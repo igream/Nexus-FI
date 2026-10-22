@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "id": "uaemex_decreto_fraccion_inmueble_no_prioritario",
+    "clean_id": "uaemex_decreto_fraccion_inmueble_no_prioritario",
+    "titulo": "DECRETO FRACCION INMUEBLE NO PRIORITARIO",
+    "documento_original": "DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf",
+    "ruta_relativa_fuente": "reglamentos y normativas uaemex/DECRETOS/DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf",
+    "categoria": "normativa",
+    "subcategoria": "codigo_lineamiento",
+    "carrera": "UAEMEX",
+    "periodo": "VIGENTE",
+    "total_paginas": 2,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-10-21 15:30:10",
+    "total_tokens": 1012,
+    "total_chunks": 2
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "1\n\nDECRETO POR EL QUE SE DECLARA EN BIEN PROPIO\nUNA FRACCIÓN DE UN INMUEBLE NO PRIORITARIO\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO\nY DONARLO A TÍTULO GRATUITO EN FAVOR DEL\nH. AYUNTAMIENTO DE METEPEC, PARA SER DESTINADO\nA LA CONSTRUCCIÓN DE LOS CARRILES DE BAJA VELOCIDAD\nDE LA VIALIDAD TOLUCA-METEPEC-TENANGO\n\nEl H. Consejo Universitario de la Universidad Autónoma del Estado de México,\ncon fundamento en los artículos 21 fracciones I y IX de la Ley de la Universidad, y 10, 11,\n13, y 142 del Estatuto Universitario\n\nDECRETA:\n\nARTÍCULO PRIMERO.- Se declara en bien propio una fracción de un inmueble\nno prioritario, con una superficie de 306.48 m2 en una franja de 43.783 m de largo por 7.00\nm de ancho, ubicado en la vialidad Toluca-Metepec-Tenango, No 902 en la localidad de\nMetepec, municipio de Metepec, Estado de México, entre la calle Pedro Ascencio y la calle\nGuadalupe Victoria.\n\nARTÍCULO SEGUNDO.- Se autoriza a la Universidad Autónoma del Estado de\nMéxico a donar a título gratuito la fracción del inmueble descrito en el artículo anterior, en\nfavor del H. Ayuntamiento de Metepec para será destinado a la construcción de carriles de\nbaja velocidad de la vialidad Toluca-Metepec-Tenango, ubicado en ese municipio.\n\nARTÍCULO TERCERO.- El H. Consejo Universitario de la Universidad\nAutónoma del Estado de México, con fundamento en los artículos 21 fracciones I y IX de la\nLey de la Universidad, y 10, 11, 13 y 142 del Estatuto Universitario.\n\nLa donación a la que se refiere el artículo anterior, estará condicionada a que el\ninmueble sea destinado al objeto señalado, en caso de incumplimiento, el bien donado\nrevertirá el patrimonio universitario.\n\nARTÍCULO CUARTO.- La afectación del inmueble descrito, estará supeditada\ntanto a la reconstrucción de la barda con las misma características y dimensiones originales\ncomo a la totalidad de los gastos de escrituración, que correrán por cuenta del H.\nAyuntamiento de Metepec.\n\nARTÍCULO QUINTO.- Se faculta al Rector de la Universidad Autónoma del\nEstado de México, para que por conducto de sus representantes o apoderados legalmente\ninvestidos realicen las actuaciones y trámites correspondientes que se derivan de la presente\ndonación.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 2,
+      "text": "2\n\nTRANSITORIOS\n\nPRIMERO.- Publíquese el presente decreto en el Órgano Oficial Gaceta\nUniversitaria.\n\nSEGUNDO.- El presente decreto entrará en vigor el día de su aprobación por el\nH. Consejo Universitario.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Ordinaria, celebrada\nel día 29 de enero de 1999\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 38, 31 de enero de 1999, Época\nVIII, Año XV\n\nVIGENCIA:\n29 de enero de 1999",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "uaemex_decreto_fraccion_inmueble_no_prioritario_c001",
+      "content_hash": "de5c37c745920170bc55a465a9d71e964fac2da1c40d9909569300037ddd5f8d",
+      "text": "[DOCUMENTO: DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf | CATEGORÍA: NORMATIVA | PÁG: 1-1]\n\n1\n\nDECRETO POR EL QUE SE DECLARA EN BIEN PROPIO\n\nUNA FRACCIÓN DE UN INMUEBLE NO PRIORITARIO\n\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO\n\nY DONARLO A TÍTULO GRATUITO EN FAVOR DEL\n\nH. AYUNTAMIENTO DE METEPEC, PARA SER DESTINADO\n\nA LA CONSTRUCCIÓN DE LOS CARRILES DE BAJA VELOCIDAD\n\nDE LA VIALIDAD TOLUCA-METEPEC-TENANGO\n\nEl H. Consejo Universitario de la Universidad Autónoma del Estado de México,\n\ncon fundamento en los artículos 21 fracciones I y IX de la Ley de la Universidad, y 10, 11,\n\n13, y 142 del Estatuto Universitario\n\nDECRETA:\n\nARTÍCULO PRIMERO.- Se declara en bien propio una fracción de un inmueble\n\nno prioritario, con una superficie de 306.48 m2 en una franja de 43.783 m de largo por 7.00\n\nm de ancho, ubicado en la vialidad Toluca-Metepec-Tenango, No 902 en la localidad de\n\nMetepec, municipio de Metepec, Estado de México, entre la calle Pedro Ascencio y la calle\n\nGuadalupe Victoria.\n\nARTÍCULO SEGUNDO.- Se autoriza a la Universidad Autónoma del Estado de\n\nMéxico a donar a título gratuito la fracción del inmueble descrito en el artículo anterior, en\n\nfavor del H. Ayuntamiento de Metepec para será destinado a la construcción de carriles de\n\nbaja velocidad de la vialidad Toluca-Metepec-Tenango, ubicado en ese municipio.\n\nARTÍCULO TERCERO.- El H. Consejo Universitario de la Universidad\n\nAutónoma del Estado de México, con fundamento en los artículos 21 fracciones I y IX de la\n\nLey de la Universidad, y 10, 11, 13 y 142 del Estatuto Universitario.\n\nLa donación a la que se refiere el artículo anterior, estará condicionada a que el\n\ninmueble sea destinado al objeto señalado, en caso de incumplimiento, el bien donado\n\nrevertirá el patrimonio universitario.\n\nARTÍCULO CUARTO.- La afectación del inmueble descrito, estará supeditada\n\ntanto a la reconstrucción de la barda con las misma características y dimensiones originales\n\ncomo a la totalidad de los gastos de escrituración, que correrán por cuenta del H.\n\nAyuntamiento de Metepec.",
+      "raw_text": "1\n\nDECRETO POR EL QUE SE DECLARA EN BIEN PROPIO\n\nUNA FRACCIÓN DE UN INMUEBLE NO PRIORITARIO\n\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO\n\nY DONARLO A TÍTULO GRATUITO EN FAVOR DEL\n\nH. AYUNTAMIENTO DE METEPEC, PARA SER DESTINADO\n\nA LA CONSTRUCCIÓN DE LOS CARRILES DE BAJA VELOCIDAD\n\nDE LA VIALIDAD TOLUCA-METEPEC-TENANGO\n\nEl H. Consejo Universitario de la Universidad Autónoma del Estado de México,\n\ncon fundamento en los artículos 21 fracciones I y IX de la Ley de la Universidad, y 10, 11,\n\n13, y 142 del Estatuto Universitario\n\nDECRETA:\n\nARTÍCULO PRIMERO.- Se declara en bien propio una fracción de un inmueble\n\nno prioritario, con una superficie de 306.48 m2 en una franja de 43.783 m de largo por 7.00\n\nm de ancho, ubicado en la vialidad Toluca-Metepec-Tenango, No 902 en la localidad de\n\nMetepec, municipio de Metepec, Estado de México, entre la calle Pedro Ascencio y la calle\n\nGuadalupe Victoria.\n\nARTÍCULO SEGUNDO.- Se autoriza a la Universidad Autónoma del Estado de\n\nMéxico a donar a título gratuito la fracción del inmueble descrito en el artículo anterior, en\n\nfavor del H. Ayuntamiento de Metepec para será destinado a la construcción de carriles de\n\nbaja velocidad de la vialidad Toluca-Metepec-Tenango, ubicado en ese municipio.\n\nARTÍCULO TERCERO.- El H. Consejo Universitario de la Universidad\n\nAutónoma del Estado de México, con fundamento en los artículos 21 fracciones I y IX de la\n\nLey de la Universidad, y 10, 11, 13 y 142 del Estatuto Universitario.\n\nLa donación a la que se refiere el artículo anterior, estará condicionada a que el\n\ninmueble sea destinado al objeto señalado, en caso de incumplimiento, el bien donado\n\nrevertirá el patrimonio universitario.\n\nARTÍCULO CUARTO.- La afectación del inmueble descrito, estará supeditada\n\ntanto a la reconstrucción de la barda con las misma características y dimensiones originales\n\ncomo a la totalidad de los gastos de escrituración, que correrán por cuenta del H.\n\nAyuntamiento de Metepec.",
+      "token_count": 648,
+      "documento": "DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf",
+      "categoria": "normativa",
+      "subcategoria": "codigo_lineamiento",
+      "carrera": "UAEMEX",
+      "periodo": "VIGENTE",
+      "articulo": "",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "uaemex_decreto_fraccion_inmueble_no_prioritario_c002",
+      "content_hash": "b0afd5a56e79f860e98865b8f2827523829c5a884cafa8d672d017079c8c7b32",
+      "text": "[DOCUMENTO: DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf | CATEGORÍA: NORMATIVA | PÁG: 1-2]\n\nrevertirá el patrimonio universitario.\n\nARTÍCULO CUARTO.- La afectación del inmueble descrito, estará supeditada\n\ntanto a la reconstrucción de la barda con las misma características y dimensiones originales\n\ncomo a la totalidad de los gastos de escrituración, que correrán por cuenta del H.\n\nAyuntamiento de Metepec.\n\nARTÍCULO QUINTO.- Se faculta al Rector de la Universidad Autónoma del\n\nEstado de México, para que por conducto de sus representantes o apoderados legalmente\n\ninvestidos realicen las actuaciones y trámites correspondientes que se derivan de la presente\n\ndonación.\n\n2\n\nTRANSITORIOS\n\nPRIMERO.- Publíquese el presente decreto en el Órgano Oficial Gaceta\n\nUniversitaria.\n\nSEGUNDO.- El presente decreto entrará en vigor el día de su aprobación por el\n\nH. Consejo Universitario.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Ordinaria, celebrada\n\nel día 29 de enero de 1999\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 38, 31 de enero de 1999, Época\n\nVIII, Año XV\n\nVIGENCIA:\n\n29 de enero de 1999",
+      "raw_text": "revertirá el patrimonio universitario.\n\nARTÍCULO CUARTO.- La afectación del inmueble descrito, estará supeditada\n\ntanto a la reconstrucción de la barda con las misma características y dimensiones originales\n\ncomo a la totalidad de los gastos de escrituración, que correrán por cuenta del H.\n\nAyuntamiento de Metepec.\n\nARTÍCULO QUINTO.- Se faculta al Rector de la Universidad Autónoma del\n\nEstado de México, para que por conducto de sus representantes o apoderados legalmente\n\ninvestidos realicen las actuaciones y trámites correspondientes que se derivan de la presente\n\ndonación.\n\n2\n\nTRANSITORIOS\n\nPRIMERO.- Publíquese el presente decreto en el Órgano Oficial Gaceta\n\nUniversitaria.\n\nSEGUNDO.- El presente decreto entrará en vigor el día de su aprobación por el\n\nH. Consejo Universitario.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Ordinaria, celebrada\n\nel día 29 de enero de 1999\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 38, 31 de enero de 1999, Época\n\nVIII, Año XV\n\nVIGENCIA:\n\n29 de enero de 1999",
+      "token_count": 364,
+      "documento": "DECRETO FRACCION INMUEBLE NO PRIORITARIO.pdf",
+      "categoria": "normativa",
+      "subcategoria": "codigo_lineamiento",
+      "carrera": "UAEMEX",
+      "periodo": "VIGENTE",
+      "articulo": "",
+      "pagina_inicio": 1,
+      "pagina_fin": 2
+    }
+  ]
+}

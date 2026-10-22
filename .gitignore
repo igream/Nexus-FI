@@ -1,3 +1,37 @@
+# ==============================================================================
+# SEGURIDAD Y SECRETOS (NUNCA SUBIR A GIT)
+# ==============================================================================
 .env
+.env.*
+*.env
+*.pem
+*.key
+
+# ==============================================================================
+# DATOS BINARIOS PESADOS Y BASES DE DATOS (VAN A AMAZON S3)
+# ==============================================================================
+# PDFs originales crudos (~243 MB, deben alojarse en bucket S3)
+Pre Procesados/
+PreProcesados/
+*.pdf
+
+# Base de datos vectorial activa (~26 MB, sincronizar vía AWS CLI a S3)
+data/
+data/lancedb/
+*.lance
+
+# ==============================================================================
+# ENTORNO PYTHON Y CACHÉ
+# ==============================================================================
 venv/
+.venv/
+env/
 __pycache__/
+*.py[cod]
+*$py.class
+*.log
+
+# Scripts temporales y logs del sistema
+scratch/
+.system_generated/
+desktop.ini
