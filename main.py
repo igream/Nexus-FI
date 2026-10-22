@@ -44,44 +44,56 @@ def print_banner():
 
 
 def run_telemetry_dt10():
-    """Módulo DT-10: Verificación de Credenciales, Conectividad y Telemetría."""
+    """Módulo DT-10: Verificación de Credenciales Segregadas, Conectividad y Telemetría."""
     print("------------------------------------------------------------------------")
     print(" [MÓDULO DT-10] Verificación de Seguridad, Conectividad y Telemetría")
     print("------------------------------------------------------------------------")
 
-    openai_key = os.getenv("OPENAI_API_KEY", "")
+    k_emb = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
+    k_4o = os.getenv("OPENAI_API_KEY_CHAT_4O_MINI") or os.getenv("OPENAI_API_KEY_CHAT") or os.getenv("OPENAI_API_KEY", "")
+    k_luna6 = os.getenv("OPENAI_API_KEY_GPT6_LUNA", "")
+    k_luna56 = os.getenv("OPENAI_API_KEY_GPT5_6_LUNA", "")
+
     gemini_key = os.getenv("GEMINI_API_KEY", "")
     aws_id = os.getenv("AWS_ACCESS_KEY_ID", "")
-    aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY", "")
     aws_region = os.getenv("AWS_REGION", "us-east-1")
 
-    print(f" [1/4] OpenAI API Key:       {'Configurada ✓ (' + openai_key[:7] + '...)' if openai_key else 'NO configurada ✗'}")
-    print(f" [2/4] Google Gemini API Key: {'Configurada ✓ (' + gemini_key[:7] + '...)' if gemini_key else 'NO configurada (opcional)'}")
-    print(f" [3/4] AWS Access Key ID:     {'Configurada ✓ (' + aws_id[:6] + '...)' if aws_id else 'NO configurada (opcional S3)'}")
-    print(f"       AWS Region:            {aws_region}")
+    def mask(k):
+        return (k[:10] + "..." + k[-4:]) if (k and len(k) > 14) else ("Configurada ✓" if k else "NO configurada ✗")
+
+    print(" [CLAVES API SEGREGADAS - CONTROL DE FACTURACIÓN Y REPORTES]")
+    print(f"  1. Embeddings (text-embedding-3-small): {mask(k_emb)}")
+    print(f"  2. Chat RAG Producción (GPT-4o-mini):   {mask(k_4o)}")
+    print(f"  3. Benchmark Luna (GPT-6 Luna):         {mask(k_luna6)}")
+    print(f"  4. Benchmark Luna (GPT-5.6 Luna):       {mask(k_luna56)}")
+
+    print("\n [SERVICIOS EN LA NUBE ADICIONALES]")
+    print(f"  • Google Gemini API:  {'Configurada ✓' if gemini_key else 'NO configurada (opcional)'}")
+    print(f"  • AWS S3 Access Key:  {'Configurada ✓ (' + aws_id[:6] + '...)' if aws_id else 'NO configurada (opcional S3)'}")
+    print(f"    AWS Region:         {aws_region}")
 
     # Verificar Base de Datos Vectorial LanceDB
-    print("\n [4/4] Verificando Base de Datos Vectorial LanceDB...")
+    print("\n [ALMACÉN VECTORIAL LANCEDB]")
     vdb_dir = BASE_DIR / "data" / "lancedb"
     if vdb_dir.exists():
         try:
             from nexus_ingestion.vector_store import LanceDBVectorStore
             store = LanceDBVectorStore(uri=str(vdb_dir), table_name="nexus_documents")
             total_chunks = store.count()
-            print(f"       LanceDB Status:        ONLINE ✓")
-            print(f"       Tabla:                 nexus_documents")
-            print(f"       Vectores Indexados:    {total_chunks:,} fragmentos (1536 dimensiones)")
+            print(f"  • LanceDB Status:     ONLINE ✓")
+            print(f"  • Tabla de Datos:     nexus_documents")
+            print(f"  • Vectores Activos:   {total_chunks:,} fragmentos (1536 dimensiones)")
         except Exception as e:
-            print(f"       LanceDB Status:        ERROR ({e})")
+            print(f"  • LanceDB Status:     ERROR ({e})")
     else:
-        print(f"       LanceDB Status:        Directorio {vdb_dir} no encontrado.")
+        print(f"  • LanceDB Status:     Directorio {vdb_dir} no encontrado.")
 
-    # Prueba de telemetría de inferencia
-    if openai_key:
-        print("\n [Test] Realizando prueba de telemetría y latencia con OpenAI...")
+    # Pruebas de telemetría de inferencia
+    if k_4o:
+        print("\n [TEST EN VIVO: Chat GPT-4o-mini]")
         try:
             import openai
-            client = openai.OpenAI(api_key=openai_key)
+            client = openai.OpenAI(api_key=k_4o)
             t0 = time.time()
             resp = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -90,11 +102,9 @@ def run_telemetry_dt10():
             )
             lat = round((time.time() - t0) * 1000, 2)
             content = resp.choices[0].message.content.strip()
-            print(f"       Conexión exitosa ✓ (Latencia: {lat} ms | Respuesta: '{content}')")
+            print(f"  • Conexión exitosa ✓ (Latencia: {lat} ms | Respuesta: '{content}')")
         except Exception as e:
-            print(f"       Aviso telemetría: {e}")
-    else:
-        print("\n [Aviso] Para activar telemetría en la nube, configura OPENAI_API_KEY en tu .env")
+            print(f"  • Aviso telemetría: {e}")
 
     print("------------------------------------------------------------------------\n")
 
@@ -117,9 +127,9 @@ def run_cli_search(query: str, top_k: int = 4):
     print(f"\n[BÚSQUEDA SEMÁNTICA RAG] Consulta: '{query}'")
     print(f"Umbral anti-alucinaciones RF13: Xbase >= 0.52 | Top-K: {top_k}\n")
 
-    openai_key = os.getenv("OPENAI_API_KEY", "")
+    openai_key = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
     if not openai_key:
-        print("[Error] Se requiere OPENAI_API_KEY en .env para vectorizar la consulta.")
+        print("[Error] Se requiere OPENAI_API_KEY_EMBEDDINGS en .env para vectorizar la consulta.")
         return
 
     from nexus_ingestion.embedder import TextEmbedder

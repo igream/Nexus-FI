@@ -22,7 +22,8 @@ from nexus_ingestion.vector_store import LanceDBVectorStore
 app = FastAPI(
     title="Nexus FI - API Asistente Inteligente RAG",
     description="Backend oficial de Nexus FI para la Facultad de Ingeniería (UAEMéx). "
-                "Búsqueda semántica sobre LanceDB y generación aumentada por recuperación (RAG).",
+                "Búsqueda semántica sobre LanceDB y generación aumentada por recuperación (RAG) "
+                "con facturación y claves API segregadas para telemetría precisa de consumo.",
     version="0.1.0-alpha",
 )
 
@@ -35,28 +36,63 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inicializar almacén vectorial y embedder
+# Rutas del sistema
 LANCEDB_DIR = BASE_DIR / "data" / "lancedb"
 FRONTEND_DIR = BASE_DIR / "frontend"
 
+def mask_key(k: Optional[str]) -> str:
+    if not k:
+        return "No configurada"
+    return k[:11] + "..." + k[-4:] if len(k) > 15 else "***"
+
+# =============================================================================
+# SEGREGACIÓN DE CLAVES API POR SERVICIO (MEDICIÓN DE CONSUMO INDEPENDIENTE)
+# =============================================================================
+KEY_EMBEDDINGS = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
+KEY_CHAT_4O_MINI = (
+    os.getenv("OPENAI_API_KEY_CHAT_4O_MINI")
+    or os.getenv("OPENAI_API_KEY_CHAT")
+    or os.getenv("OPENAI_API_KEY", "")
+)
+KEY_GPT6_LUNA = os.getenv("OPENAI_API_KEY_GPT6_LUNA", "")
+KEY_GPT5_6_LUNA = os.getenv("OPENAI_API_KEY_GPT5_6_LUNA", "")
+
 vector_store: Optional[LanceDBVectorStore] = None
 embedder: Optional[TextEmbedder] = None
-openai_client: Optional[openai.OpenAI] = None
 
-# Intentar inicializar componentes al arrancar
+# Inicializar almacén vectorial LanceDB
 try:
     if LANCEDB_DIR.exists():
         vector_store = LanceDBVectorStore(uri=str(LANCEDB_DIR), table_name="nexus_documents")
 except Exception as e:
     print(f"[Aviso] No se pudo conectar a LanceDB en {LANCEDB_DIR}: {e}")
 
-api_key = os.getenv("OPENAI_API_KEY", "")
-if api_key:
+# Inicializar embedder con su clave exclusiva
+if KEY_EMBEDDINGS:
     try:
-        embedder = TextEmbedder(api_key=api_key)
-        openai_client = openai.OpenAI(api_key=api_key)
+        embedder = TextEmbedder(api_key=KEY_EMBEDDINGS)
     except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente OpenAI: {e}")
+        print(f"[Aviso] Error al inicializar embedder exclusivo: {e}")
+
+# Inicializar clientes de chat independientes por modelo
+chat_clients: Dict[str, openai.OpenAI] = {}
+if KEY_CHAT_4O_MINI:
+    try:
+        chat_clients["gpt-4o-mini"] = openai.OpenAI(api_key=KEY_CHAT_4O_MINI)
+    except Exception as e:
+        print(f"[Aviso] Error al inicializar cliente GPT-4o-mini: {e}")
+
+if KEY_GPT6_LUNA:
+    try:
+        chat_clients["gpt-6-luna"] = openai.OpenAI(api_key=KEY_GPT6_LUNA)
+    except Exception as e:
+        print(f"[Aviso] Error al inicializar cliente GPT-6 Luna: {e}")
+
+if KEY_GPT5_6_LUNA:
+    try:
+        chat_clients["gpt-5.6-luna"] = openai.OpenAI(api_key=KEY_GPT5_6_LUNA)
+    except Exception as e:
+        print(f"[Aviso] Error al inicializar cliente GPT-5.6 Luna: {e}")
 
 
 # Esquemas Pydantic
@@ -64,7 +100,8 @@ class ChatRequest(BaseModel):
     query: str = Field(..., description="Pregunta del usuario sobre trámites, normativa o vida universitaria en FI UAEMéx")
     top_k: int = Field(default=4, ge=1, le=10, description="Número de fragmentos vectoriales a recuperar")
     category_filter: Optional[str] = Field(default=None, description="Filtrar por categoría documental")
-    use_llm: bool = Field(default=True, description="Si es True, sintetiza la respuesta con LLM; si es False, devuelve los fragmentos directos")
+    use_llm: bool = Field(default=True, description="Si es True, sintetiza la respuesta con LLM; si es False, devuelve fragmentos directos")
+    model: Optional[str] = Field(default="gpt-4o-mini", description="Modelo generativo: 'gpt-4o-mini', 'gpt-6-luna', 'gpt-5.6-luna'")
 
 
 class CitationItem(BaseModel):
@@ -93,7 +130,7 @@ class ChatResponse(BaseModel):
 
 @app.get("/api/health")
 def get_health():
-    """Verifica el estado del servicio, base vectorial y conectividad externa."""
+    """Verifica el estado del servicio, base vectorial y segregación de claves API."""
     total_chunks = 0
     vdb_status = "offline"
     if vector_store:
@@ -115,8 +152,33 @@ def get_health():
             "table": "nexus_documents",
             "path": str(LANCEDB_DIR),
         },
+        "segregated_api_keys": {
+            "embeddings_service": {
+                "configured": bool(KEY_EMBEDDINGS),
+                "env_var": "OPENAI_API_KEY_EMBEDDINGS",
+                "masked": mask_key(KEY_EMBEDDINGS),
+                "purpose": "Cálculo de vectores semánticos (text-embedding-3-small, 1536d)",
+            },
+            "chat_4o_mini": {
+                "configured": bool(KEY_CHAT_4O_MINI),
+                "env_var": "OPENAI_API_KEY_CHAT_4O_MINI",
+                "masked": mask_key(KEY_CHAT_4O_MINI),
+                "purpose": "Generación RAG en producción (GPT-4o-mini)",
+            },
+            "chat_gpt6_luna": {
+                "configured": bool(KEY_GPT6_LUNA),
+                "env_var": "OPENAI_API_KEY_GPT6_LUNA",
+                "masked": mask_key(KEY_GPT6_LUNA),
+                "purpose": "Experimentación y benchmarking (Nexus FI GPT 6 Luna)",
+            },
+            "chat_gpt5_6_luna": {
+                "configured": bool(KEY_GPT5_6_LUNA),
+                "env_var": "OPENAI_API_KEY_GPT5_6_LUNA",
+                "masked": mask_key(KEY_GPT5_6_LUNA),
+                "purpose": "Experimentación y benchmarking (Nexus FI GPT 5.6 Luna)",
+            },
+        },
         "telemetry": {
-            "openai_configured": bool(os.getenv("OPENAI_API_KEY")),
             "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
             "aws_configured": bool(os.getenv("AWS_ACCESS_KEY_ID")),
             "aws_region": os.getenv("AWS_REGION", "us-east-1"),
@@ -159,7 +221,7 @@ def get_stats():
 def chat_endpoint(req: ChatRequest):
     """
     Atiende consultas institucionales mediante búsqueda semántica vectorial (LanceDB)
-    y generación aumentada por recuperación (RAG).
+    y generación aumentada por recuperación (RAG), garantizando segregación estricta de consumo.
     """
     start_time = time.time()
     user_query = req.query.strip()
@@ -171,18 +233,16 @@ def chat_endpoint(req: ChatRequest):
         raise HTTPException(status_code=503, detail="Base de datos vectorial no inicializada.")
 
     current_embedder = embedder
-    if not current_embedder:
-        api_k = os.getenv("OPENAI_API_KEY", "")
-        if api_k:
-            current_embedder = TextEmbedder(api_key=api_k)
+    if not current_embedder and KEY_EMBEDDINGS:
+        current_embedder = TextEmbedder(api_key=KEY_EMBEDDINGS)
 
     if not current_embedder:
         raise HTTPException(
             status_code=500,
-            detail="No se encuentra configurada OPENAI_API_KEY para calcular el vector de búsqueda.",
+            detail="No se encuentra configurada OPENAI_API_KEY_EMBEDDINGS para calcular el vector de búsqueda.",
         )
 
-    # 1. Generar vector de consulta
+    # 1. Generar vector de consulta (Facturado a OPENAI_API_KEY_EMBEDDINGS)
     try:
         t0_emb = time.time()
         query_vector = current_embedder.embed_query(user_query)
@@ -244,16 +304,32 @@ def chat_endpoint(req: ChatRequest):
                 "search_latency_ms": search_latency_ms,
                 "chunks_retrieved": 0,
                 "model": "rule-based fallback",
+                "key_used_embeddings": mask_key(KEY_EMBEDDINGS),
+                "key_used_chat": "none",
             },
         )
 
-    # 3. Formular respuesta con LLM o síntesis contextual
+    # 3. Selección de cliente y modelo LLM para inferencia (Facturado a la clave de Chat elegida)
+    target_model = req.model or "gpt-4o-mini"
+    chosen_client = chat_clients.get(target_model) or chat_clients.get("gpt-4o-mini")
+    key_used_name = "OPENAI_API_KEY_CHAT_4O_MINI"
+    key_used_masked = mask_key(KEY_CHAT_4O_MINI)
+
+    if target_model in ("gpt-6-luna", "luna-6") and "gpt-6-luna" in chat_clients:
+        chosen_client = chat_clients["gpt-6-luna"]
+        key_used_name = "OPENAI_API_KEY_GPT6_LUNA"
+        key_used_masked = mask_key(KEY_GPT6_LUNA)
+    elif target_model in ("gpt-5.6-luna", "luna-5.6") and "gpt-5.6-luna" in chat_clients:
+        chosen_client = chat_clients["gpt-5.6-luna"]
+        key_used_name = "OPENAI_API_KEY_GPT5_6_LUNA"
+        key_used_masked = mask_key(KEY_GPT5_6_LUNA)
+
     t0_llm = time.time()
     generated_answer = ""
     model_name = "direct_synthesis"
 
-    if req.use_llm and openai_client:
-        model_name = "gpt-4o-mini"
+    if req.use_llm and chosen_client:
+        model_name = "gpt-4o-mini"  # Modelo real OpenAI para ejecución
         context_blocks = []
         for idx, res in enumerate(results, start=1):
             doc_info = f"Documento: {res['documento']} | Categoría: {res['categoria']}"
@@ -279,7 +355,7 @@ def chat_endpoint(req: ChatRequest):
         user_content = f"Contexto Oficial:\n{joined_context}\n\nPregunta del Estudiante: {user_query}"
 
         try:
-            chat_completion = openai_client.chat.completions.create(
+            chat_completion = chosen_client.chat.completions.create(
                 model=model_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -290,7 +366,6 @@ def chat_endpoint(req: ChatRequest):
             )
             generated_answer = chat_completion.choices[0].message.content or ""
         except Exception as e:
-            # Fallback en caso de fallo del LLM
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
             model_name = "direct_synthesis_fallback"
             primary_chunk = results[0]
@@ -299,7 +374,6 @@ def chat_endpoint(req: ChatRequest):
                 f"({primary_chunk['categoria']}):\n\n{primary_chunk['text']}"
             )
     else:
-        # Síntesis directa sin llamada a LLM
         primary_chunk = results[0]
         generated_answer = (
             f"Información localizada en '{primary_chunk['documento']}' "
@@ -322,6 +396,10 @@ def chat_endpoint(req: ChatRequest):
             "chunks_retrieved": len(results),
             "top_similarity": results[0]["similarity"],
             "model": model_name,
+            "billing_segregation": {
+                "embeddings_account": f"OPENAI_API_KEY_EMBEDDINGS ({mask_key(KEY_EMBEDDINGS)})",
+                "chat_account": f"{key_used_name} ({key_used_masked})",
+            },
         },
     )
 
@@ -348,7 +426,6 @@ if FRONTEND_DIR.exists():
             return FileResponse(str(dash_file))
         return {"message": "Frontend dashboard.html no encontrado."}
 
-    # Atajos para archivos raíz del frontend (styles.css, app.js, manifest, favicon, etc.)
     @app.get("/styles.css")
     def serve_styles():
         return FileResponse(str(FRONTEND_DIR / "styles.css"))

@@ -20,7 +20,11 @@ class TextEmbedder:
         model: str = "text-embedding-3-small",
         dimensions: int = 1536,
     ):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
+        self.api_key = (
+            api_key
+            or os.getenv("OPENAI_API_KEY_EMBEDDINGS")
+            or os.getenv("OPENAI_API_KEY", "")
+        )
         self.model = model
         self.dimensions = dimensions
         self.api_url = "https://api.openai.com/v1/embeddings"
@@ -29,7 +33,7 @@ class TextEmbedder:
     def _validate_api_key(self):
         if not self.api_key:
             raise ValueError(
-                "OPENAI_API_KEY no configurada. Define la variable de entorno "
+                "OPENAI_API_KEY_EMBEDDINGS (o OPENAI_API_KEY) no configurada. Define la variable de entorno "
                 "en el archivo .env o mediante AWS Secrets Manager."
             )
 

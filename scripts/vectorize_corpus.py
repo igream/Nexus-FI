@@ -34,15 +34,14 @@ def main():
 
     args = parser.parse_args()
 
-    api_key = os.getenv("OPENAI_API_KEY", "")
+    api_key = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
     if not api_key:
         print("\n" + "=" * 70)
-        print("ERROR: NO SE ENCONTRÓ LA VARIABLE DE ENTORNO OPENAI_API_KEY")
+        print("ERROR: NO SE ENCONTRÓ LA VARIABLE OPENAI_API_KEY_EMBEDDINGS")
         print("=" * 70)
         print("Por seguridad, la API Key no debe pasarse por argumentos CLI.")
-        print("Configúrala mediante:")
-        print("  1. Archivo .env local (OPENAI_API_KEY=sk-proj-...)")
-        print("  2. Variable de entorno del sistema / AWS Secrets Manager.")
+        print("Configúrala en tu archivo .env local:")
+        print("  OPENAI_API_KEY_EMBEDDINGS=sk-proj-...")
         print("=" * 70 + "\n")
         sys.exit(1)
 
