@@ -11,7 +11,7 @@ from nexus_ingestion.vector_store import LanceDBVectorStore
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 CORPUS_JSONL = str(BASE_DIR / "Procesados" / "corpus_chunks_para_embedding.jsonl")
 DEFAULT_LANCEDB_DIR = str(BASE_DIR / "data" / "lancedb")
 TABLE_NAME = os.getenv("LANCEDB_TABLE_NAME", "nexus_documents")

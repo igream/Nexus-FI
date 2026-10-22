@@ -3,6 +3,7 @@
 # ==============================================================================
 .env
 .env.*
+!.env.example
 *.env
 *.pem
 *.key
@@ -35,3 +36,6 @@ __pycache__/
 scratch/
 .system_generated/
 desktop.ini
+~$*
+*.tmp
+*.temp

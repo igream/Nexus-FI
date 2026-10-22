@@ -8,7 +8,7 @@ from nexus_ingestion.classifier import clean_filename
 from nexus_ingestion.chunker import StructuralChunker
 from nexus_ingestion.extractors.text_normalizer import normalize_text
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_PROCESSED = str(BASE_DIR / "Procesados")
 _chunker = StructuralChunker(target_tokens=650, overlap_tokens=100, min_tokens=100, max_tokens=800)
 

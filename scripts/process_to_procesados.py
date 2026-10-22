@@ -13,10 +13,10 @@ from nexus_ingestion.extractors.pdf_extractor import PDFExtractor
 from nexus_ingestion.extractors.html_extractor import HTMLExtractor
 from nexus_ingestion.extractors.text_normalizer import normalize_text
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_INPUT = str(BASE_DIR / "Pre Procesados")
 BASE_OUTPUT = str(BASE_DIR / "Procesados")
-TEMPLATE_FILE = str(BASE_DIR / "plantilla_coordinacion_ico.md")
+TEMPLATE_FILE = str(BASE_DIR / "docs" / "plantilla_coordinacion_ico.md")
 
 _worker_pdf: PDFExtractor = None
 _worker_html: HTMLExtractor = None
