@@ -156,19 +156,35 @@ El repositorio implementa una estricta política de protección de credenciales 
 
 ## 🚀 Guía de Instalación y Uso
 
-### 1. Clonar el Repositorio y Crear Entorno Virtual
+### ⚡ Opción A: Instalación Automatizada en 1 Clic (Recomendada)
+
+- **En Windows:**
+  Simplemente haz doble clic sobre el archivo [`setup.bat`](file:///c:/Users/feraz/Desktop/Documentos%20FI%20UAEMex/setup.bat) (o ejecútalo desde cmd/PowerShell).
+  El script detecta tu versión de Python, crea el entorno virtual aislado `.venv`, instala todas las dependencias de `requirements.txt`, crea tu plantilla `.env`, valida la base de datos vectorial y ofrece iniciar el servidor web al instante.
+  *(Para iniciar la aplicación en el futuro, solo haz doble clic en [`start.bat`](file:///c:/Users/feraz/Desktop/Documentos%20FI%20UAEMex/start.bat))*
+
+- **En Linux / macOS / Servidores AWS:**
+  ```bash
+  chmod +x setup.sh && ./setup.sh
+  ```
+
+---
+
+### 🛠️ Opción B: Instalación Manual Paso a Paso
+
+#### 1. Clonar el Repositorio y Crear Entorno Virtual
 ```bash
 git clone https://github.com/igream/Nexus-FI.git
 cd Nexus-FI
 
-python -m venv venv
+python -m venv .venv
 # En Windows:
-.\venv\Scripts\activate
+.\.venv\Scripts\activate
 # En Linux/macOS:
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
-### 2. Instalar Dependencias
+#### 2. Instalar Dependencias
 ```bash
 pip install -r requirements.txt
 ```
