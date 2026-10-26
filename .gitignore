@@ -15,6 +15,7 @@
 Pre Procesados/
 PreProcesados/
 *.pdf
+!docs/**/*.pdf
 
 # Base de datos vectorial activa (~26 MB, sincronizar vía AWS CLI a S3)
 data/
