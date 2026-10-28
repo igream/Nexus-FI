@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "id": "uaemex_decreto_rector",
+    "clean_id": "uaemex_decreto_rector",
+    "titulo": "DECRETO RECTOR",
+    "documento_original": "DECRETO RECTOR.pdf",
+    "ruta_relativa_fuente": "reglamentos y normativas uaemex/DECRETOS/DECRETO RECTOR.pdf",
+    "categoria": "normativa",
+    "subcategoria": "codigo_lineamiento",
+    "carrera": "UAEMEX",
+    "periodo": "VIGENTE",
+    "total_paginas": 2,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-10-21 15:30:11",
+    "total_tokens": 1007,
+    "total_chunks": 2
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "1\n\nDR. EN A. P. JOSÉ MARTÍNEZ VILCHIS, RECTOR\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO,\nA LOS INTEGRANTES DE LA COMUNIDAD UNIVERSITARIA\nY A LOS UNIVERSITARIOS, SABED:\n\nQue el H. Consejo Universitario de la Universidad Autónoma del Estado de México\nha tenido a bien expedir lo siguiente:\n\nD E C R E T O\n\nEn sesión extraordinaria de 27 de febrero de 2006, el H. Consejo Universitario de\nla Universidad Autónoma del Estado de México:\n\nD E C R E T A :\n\nÚNICO.- Se reforma el artículo 116 del Estatuto Universitario de la Universidad\nAutónoma del Estado de México, para quedar como sigue:\n\nArtículo 116. Para ocupar el cargo de Director de Organismo Académico, Centro\nUniversitario o de plantel de la Escuela Preparatoria se requiere:\n\nI. Ser mexicano por nacimiento y en pleno ejercicio de sus derechos.\n\nII. Ser mayor de treinta años en el momento de la elección.\n\nIII. Ser integrante del personal académico definitivo al serávicio del Organismo\nAcadémico, Centro Universitario o plantel de la Escuela Preparatoria; excepto en los\nde nueva creación.\n\nIV. Poseer cédula profesional y título de licenciatura expedido por universidad pública\nmexicana reconocida por la Secretaría de Educación Pública, igual o equivalente a los\nque expide la Institución, en el caso de los Organismos Académicos, seráá afín a su\nobjeto de estudios.\n\nPara el caso de los Centros Universitarios, seráá afín a cualquiera de los objetos de\nestudio que en él se impartan.\n\nV. Tener grado académico de maestro o de doctor, otorgado por una institución de\neducación superior reconocida por la Secretaría de Educación Pública.\n\nVI. Haber prestado sus serávicios adscrito al Organismo Académico, Centro Universitario\no plantel de la Escuela Preparatoria por lo menos tres años naturales y continuos\ninmediatos al día de la elección; excepto en los de nueva creación.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 2,
+      "text": "2\n\nVII. Haberse distinguido en su actividad profesional y demostrado su interés por los asuntos\ndel Organismo Académico, Centro Universitario o plantel de la Escuela Preparatoria.\n\nVIII. Lo demás que establezca la legislación universitaria y las disposiciones aplicables.\n\nTRANSITORIOS\n\nPRIMERO. Publíquese el presente Decreto en el órgano oficial “Gaceta\nUniversitaria”.\n\nSEGUNDO. El presente Decreto entrará en vigor el día de su aprobación.\n\nTERCERO. El Consejo Universitario procederá en el término de 30 días hábiles\ncontados a partir de la entrada en vigor del presente Decreto, a la expedición del Acuerdo\nque regula el proceso de auscultación y designación de Directores de Organismos\nAcadémicos, Centros Universitarios y de Planteles de la Escuela Preparatoria de la\nUniversidad Autónoma del Estado de México.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Extraordinaria,\ncelebrada el día 27 de febrero de 2006\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 128, Febrero 2006, Época XII,\nAño XXII\n\nVIGENCIA:\n27 de febrero de 2006",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "uaemex_decreto_rector_c001",
+      "content_hash": "6cf4406d39844a3989b982c6649548a2e310ad0d4e0ee7c94d7f7ded4c7a87c5",
+      "text": "[DOCUMENTO: DECRETO RECTOR.pdf | CATEGORÍA: NORMATIVA | PÁG: 1-2 | artículo 116]\n\n1\n\nDR. EN A. P. JOSÉ MARTÍNEZ VILCHIS, RECTOR\n\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO,\n\nA LOS INTEGRANTES DE LA COMUNIDAD UNIVERSITARIA\n\nY A LOS UNIVERSITARIOS, SABED:\n\nQue el H. Consejo Universitario de la Universidad Autónoma del Estado de México\n\nha tenido a bien expedir lo siguiente:\n\nD E C R E T O\n\nEn sesión extraordinaria de 27 de febrero de 2006, el H. Consejo Universitario de\n\nla Universidad Autónoma del Estado de México:\n\nD E C R E T A :\n\nÚNICO.- Se reforma el artículo 116 del Estatuto Universitario de la Universidad\n\nAutónoma del Estado de México, para quedar como sigue:\n\nArtículo 116. Para ocupar el cargo de Director de Organismo Académico, Centro\n\nUniversitario o de plantel de la Escuela Preparatoria se requiere:\n\nI. Ser mexicano por nacimiento y en pleno ejercicio de sus derechos.\n\nII. Ser mayor de treinta años en el momento de la elección.\n\nIII. Ser integrante del personal académico definitivo al serávicio del Organismo\n\nAcadémico, Centro Universitario o plantel de la Escuela Preparatoria; excepto en los\n\nde nueva creación.\n\nIV. Poseer cédula profesional y título de licenciatura expedido por universidad pública\n\nmexicana reconocida por la Secretaría de Educación Pública, igual o equivalente a los\n\nque expide la Institución, en el caso de los Organismos Académicos, seráá afín a su\n\nobjeto de estudios.\n\nPara el caso de los Centros Universitarios, seráá afín a cualquiera de los objetos de\n\nestudio que en él se impartan.\n\nV. Tener grado académico de maestro o de doctor, otorgado por una institución de\n\neducación superior reconocida por la Secretaría de Educación Pública.\n\nVI. Haber prestado sus serávicios adscrito al Organismo Académico, Centro Universitario\n\no plantel de la Escuela Preparatoria por lo menos tres años naturales y continuos\n\ninmediatos al día de la elección; excepto en los de nueva creación.\n\n2\n\nVII. Haberse distinguido en su actividad profesional y demostrado su interés por los asuntos\n\ndel Organismo Académico, Centro Universitario o plantel de la Escuela Preparatoria.\n\nVIII. Lo demás que establezca la legislación universitaria y las disposiciones aplicables.\n\nTRANSITORIOS",
+      "raw_text": "1\n\nDR. EN A. P. JOSÉ MARTÍNEZ VILCHIS, RECTOR\n\nDE LA UNIVERSIDAD AUTÓNOMA DEL ESTADO DE MÉXICO,\n\nA LOS INTEGRANTES DE LA COMUNIDAD UNIVERSITARIA\n\nY A LOS UNIVERSITARIOS, SABED:\n\nQue el H. Consejo Universitario de la Universidad Autónoma del Estado de México\n\nha tenido a bien expedir lo siguiente:\n\nD E C R E T O\n\nEn sesión extraordinaria de 27 de febrero de 2006, el H. Consejo Universitario de\n\nla Universidad Autónoma del Estado de México:\n\nD E C R E T A :\n\nÚNICO.- Se reforma el artículo 116 del Estatuto Universitario de la Universidad\n\nAutónoma del Estado de México, para quedar como sigue:\n\nArtículo 116. Para ocupar el cargo de Director de Organismo Académico, Centro\n\nUniversitario o de plantel de la Escuela Preparatoria se requiere:\n\nI. Ser mexicano por nacimiento y en pleno ejercicio de sus derechos.\n\nII. Ser mayor de treinta años en el momento de la elección.\n\nIII. Ser integrante del personal académico definitivo al serávicio del Organismo\n\nAcadémico, Centro Universitario o plantel de la Escuela Preparatoria; excepto en los\n\nde nueva creación.\n\nIV. Poseer cédula profesional y título de licenciatura expedido por universidad pública\n\nmexicana reconocida por la Secretaría de Educación Pública, igual o equivalente a los\n\nque expide la Institución, en el caso de los Organismos Académicos, seráá afín a su\n\nobjeto de estudios.\n\nPara el caso de los Centros Universitarios, seráá afín a cualquiera de los objetos de\n\nestudio que en él se impartan.\n\nV. Tener grado académico de maestro o de doctor, otorgado por una institución de\n\neducación superior reconocida por la Secretaría de Educación Pública.\n\nVI. Haber prestado sus serávicios adscrito al Organismo Académico, Centro Universitario\n\no plantel de la Escuela Preparatoria por lo menos tres años naturales y continuos\n\ninmediatos al día de la elección; excepto en los de nueva creación.\n\n2\n\nVII. Haberse distinguido en su actividad profesional y demostrado su interés por los asuntos\n\ndel Organismo Académico, Centro Universitario o plantel de la Escuela Preparatoria.\n\nVIII. Lo demás que establezca la legislación universitaria y las disposiciones aplicables.\n\nTRANSITORIOS",
+      "token_count": 630,
+      "documento": "DECRETO RECTOR.pdf",
+      "categoria": "normativa",
+      "subcategoria": "codigo_lineamiento",
+      "carrera": "UAEMEX",
+      "periodo": "VIGENTE",
+      "articulo": "artículo 116",
+      "pagina_inicio": 1,
+      "pagina_fin": 2
+    },
+    {
+      "chunk_id": "uaemex_decreto_rector_c002",
+      "content_hash": "73f106366760d7a5aea8c987cd881db447d937783fdc64145850e93fe22d1397",
+      "text": "[DOCUMENTO: DECRETO RECTOR.pdf | CATEGORÍA: NORMATIVA | PÁG: 1-2 | título d]\n\ninmediatos al día de la elección; excepto en los de nueva creación.\n\n2\n\nVII. Haberse distinguido en su actividad profesional y demostrado su interés por los asuntos\n\ndel Organismo Académico, Centro Universitario o plantel de la Escuela Preparatoria.\n\nVIII. Lo demás que establezca la legislación universitaria y las disposiciones aplicables.\n\nTRANSITORIOS\n\nPRIMERO. Publíquese el presente Decreto en el órgano oficial “Gaceta\n\nUniversitaria”.\n\nSEGUNDO. El presente Decreto entrará en vigor el día de su aprobación.\n\nTERCERO. El Consejo Universitario procederá en el término de 30 días hábiles\n\ncontados a partir de la entrada en vigor del presente Decreto, a la expedición del Acuerdo\n\nque regula el proceso de auscultación y designación de Directores de Organismos\n\nAcadémicos, Centros Universitarios y de Planteles de la Escuela Preparatoria de la\n\nUniversidad Autónoma del Estado de México.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Extraordinaria,\n\ncelebrada el día 27 de febrero de 2006\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 128, Febrero 2006, Época XII,\n\nAño XXII\n\nVIGENCIA:\n\n27 de febrero de 2006",
+      "raw_text": "inmediatos al día de la elección; excepto en los de nueva creación.\n\n2\n\nVII. Haberse distinguido en su actividad profesional y demostrado su interés por los asuntos\n\ndel Organismo Académico, Centro Universitario o plantel de la Escuela Preparatoria.\n\nVIII. Lo demás que establezca la legislación universitaria y las disposiciones aplicables.\n\nTRANSITORIOS\n\nPRIMERO. Publíquese el presente Decreto en el órgano oficial “Gaceta\n\nUniversitaria”.\n\nSEGUNDO. El presente Decreto entrará en vigor el día de su aprobación.\n\nTERCERO. El Consejo Universitario procederá en el término de 30 días hábiles\n\ncontados a partir de la entrada en vigor del presente Decreto, a la expedición del Acuerdo\n\nque regula el proceso de auscultación y designación de Directores de Organismos\n\nAcadémicos, Centros Universitarios y de Planteles de la Escuela Preparatoria de la\n\nUniversidad Autónoma del Estado de México.\n\nPUBLICACIONES EN LA “GACETA UNIVERSITARIA”\n\nEXPEDICIÓN\n\nAPROBACIÓN:\n\nPor el Consejo Universitario en Sesión Extraordinaria,\n\ncelebrada el día 27 de febrero de 2006\n\nPUBLICACIÓN:\n\nGaceta Universitaria, Núm. 128, Febrero 2006, Época XII,\n\nAño XXII\n\nVIGENCIA:\n\n27 de febrero de 2006",
+      "token_count": 377,
+      "documento": "DECRETO RECTOR.pdf",
+      "categoria": "normativa",
+      "subcategoria": "codigo_lineamiento",
+      "carrera": "UAEMEX",
+      "periodo": "VIGENTE",
+      "articulo": "título d",
+      "pagina_inicio": 1,
+      "pagina_fin": 2
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#006747">
+  <title>Nexus FI | Asistente Inteligente UAEMéx</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/nexus-icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">N<span>FI</span></div>
+      <div>
+        <b>Nexus FI</b>
+        <small>Facultad de Ingeniería</small>
+      </div>
+    </div>
+    <button class="primary" id="new">＋ Nueva consulta</button>
+    <p class="label">CONSULTAS RECIENTES</p>
+    <button class="history">⌕ Servicio social</button>
+    <button class="history">⌕ Opciones de titulación</button>
+    <button class="history">⌕ Actividades culturales</button>
+    <div class="sidebottom">
+      <a href="dashboard.html">▦ Panel de métricas ↗</a>
+      <small>Orientación institucional oficial; no realiza trámites automáticos.</small>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <button id="menu" class="menu">☰</button>
+      <div class="mini">N</div>
+      <div>
+        <b>Nexus FI</b>
+        <small>Asistente institucional UAEMéx</small>
+      </div>
+      <span class="demo">● Sistema RAG Activo</span>
+      <div class="avatar">ICO</div>
+    </header>
+
+    <section class="content">
+      <div id="welcome" class="welcome">
+        <div class="hero-logo">N<span>FI</span></div>
+        <p class="eyebrow">FACULTAD DE INGENIERÍA · UAEMÉX</p>
+        <h1>Tu vida universitaria,<br><em>más clara y sencilla.</em></h1>
+        <p class="intro">
+          Encuentra orientación sobre servicios, procedimientos y oportunidades universitarias. 
+          Nexus FI consulta 211 documentos oficiales de la Facultad de Ingeniería y la normativa UAEMéx.
+        </p>
+        <div class="suggestions">
+          <button data-q="¿Cómo puedo comenzar mi servicio social?">
+            <b>◎ Servicio social</b>
+            <small>Requisitos y pasos generales</small>
+          </button>
+          <button data-q="¿Dónde consulto las opciones de titulación?">
+            <b>◇ Opciones de titulación</b>
+            <small>Información y fuentes oficiales</small>
+          </button>
+          <button data-q="¿Qué actividades culturales y deportivas hay?">
+            <b>✳ Actividades universitarias</b>
+            <small>Cultura, deporte y comunidad</small>
+          </button>
+          <button data-q="¿A qué área debo acudir con una duda escolar?">
+            <b>⌖ ¿Con quién me dirijo?</b>
+            <small>Encuentra el área adecuada</small>
+          </button>
+        </div>
+      </div>
+
+      <div id="messages" class="messages"></div>
+
+      <form id="form" class="composer">
+        <button type="button" class="attach">＋</button>
+        <textarea id="input" rows="1" maxlength="500" placeholder="Pregunta sobre servicios o información de la Facultad…"></textarea>
+        <button class="send" aria-label="Enviar">↑</button>
+      </form>
+
+      <div class="caption">
+        <span>Orientación oficial basada en 211 documentos y 3,977 vectores.</span>
+        <span id="count">0 / 500</span>
+      </div>
+    </section>
+
+    <footer>
+      Proyecto de Titulación Nexus FI · Equipo 404 (UAEMéx)
+      <span>Ingeniería en Computación · LanceDB + OpenAI RAG</span>
+    </footer>
+  </main>
+
+  <div id="shade"></div>
+  <script src="app.js"></script>
+</body>
+</html>

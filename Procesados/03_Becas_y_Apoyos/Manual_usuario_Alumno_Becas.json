@@ -1,0 +1,82 @@
+{
+  "metadata": {
+    "id": "general_fi_manual_usuario_alumno_becas",
+    "clean_id": "general_fi_manual_usuario_alumno_becas",
+    "titulo": "Manual_usuario_Alumno Becas",
+    "documento_original": "Manual_usuario_Alumno Becas.pdf",
+    "ruta_relativa_fuente": "Becas/Manual_usuario_Alumno Becas.pdf",
+    "categoria": "becas",
+    "subcategoria": "manual_reglamento",
+    "carrera": "GENERAL_FI",
+    "periodo": "VIGENTE",
+    "total_paginas": 6,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-10-21 15:08:24",
+    "total_tokens": 891,
+    "total_chunks": 2
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "Manual de\nU suario Sistema\nInstitucional de Becas\nEstudiante\nDirección de Servicios al Universitario",
+      "is_ocr": false
+    },
+    {
+      "page_number": 2,
+      "text": "SEV\nIngreso al Sistema Institucional de Becas\n\nPara ingresar al Sistema Institucional de Becas debes colocar la siguiente direccion electrónica\nhttps://sibecas.uaemex.mx\n\nPosteriormente identificar la siguiente ventana, misma que se encuentra en la parte inferior de la\npágina.\n\nColocar las claves de acceso al sistema, las cuales corresponden a tu Número de Cuenta y Clave UNIP\nproporcionada por el Sistema de Control Escolar (Únicas e intransferibles).\n\nEn caso de que no fueran las correctas les aparecerá en la misma ventana la No identificación y/o No\ncoincidencia de datos, por lo que se tendrán que verificar y colocar nuevamente las claves.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 3,
+      "text": "SEV\nSolicitudes\n\nTendrás que realizar 3 sencillos pasos, el PRIMERO de ellos consiste en proporcionar tus datos\npersonales para el seguimiento y actualización permanente de tu información.\n\nEn el SEGUNDO, deberás de completar el llenado del Estudio Socioeducativo, mismo que tiene como\npropósito contar con información valiosa para conocer como institución las distintas características y\nnecesidades de su comunidad estudiantil.\n\nPosteriormente, deberás seleccionar la modalidad de beca por la que deseas postularte, donde\nconforme lo establecido en las convocatorias, deberás reunir los requisitos y contar con la\ndocumentación necesaria previamente digitalizada para será adjuntada en tu solicitud electrónica.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 4,
+      "text": "SEV\n\nTe aparecerá una ventana que señalará si tu registro fue completado con éxito, en caso de no ocurrir\nasíí el sistema te reconocerá los campos obligatorios que no llenaste para que puedas concluir tu\nregistro de solicitud.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 5,
+      "text": "SEV\nResultados\n\nNuevamente deberás acceder con tu Número de Cuenta y Clave UNIP para conocerlo.\n\nPosteriormente, deberás Leer y en su caso, Aceptar, el Aviso de Privacidad de la UAEM, a fin de que\nconozcas que tu información personal seráá cuidada y tratada con responsabilidad por la Institución\nbajo lo previsto en la Ley General de Protección de Datos Personales del Estado de México.\n\nLos Resultados seráán colocados en tu sesión del Sistema Institucional de Becas mediante un\nDictamen de Asignación.",
+      "is_ocr": false
+    },
+    {
+      "page_number": 6,
+      "text": "SEV\nRecurso de Inconformidad\n\nSi al consultar los resultados no fuiste beneficiado con la modalidad de beca por la que te postulaste, tienes\nderecho a solicitar el recurso de inconformidad, por lo que deberás hacer clic en solicitar, y después escribir tu\ncomentario para que en lo subsecuente se realice una segunda revisión de tu solicitud, la cual seráá evaluada\npor el Comité General de Becas.\n\nUna vez que envíes tu comentario, quedará registrado en el Sistema Institucional de Becas para la revisión\nconducente.\n\nIgualmente, al concluir la revisión y el análisis del Recurso de Inconformidad, el Dictamen correspondiente\npodrás revisarlo en tu sesión del Sistema Institucional de Becas.",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "general_fi_manual_usuario_alumno_becas_c001",
+      "content_hash": "d38b46eb96f8d3631032b5b82ca1196cbe526681c24392fbc0121fe1daf4540b",
+      "text": "[DOCUMENTO: Manual_usuario_Alumno Becas.pdf | CATEGORÍA: BECAS | PÁG: 1-6]\n\nManual de\n\nU suario Sistema\n\nInstitucional de Becas\n\nEstudiante\n\nDirección de Servicios al Universitario\n\nSEV\n\nIngreso al Sistema Institucional de Becas\n\nPara ingresar al Sistema Institucional de Becas debes colocar la siguiente direccion electrónica\n\nhttps://sibecas.uaemex.mx\n\nPosteriormente identificar la siguiente ventana, misma que se encuentra en la parte inferior de la\n\npágina.\n\nColocar las claves de acceso al sistema, las cuales corresponden a tu Número de Cuenta y Clave UNIP\n\nproporcionada por el Sistema de Control Escolar (Únicas e intransferibles).\n\nEn caso de que no fueran las correctas les aparecerá en la misma ventana la No identificación y/o No\n\ncoincidencia de datos, por lo que se tendrán que verificar y colocar nuevamente las claves.\n\nSEV\n\nSolicitudes\n\nTendrás que realizar 3 sencillos pasos, el PRIMERO de ellos consiste en proporcionar tus datos\n\npersonales para el seguimiento y actualización permanente de tu información.\n\nEn el SEGUNDO, deberás de completar el llenado del Estudio Socioeducativo, mismo que tiene como\n\npropósito contar con información valiosa para conocer como institución las distintas características y\n\nnecesidades de su comunidad estudiantil.\n\nPosteriormente, deberás seleccionar la modalidad de beca por la que deseas postularte, donde\n\nconforme lo establecido en las convocatorias, deberás reunir los requisitos y contar con la\n\ndocumentación necesaria previamente digitalizada para será adjuntada en tu solicitud electrónica.\n\nSEV\n\nTe aparecerá una ventana que señalará si tu registro fue completado con éxito, en caso de no ocurrir\n\nasíí el sistema te reconocerá los campos obligatorios que no llenaste para que puedas concluir tu\n\nregistro de solicitud.\n\nSEV\n\nResultados\n\nNuevamente deberás acceder con tu Número de Cuenta y Clave UNIP para conocerlo.\n\nPosteriormente, deberás Leer y en su caso, Aceptar, el Aviso de Privacidad de la UAEM, a fin de que\n\nconozcas que tu información personal seráá cuidada y tratada con responsabilidad por la Institución\n\nbajo lo previsto en la Ley General de Protección de Datos Personales del Estado de México.\n\nLos Resultados seráán colocados en tu sesión del Sistema Institucional de Becas mediante un\n\nDictamen de Asignación.\n\nSEV\n\nRecurso de Inconformidad\n\nSi al consultar los resultados no fuiste beneficiado con la modalidad de beca por la que te postulaste, tienes",
+      "raw_text": "Manual de\n\nU suario Sistema\n\nInstitucional de Becas\n\nEstudiante\n\nDirección de Servicios al Universitario\n\nSEV\n\nIngreso al Sistema Institucional de Becas\n\nPara ingresar al Sistema Institucional de Becas debes colocar la siguiente direccion electrónica\n\nhttps://sibecas.uaemex.mx\n\nPosteriormente identificar la siguiente ventana, misma que se encuentra en la parte inferior de la\n\npágina.\n\nColocar las claves de acceso al sistema, las cuales corresponden a tu Número de Cuenta y Clave UNIP\n\nproporcionada por el Sistema de Control Escolar (Únicas e intransferibles).\n\nEn caso de que no fueran las correctas les aparecerá en la misma ventana la No identificación y/o No\n\ncoincidencia de datos, por lo que se tendrán que verificar y colocar nuevamente las claves.\n\nSEV\n\nSolicitudes\n\nTendrás que realizar 3 sencillos pasos, el PRIMERO de ellos consiste en proporcionar tus datos\n\npersonales para el seguimiento y actualización permanente de tu información.\n\nEn el SEGUNDO, deberás de completar el llenado del Estudio Socioeducativo, mismo que tiene como\n\npropósito contar con información valiosa para conocer como institución las distintas características y\n\nnecesidades de su comunidad estudiantil.\n\nPosteriormente, deberás seleccionar la modalidad de beca por la que deseas postularte, donde\n\nconforme lo establecido en las convocatorias, deberás reunir los requisitos y contar con la\n\ndocumentación necesaria previamente digitalizada para será adjuntada en tu solicitud electrónica.\n\nSEV\n\nTe aparecerá una ventana que señalará si tu registro fue completado con éxito, en caso de no ocurrir\n\nasíí el sistema te reconocerá los campos obligatorios que no llenaste para que puedas concluir tu\n\nregistro de solicitud.\n\nSEV\n\nResultados\n\nNuevamente deberás acceder con tu Número de Cuenta y Clave UNIP para conocerlo.\n\nPosteriormente, deberás Leer y en su caso, Aceptar, el Aviso de Privacidad de la UAEM, a fin de que\n\nconozcas que tu información personal seráá cuidada y tratada con responsabilidad por la Institución\n\nbajo lo previsto en la Ley General de Protección de Datos Personales del Estado de México.\n\nLos Resultados seráán colocados en tu sesión del Sistema Institucional de Becas mediante un\n\nDictamen de Asignación.\n\nSEV\n\nRecurso de Inconformidad\n\nSi al consultar los resultados no fuiste beneficiado con la modalidad de beca por la que te postulaste, tienes",
+      "token_count": 629,
+      "documento": "Manual_usuario_Alumno Becas.pdf",
+      "categoria": "becas",
+      "subcategoria": "manual_reglamento",
+      "carrera": "GENERAL_FI",
+      "periodo": "VIGENTE",
+      "articulo": "",
+      "pagina_inicio": 1,
+      "pagina_fin": 6
+    },
+    {
+      "chunk_id": "general_fi_manual_usuario_alumno_becas_c002",
+      "content_hash": "22e47f0bb4f49bb6a2e22f42e408f7eace6699e1afc27e93686650873eeb83ac",
+      "text": "[DOCUMENTO: Manual_usuario_Alumno Becas.pdf | CATEGORÍA: BECAS | PÁG: 5-6]\n\nbajo lo previsto en la Ley General de Protección de Datos Personales del Estado de México.\n\nLos Resultados seráán colocados en tu sesión del Sistema Institucional de Becas mediante un\n\nDictamen de Asignación.\n\nSEV\n\nRecurso de Inconformidad\n\nSi al consultar los resultados no fuiste beneficiado con la modalidad de beca por la que te postulaste, tienes\n\nderecho a solicitar el recurso de inconformidad, por lo que deberás hacer clic en solicitar, y después escribir tu\n\ncomentario para que en lo subsecuente se realice una segunda revisión de tu solicitud, la cual seráá evaluada\n\npor el Comité General de Becas.\n\nUna vez que envíes tu comentario, quedará registrado en el Sistema Institucional de Becas para la revisión\n\nconducente.\n\nIgualmente, al concluir la revisión y el análisis del Recurso de Inconformidad, el Dictamen correspondiente\n\npodrás revisarlo en tu sesión del Sistema Institucional de Becas.",
+      "raw_text": "bajo lo previsto en la Ley General de Protección de Datos Personales del Estado de México.\n\nLos Resultados seráán colocados en tu sesión del Sistema Institucional de Becas mediante un\n\nDictamen de Asignación.\n\nSEV\n\nRecurso de Inconformidad\n\nSi al consultar los resultados no fuiste beneficiado con la modalidad de beca por la que te postulaste, tienes\n\nderecho a solicitar el recurso de inconformidad, por lo que deberás hacer clic en solicitar, y después escribir tu\n\ncomentario para que en lo subsecuente se realice una segunda revisión de tu solicitud, la cual seráá evaluada\n\npor el Comité General de Becas.\n\nUna vez que envíes tu comentario, quedará registrado en el Sistema Institucional de Becas para la revisión\n\nconducente.\n\nIgualmente, al concluir la revisión y el análisis del Recurso de Inconformidad, el Dictamen correspondiente\n\npodrás revisarlo en tu sesión del Sistema Institucional de Becas.",
+      "token_count": 262,
+      "documento": "Manual_usuario_Alumno Becas.pdf",
+      "categoria": "becas",
+      "subcategoria": "manual_reglamento",
+      "carrera": "GENERAL_FI",
+      "periodo": "VIGENTE",
+      "articulo": "",
+      "pagina_inicio": 5,
+      "pagina_fin": 6
+    }
+  ]
+}
