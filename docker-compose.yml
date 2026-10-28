@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # Servicio Backend (FastAPI / Uvicorn)
+  backend:
+    build: .
+    container_name: nexus_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
+  # Servicio Proxy (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: nexus_proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
