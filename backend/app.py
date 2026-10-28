@@ -179,11 +179,19 @@ def get_user_dashboard_metrics():
 
 @app.get("/api/v1/admin/metrics")
 def get_admin_metrics():
-    """Devuelve métricas unificadas de infraestructura (AWS/Nginx) y consumo de tokens."""
+    """Devuelve métricas conservando la estructura original del tablero más los datos de servidor de Ángel."""
     return {
         "status": "healthy",
         "environment": "aws-docker",
-        "server_metrics": {
+        "openai": admin_tokens_store,
+        "aws": {
+            "s3StorageGb": 18.4,
+            "ec2Instances": "2x t3.medium",
+            "ec2CpuUsage": 28,
+            "bandwidthGb": 142.0,
+            "availableCredit": 170.91
+        },
+        "server": {
             "base_latency_seconds": 2.1,
             "active_connections": 45,
             "query_distribution": {
@@ -192,14 +200,6 @@ def get_admin_metrics():
             },
             "proxy": "nginx",
             "ip_forwarding": "enabled"
-        },
-        "openai": admin_tokens_store,
-        "aws": {
-            "s3StorageGb": 18.4,
-            "ec2Instances": "2x t3.medium",
-            "ec2CpuUsage": 28,
-            "bandwidthGb": 142.0,
-            "availableCredit": 170.91
         }
     }
 
