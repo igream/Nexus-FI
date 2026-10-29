@@ -8,6 +8,7 @@ Funcionalidades:
 1. Migrar API Keys y Subredes de .env a Variables de Entorno de Usuario de Windows (HKCU).
 2. Instalar Pre-Commit Hook en Git para bloquear commits accidentales con secretos.
 3. Verificar el estado de seguridad de credenciales locales.
+4. Rotar una credencial comprometida (--rotate VAR) sin mostrarla en pantalla.
 """
 
 import os
@@ -172,6 +173,94 @@ def check_staged_files() -> int:
         return 0
 
 
+def _mask(val: str) -> str:
+    return val[:8] + "..." + val[-4:] if len(val) > 12 else "***"
+
+
+def _validate_openai_key(key: str) -> tuple[bool, str]:
+    """Hace una llamada mínima a OpenAI (listar modelos) para confirmar que la clave funciona."""
+    try:
+        import openai
+        openai.OpenAI(api_key=key).models.list()
+        return True, ""
+    except Exception as e:
+        return False, str(e)[:200]
+
+
+def rotate_key(var_name: str):
+    """
+    Reemplaza una credencial comprometida sin que pase por pantalla ni por el historial:
+    1. Pide la clave nueva de forma oculta (getpass).
+    2. Si es de OpenAI, la valida con una llamada real antes de guardarla.
+    3. La escribe en .env y en las Variables de Usuario de Windows, junto con cualquier
+       otra variable que tuviera el mismo valor anterior (p. ej. alias como OPENAI_API_KEY).
+    """
+    import getpass
+
+    if var_name not in SENSITIVE_KEYS:
+        print(f"[-] {var_name} no es una variable sensible conocida: {', '.join(SENSITIVE_KEYS)}")
+        sys.exit(1)
+
+    data = load_env_dict(ENV_PATH)
+    old_val = data.get(var_name) or os.environ.get(var_name, "")
+    print("=================================================================")
+    print(f" ROTACIÓN DE CREDENCIAL: {var_name}")
+    print(f" Valor actual: {_mask(old_val) if old_val else 'no configurado'}")
+    print("=================================================================")
+
+    new_val = getpass.getpass(" Pega la clave NUEVA (no se mostrará) y pulsa Enter: ").strip().strip('"').strip("'")
+    if not new_val:
+        print("[-] No se capturó ninguna clave. Sin cambios.")
+        sys.exit(1)
+    if new_val == old_val:
+        print("[-] La clave nueva es igual a la anterior. Genera una distinta en el panel del proveedor.")
+        sys.exit(1)
+
+    if var_name.startswith("OPENAI"):
+        if not new_val.startswith("sk-"):
+            print("[-] Una clave de OpenAI debe empezar con 'sk-'. Sin cambios.")
+            sys.exit(1)
+        print(" Validando la clave con OpenAI...")
+        ok, err = _validate_openai_key(new_val)
+        if not ok:
+            print(f"[-] OpenAI rechazó la clave: {err}\n    Sin cambios.")
+            sys.exit(1)
+        print(" [OK] La clave nueva funciona.")
+
+    # Variables que comparten el valor anterior (alias) también se actualizan
+    targets = [var_name] + [k for k, v in data.items() if old_val and v == old_val and k != var_name]
+
+    # 1. Actualizar .env conservando el resto de líneas y comentarios
+    lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
+    written = set()
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and "=" in stripped:
+            k = stripped.split("=", 1)[0].strip()
+            if k in targets:
+                lines[i] = f"{k}={new_val}"
+                written.add(k)
+    for k in targets:
+        if k not in written:
+            lines.append(f"{k}={new_val}")
+    ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f" [OK] .env actualizado: {', '.join(targets)}")
+
+    # 2. Actualizar Variables de Usuario de Windows
+    if sys.platform == "win32":
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
+            for k in targets:
+                winreg.SetValueEx(key, k, 0, winreg.REG_SZ, new_val)
+        print(f" [OK] Variables de Usuario de Windows actualizadas: {', '.join(targets)}")
+
+    print("-----------------------------------------------------------------")
+    print(f" Nuevo valor: {_mask(new_val)}")
+    print(" Siguiente paso: revoca la clave anterior en el panel del proveedor")
+    print(" y abre una terminal nueva para que tome las variables actualizadas.")
+    print("=================================================================")
+
+
 def status_report():
     """Genera un reporte del estado de seguridad local de credenciales."""
     print("=================================================================")
@@ -211,8 +300,11 @@ if __name__ == "__main__":
             sys.exit(check_staged_files())
         elif arg == "--status":
             status_report()
+        elif arg == "--rotate" and len(sys.argv) > 2:
+            rotate_key(sys.argv[2])
         else:
             print("Opciones disponibles:")
+            print("  --rotate VAR     Reemplaza una credencial comprometida (entrada oculta)")
             print("  --sync-windows   Copia claves de .env a Variables de Usuario Windows")
             print("  --install-hook   Instala el blindaje pre-commit en Git")
             print("  --status         Muestra el diagnóstico de seguridad local")
