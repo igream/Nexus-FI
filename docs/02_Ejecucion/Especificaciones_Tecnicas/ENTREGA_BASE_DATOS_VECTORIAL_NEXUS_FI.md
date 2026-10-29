@@ -42,8 +42,8 @@ Documentos FI UAEMex/
 ├── .env.example                            # Plantilla de variables de entorno segura
 ├── .gitignore                              # Reglas de protección de secretos y datos para Git
 ├── .dockerignore                           # Reglas de exclusión para imágenes Docker de producción
-├── Documento Final Nexus FI.pdf            # Documento Maestro oficial del proyecto
-├── plantilla_coordinacion_ico.md           # Plantilla estructurada para capturar info operativa de ICO
+├── docs/01_Planeacion/DOCUMENTO_MAESTRO_NEXUS_FI.pdf   # Documento Maestro oficial del proyecto
+├── docs/02_Ejecucion/Especificaciones_Tecnicas/PLANTILLA_COORDINACION_ICO.md   # Plantilla de info operativa de ICO
 ├── vectorize_corpus.py                     # Script ejecutor de vectorización con connection pooling
 ├── process_to_procesados.py                # Script batch multiproceso delegado a nexus_ingestion
 ├── finalize_procesados.py                  # Script normalizador de nombres y chunks canónicos RF08
@@ -201,12 +201,12 @@ Cuando el equipo DevOps (`Ángel Israel`) tenga disponible el bucket de S3:
 ---
 
 ### Tarea C: Incorporación de Nuevos Datos o Actualizaciones (Idempotente)
-Cuando se actualicen reglamentos o se ingrese nueva información (por ejemplo, en [`plantilla_coordinacion_ico.md`](file:///C:/Users/feraz/Desktop/Documentos%20FI%20UAEMex/plantilla_coordinacion_ico.md)):
+Cuando se actualicen reglamentos o se ingrese nueva información (por ejemplo, en [`PLANTILLA_COORDINACION_ICO.md`](PLANTILLA_COORDINACION_ICO.md)):
 
 1. Editar o agregar el documento en Markdown, PDF o HTML.
 2. Ejecutar la ingesta selectiva mediante la CLI:
    ```bash
-   python -m nexus_ingestion.cli --input "plantilla_coordinacion_ico.md" --mode upsert
+   python -m nexus_ingestion.cli --input "docs/02_Ejecucion/Especificaciones_Tecnicas/PLANTILLA_COORDINACION_ICO.md" --mode upsert
    ```
 3. Gracias al modo `upsert`, el sistema eliminará automáticamente los vectores viejos asociados al documento y cargará los nuevos sin generar duplicados.
 
