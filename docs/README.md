@@ -47,12 +47,12 @@ Formatos de asignación formal por integrante con nombres completos, ramas Git y
 * `FORMATO_ASIGNACION_AVANCE1_SANTIAGO_CUEVAS_SANCHEZ.docx` (Scripts de extracción y reporte técnico)
 * `FORMATO_ASIGNACION_AVANCE1_ANGEL_ISRAEL_DE_LA_CRUZ.docx` (Rama: `main` / Commit `6aa9d67`)
 * `FORMATO_ASIGNACION_AVANCE1_AARON_NEVID_DOMINGUEZ.docx` (Rama: `BaseVectorial`)
-* `FORMATO_ASIGNACION_AVANCE1_ZULEICA_BETSABEL_DE_LA_CRUZ.docx` (Rama: `BaseVectorial`)
+* `FORMATO_ASIGNACION_AVANCE1_AZULEICA_BETSABEL_DE_LA_CRUZ.docx` (Rama: `BaseVectorial`)
 
 #### `Avance_2_50_Porciento/` (Entrega Interna: Miércoles 28 de octubre de 2026 — 50% de Ejecución)
 * `FORMATO_ASIGNACION_AVANCE2_DANIEL_AGUILAR_Y_JOAN_OCANA.docx` (Rama: `feature/dark-mode-and-metrics`)
 * `FORMATO_ASIGNACION_AVANCE2_JOAQUIN_ULISES_GARCIA.docx` (Rama: `feature/ip-filter-and-session`)
-* `FORMATO_ASIGNACION_AVANCE2_SANTIAGO_CUEVAS_Y_ZULEICA_DE_LA_CRUZ.docx` (Rama: `feature/fi-network-subnets`)
+* `FORMATO_ASIGNACION_AVANCE2_SANTIAGO_CUEVAS_Y_AZULEICA_DE_LA_CRUZ.docx` (Rama: `feature/fi-network-subnets`)
 * `FORMATO_ASIGNACION_AVANCE2_ANGEL_ISRAEL_Y_AARON_NEVID.docx` (Rama: `feature/aws-docker-deployment`)
 
 ### 4. `Informes_Ejecutivos/`
