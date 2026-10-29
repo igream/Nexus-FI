@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Nexus FI — Sistema de consulta documental con IA para la Facultad de Ingeniería UAEMéx. Avance 2: Filtrado Perimetral IP + Control de Sesión." />
+  <meta name="author" content="Equipo 404 — FI UAEMéx" />
+  <title>Nexus FI — Facultad de Ingeniería UAEMéx</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- =====================================================================
+       Barra de navegación superior
+       ===================================================================== -->
+  <nav class="navbar" role="banner" aria-label="Barra principal Nexus FI">
+    <div class="navbar-brand">
+      <div class="navbar-logo" aria-hidden="true">N</div>
+      <div class="navbar-title">
+        <h1>Nexus FI</h1>
+        <span>Facultad de Ingeniería — UAEMéx · Equipo 404</span>
+      </div>
+    </div>
+
+    <!-- Badges de estado de seguridad -->
+    <div class="badges-container" role="status" aria-live="polite" aria-label="Estado de red y cuota">
+      <span
+        id="perimeter-status-badge"
+        class="badge loading"
+        title="Estado del perímetro de red institucional (WBS 1.3.5)"
+        aria-label="Estado de perímetro de red">
+        🔄 Verificando red...
+      </span>
+      <span
+        id="rate-limit-badge"
+        class="badge loading"
+        title="Cuota de consultas por dispositivo/sesión (WBS 1.4.2)"
+        aria-label="Estado de cuota de consultas">
+        🔄 Cargando cuota...
+      </span>
+    </div>
+  </nav>
+
+  <!-- =====================================================================
+       Contenido principal
+       ===================================================================== -->
+  <main class="main-content" role="main">
+
+    <!-- Panel de información de sesión -->
+    <section class="session-info-panel" aria-label="Información de sesión activa">
+      <div class="session-info-item">
+        <span class="session-info-label">IP del Cliente</span>
+        <span class="session-info-value" id="session-ip">—</span>
+      </div>
+      <div class="session-info-item">
+        <span class="session-info-label">Device ID</span>
+        <span class="session-info-value" id="session-device-id">—</span>
+      </div>
+      <div class="session-info-item">
+        <span class="session-info-label">Subredes Autorizadas</span>
+        <span class="session-info-value">
+          172.17.18.0/24 &nbsp;|&nbsp; 148.215.12-18-30-31.0/24
+        </span>
+      </div>
+      <div class="session-info-item">
+        <span class="session-info-label">Rama Git</span>
+        <span class="session-info-value">feature/ip-filter-and-session</span>
+      </div>
+    </section>
+
+    <!-- Área de chat -->
+    <section class="chat-container" aria-label="Interfaz de consulta Nexus FI">
+      <div class="chat-header" aria-hidden="true">
+        <span>💬</span>
+        <span>Consultas al corpus documental · Gemini API</span>
+        <span style="margin-left: auto; font-size: 0.75rem; opacity: 0.6;">Ctrl+Enter para enviar</span>
+      </div>
+
+      <!-- Área de mensajes -->
+      <div
+        id="chat-output"
+        class="chat-output"
+        role="log"
+        aria-live="polite"
+        aria-label="Historial de conversación"
+        tabindex="0">
+        <div class="chat-empty">
+          <span class="empty-icon">🎓</span>
+          <p>Realiza tu primera consulta al sistema Nexus FI.<br>
+             Tus preguntas serán respondidas con base en el corpus documental de la FI UAEMéx.</p>
+        </div>
+      </div>
+
+      <!-- Indicador de escritura -->
+      <div id="typing-indicator" class="typing-indicator" aria-live="polite" aria-label="Nexus FI procesando consulta">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span style="margin-left: 0.25rem; font-size: 0.78rem;">Nexus FI procesando...</span>
+      </div>
+
+      <!-- Formulario de consulta -->
+      <form id="chat-form" class="chat-form" aria-label="Formulario de consulta">
+        <textarea
+          id="chat-input"
+          class="chat-input"
+          name="query"
+          placeholder="Escribe tu consulta sobre la Facultad de Ingeniería UAEMéx..."
+          rows="2"
+          maxlength="2000"
+          aria-label="Campo de consulta"
+          required></textarea>
+        <button
+          id="btn-send"
+          type="submit"
+          class="btn-send"
+          aria-label="Enviar consulta">
+          <span aria-hidden="true">🚀</span> Consultar
+        </button>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- =====================================================================
+       Modal de alerta de seguridad (403 / 429)
+       ===================================================================== -->
+  <div
+    id="security-alert-modal"
+    class="modal-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    aria-describedby="modal-message">
+    <div class="modal-box">
+      <span id="modal-icon" class="modal-icon" aria-hidden="true">🔒</span>
+      <h2 id="modal-title" class="modal-title error-403">Acceso Restringido</h2>
+      <p id="modal-message" class="modal-message">
+        Tu conexión está fuera del perímetro institucional.
+      </p>
+      <div id="modal-detail" class="modal-detail" aria-label="Detalles técnicos del error"></div>
+      <div id="modal-countdown" class="modal-countdown" style="display:none;" aria-live="polite">--:--</div>
+      <p id="modal-countdown-label" class="modal-countdown-label" style="display:none;">
+        Tiempo restante para reintentar
+      </p>
+      <button
+        id="btn-modal-close"
+        class="btn-modal-close"
+        type="button"
+        aria-label="Cerrar alerta de seguridad">
+        Entendido
+      </button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       Footer
+       ===================================================================== -->
+  <footer class="footer" role="contentinfo">
+    <span>Nexus FI &copy; 2024 — Equipo 404 · Facultad de Ingeniería UAEMéx</span>
+    <div class="footer-wbs" aria-label="Identificadores WBS implementados">
+      <span class="wbs-tag" title="Middleware de Filtrado Perimetral por IP">WBS 1.3.5</span>
+      <span class="wbs-tag" title="Control de Sesión con Límite de Uso">WBS 1.4.2</span>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
