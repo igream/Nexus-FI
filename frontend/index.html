@@ -18,13 +18,21 @@
         <small>Facultad de Ingeniería</small>
       </div>
     </div>
+    
+    <!-- Menú de Navegación Principal del Proyecto -->
+    <nav class="space-y-1" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px;">
+      <a href="index.html" class="nav active">💬 Asistente RAG</a>
+      <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
+      <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
+    </nav>
+
     <button class="primary" id="new">＋ Nueva consulta</button>
     <p class="label">CONSULTAS RECIENTES</p>
     <button class="history">⌕ Servicio social</button>
     <button class="history">⌕ Opciones de titulación</button>
     <button class="history">⌕ Actividades culturales</button>
+    
     <div class="sidebottom">
-      <a href="dashboard.html">▦ Panel de métricas ↗</a>
       <small>Orientación institucional oficial; no realiza trámites automáticos.</small>
     </div>
   </aside>
@@ -37,8 +45,22 @@
         <b>Nexus FI</b>
         <small>Asistente institucional UAEMéx</small>
       </div>
-      <span class="demo">● Sistema RAG Activo</span>
+
+      <!-- Insignias de Seguridad (Red y Cuota) según Ficha Técnica de Joaquín -->
+      <span id="perimeter-status-badge" class="demo">🏛️ Evaluando red...</span>
+      <span id="rate-limit-badge" class="demo" style="margin-left: 5px;">⏱️ Cuestión de cuota...</span>
+
       <div class="avatar">ICO</div>
+      
+      <!-- Botón de Modo Oscuro de Daniel -->
+      <button
+        type="button"
+        class="theme-toggle"
+        aria-pressed="false"
+        aria-label="Activar modo oscuro"
+      >
+        Modo oscuro
+      </button>
     </header>
 
     <section class="content">
@@ -91,6 +113,8 @@
   </main>
 
   <div id="shade"></div>
+  
+  <!-- Carga de Scripts del Frontend -->
   <script src="app.js"></script>
 </body>
 </html>

@@ -47,6 +47,68 @@ function getSecurityHeaders() {
 
 const $ = s => document.querySelector(s);
 
+/* ========================================
+MODO OSCURO — NEXUS FI
+Guarda la preferencia entre páginas
+======================================== */
+
+const THEME_STORAGE_KEY = 'nexusfi-theme';
+
+function applyTheme(theme) {
+const selectedTheme = theme === 'dark' ? 'dark' : 'light';
+
+
+document.documentElement.dataset.theme = selectedTheme;
+
+document.querySelectorAll('.theme-toggle').forEach(button => {
+    const isDark = selectedTheme === 'dark';
+
+    button.textContent = isDark ? ' Modo claro' : ' Modo oscuro';
+    button.setAttribute('aria-pressed', String(isDark));
+    button.setAttribute(
+        'aria-label',
+        isDark ? 'Activar modo claro' : 'Activar modo oscuro'
+    );
+});
+
+
+}
+
+function initializeTheme() {
+let savedTheme = 'light';
+
+
+try {
+    savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+} catch (error) {
+    console.warn('No fue posible leer la preferencia de tema.', error);
+}
+
+applyTheme(savedTheme);
+
+document.querySelectorAll('.theme-toggle').forEach(button => {
+    button.addEventListener('click', () => {
+        const currentTheme =
+            document.documentElement.dataset.theme || 'light';
+
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        applyTheme(nextTheme);
+
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        } catch (error) {
+            console.warn('No fue posible guardar la preferencia de tema.', error);
+        }
+    });
+});
+
+
+}
+
+initializeTheme();
+
+
 // Registro de Service Worker PWA
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
@@ -93,7 +155,7 @@ function add(t, who, citations = [], telemetry = null) {
         citeBox.style.color = '#42574b';
 
         let citeTitle = document.createElement('div');
-        citeTitle.innerHTML = '<strong>📚 Fuentes oficiales consultadas (RF09):</strong>';
+        citeTitle.innerHTML = '<strong> Fuentes oficiales consultadas (RF09):</strong>';
         citeBox.appendChild(citeTitle);
 
         citations.forEach(c => {
@@ -112,7 +174,7 @@ function add(t, who, citations = [], telemetry = null) {
             telDiv.style.marginTop = '6px';
             telDiv.style.fontSize = '9px';
             telDiv.style.color = '#8a9890';
-            telDiv.textContent = `⚡ Latencia RAG: ${telemetry.total_latency_ms} ms · Modelo: ${telemetry.model || 'LanceDB + GPT'}`;
+            telDiv.textContent = ` Latencia RAG: ${telemetry.total_latency_ms} ms · Modelo: ${telemetry.model || 'LanceDB + GPT'}`;
             citeBox.appendChild(telDiv);
         }
 

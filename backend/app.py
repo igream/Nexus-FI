@@ -56,6 +56,63 @@ def mask_key(k: Optional[str]) -> str:
     return k[:11] + "..." + k[-4:] if len(k) > 15 else "***"
 
 # =============================================================================
+# ALMACÉN DE TELEMETRÍA Y MÉTRICAS (WBS 1.3.4 - Daniel Aguilar Sánchez y Joan Alexis Ocaña Martínez)
+# Los valores iniciales son una línea base de demostración; cada consulta real a /api/chat
+# se acumula encima. El almacén vive en memoria y se reinicia al reiniciar el servidor.
+# =============================================================================
+user_metrics_store = {
+    "total_queries": 1248,
+    "total_latency_ms": 355680,
+    "successful_queries": 1229,
+    "hourly_queries": [45, 120, 230, 180, 160, 95],
+    "hourly_latencies": [310, 280, 240, 350, 290, 285],
+    "time_labels": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"],
+    "topics": {
+        "Evaluación Escolar": 35,
+        "Servicio Social": 25,
+        "Titulación": 20,
+        "Becas": 12,
+        "Otros": 8,
+    },
+}
+
+admin_tokens_store = {
+    "embeddings": {"tokens": 14250000, "cost": 2.85},
+    "gpt4oMini": {"tokens": 8120000, "cost": 12.18},
+    "luna6": {"tokens": 3400000, "cost": 9.18},
+    "luna56": {"tokens": 1950000, "cost": 4.88},
+}
+
+# Tarifas OpenAI (USD por token) para estimar el costo devengado de cada consulta
+PRICE_EMBEDDING_PER_TOKEN = 0.02 / 1_000_000          # text-embedding-3-small
+PRICE_4O_MINI_INPUT_PER_TOKEN = 0.15 / 1_000_000      # gpt-4o-mini (entrada)
+PRICE_4O_MINI_OUTPUT_PER_TOKEN = 0.60 / 1_000_000     # gpt-4o-mini (salida)
+
+# Relación entre la clave de chat usada y su bolsa de facturación en el panel admin (DT-10)
+CHAT_KEY_TO_BUCKET = {
+    "OPENAI_API_KEY_CHAT_4O_MINI": "gpt4oMini",
+    "OPENAI_API_KEY_GPT6_LUNA": "luna6",
+    "OPENAI_API_KEY_GPT5_6_LUNA": "luna56",
+}
+
+
+def record_query_metrics(latency_ms: float, success: bool) -> None:
+    """Acumula una consulta real en el almacén de métricas del dashboard de usuario."""
+    user_metrics_store["total_queries"] += 1
+    user_metrics_store["total_latency_ms"] += latency_ms
+    if success:
+        user_metrics_store["successful_queries"] += 1
+    user_metrics_store["hourly_queries"][-1] += 1
+    user_metrics_store["hourly_latencies"][-1] = int(latency_ms)
+
+
+def record_token_usage(bucket: str, tokens: int, cost: float) -> None:
+    """Suma tokens y costo devengado a la bolsa de facturación correspondiente."""
+    admin_tokens_store[bucket]["tokens"] += tokens
+    admin_tokens_store[bucket]["cost"] += cost
+
+
+# =============================================================================
 # SEGREGACIÓN DE CLAVES API POR SERVICIO (MEDICIÓN DE CONSUMO INDEPENDIENTE)
 # =============================================================================
 KEY_EMBEDDINGS = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
@@ -274,6 +331,50 @@ def get_stats():
     }
 
 
+@app.get("/api/v1/metrics/user-dashboard", summary="Métricas del dashboard de usuario (WBS 1.3.4)")
+def get_user_dashboard_metrics():
+    """Devuelve datos dinámicos para el dashboard de usuario."""
+    total = max(user_metrics_store["total_queries"], 1)
+    return {
+        "totalQueries": user_metrics_store["total_queries"],
+        "avgLatencyMs": int(user_metrics_store["total_latency_ms"] / total),
+        "successRate": round(user_metrics_store["successful_queries"] / total * 100, 1),
+        "timeSeriesLabels": user_metrics_store["time_labels"],
+        "latencyData": user_metrics_store["hourly_latencies"],
+        "queriesData": user_metrics_store["hourly_queries"],
+        "topicLabels": list(user_metrics_store["topics"].keys()),
+        "topicValues": list(user_metrics_store["topics"].values()),
+        "dataSource": "baseline_demo + consultas reales en memoria",
+    }
+
+
+@app.get("/api/v1/admin/metrics", summary="Consumo de tokens y costos por clave segregada (WBS 1.3.4 / DT-10)")
+def get_admin_metrics():
+    """Devuelve el consumo por clave segregada de OpenAI y los datos de infraestructura AWS."""
+    return {
+        "status": "healthy",
+        "environment": "aws-docker",
+        "openai": admin_tokens_store,
+        # Valores de referencia capturados manualmente por el equipo Cloud DevOps
+        # (Ángel Israel de la Cruz Martínez y Aarón Nevid Domínguez Fuentes); no se consultan en vivo a AWS.
+        "aws": {
+            "s3StorageGb": 18.4,
+            "ec2Instances": "2x t3.medium",
+            "ec2CpuUsage": 28,
+            "bandwidthGb": 142.0,
+            "availableCredit": 170.91,
+        },
+        "server": {
+            "base_latency_seconds": 2.1,
+            "active_connections": 45,
+            "query_distribution": {"administrative": 60, "academic": 40},
+            "proxy": "nginx",
+            "ip_forwarding": "enabled",
+        },
+        "dataSource": "openai: baseline_demo + consumo real en memoria; aws/server: valores de referencia estáticos",
+    }
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_endpoint(req: ChatRequest):
     """
@@ -304,6 +405,9 @@ def chat_endpoint(req: ChatRequest):
         t0_emb = time.time()
         query_vector = current_embedder.embed_query(user_query)
         emb_latency_ms = round((time.time() - t0_emb) * 1000, 2)
+        # Estimación de tokens de embedding (~4 caracteres por token)
+        emb_tokens = max(len(user_query) // 4, 1)
+        record_token_usage("embeddings", emb_tokens, emb_tokens * PRICE_EMBEDDING_PER_TOKEN)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al vectorizar la consulta: {e}")
 
@@ -344,6 +448,7 @@ def chat_endpoint(req: ChatRequest):
     # Si no hubo fragmentos que superen el umbral RF13
     if not results:
         total_latency_ms = round((time.time() - start_time) * 1000, 2)
+        record_query_metrics(total_latency_ms, success=False)
         fallback_msg = (
             "No se encontró información oficial suficiente en el corpus normativo y operativo "
             "de la Facultad de Ingeniería (UAEMéx) para responder a tu consulta con alta certeza. "
@@ -422,6 +527,14 @@ def chat_endpoint(req: ChatRequest):
                 max_tokens=600,
             )
             generated_answer = chat_completion.choices[0].message.content or ""
+            usage = getattr(chat_completion, "usage", None)
+            if usage:
+                record_token_usage(
+                    CHAT_KEY_TO_BUCKET.get(key_used_name, "gpt4oMini"),
+                    usage.prompt_tokens + usage.completion_tokens,
+                    usage.prompt_tokens * PRICE_4O_MINI_INPUT_PER_TOKEN
+                    + usage.completion_tokens * PRICE_4O_MINI_OUTPUT_PER_TOKEN,
+                )
         except Exception as e:
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
             model_name = "direct_synthesis_fallback"
@@ -439,6 +552,7 @@ def chat_endpoint(req: ChatRequest):
 
     llm_latency_ms = round((time.time() - t0_llm) * 1000, 2)
     total_latency_ms = round((time.time() - start_time) * 1000, 2)
+    record_query_metrics(total_latency_ms, success=True)
 
     return ChatResponse(
         query=user_query,
@@ -469,6 +583,8 @@ if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
     @app.get("/")
+    @app.get("/index")
+    @app.get("/index.html")
     def serve_index():
         index_file = FRONTEND_DIR / "index.html"
         if index_file.exists():
@@ -482,6 +598,14 @@ if FRONTEND_DIR.exists():
         if dash_file.exists():
             return FileResponse(str(dash_file))
         return {"message": "Frontend dashboard.html no encontrado."}
+
+    @app.get("/admin-metrics")
+    @app.get("/admin-metrics.html")
+    def serve_admin_metrics():
+        admin_file = FRONTEND_DIR / "admin-metrics.html"
+        if admin_file.exists():
+            return FileResponse(str(admin_file))
+        return {"message": "Frontend admin-metrics.html no encontrado."}
 
     @app.get("/styles.css")
     def serve_styles():

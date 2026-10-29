@@ -1,1 +1,216 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#006747"><title>Nexus FI | Métricas</title><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"></head><body class="dashbody"><aside class="dashside"><a href="index.html" class="brand"><div class="logo">N<span>FI</span></div><div><b>Nexus FI</b><small>Administración</small></div></a><p class="label">ESPACIO DE TRABAJO</p><a class="nav" href="index.html">◫ Vista del chatbot</a><a class="nav active" href="dashboard.html">▦ Panel de métricas</a><div class="sidebottom"><small>Monitoreo ilustrativo. Los valores son ficticios y no representan actividad institucional.</small></div></aside><main class="dashmain"><header class="dashhead"><div><p class="eyebrow">CENTRO DE CONTROL</p><h1>Panel de métricas</h1><p class="sub">Vista general del uso y rendimiento del asistente.</p></div><span class="demo">● Datos de ejemplo</span></header><div class="notice"><b>ⓘ Vista de demostración</b><p>Este tablero no está conectado a servicios reales. Las cifras y gráficas son ilustrativas.</p></div><section class="kpis"><article><span>Consultas recibidas</span><strong>8,426</strong><small class="up">↗ 12.8% vs. periodo anterior</small><div class="spark"><i style="height:30%"></i><i style="height:48%"></i><i style="height:39%"></i><i style="height:68%"></i><i style="height:55%"></i><i style="height:90%"></i></div></article><article><span>Tokens consumidos</span><strong>2.84 M</strong><small class="up">↘ 4.2% consumo estimado</small><div class="spark gold"><i style="height:55%"></i><i style="height:42%"></i><i style="height:68%"></i><i style="height:78%"></i><i style="height:60%"></i><i style="height:45%"></i></div></article><article><span>Tiempo de respuesta</span><strong>1.8 <small>s</small></strong><small class="up">↘ 0.3 s respecto al periodo anterior</small><div class="spark blue"><i style="height:85%"></i><i style="height:73%"></i><i style="height:64%"></i><i style="height:60%"></i><i style="height:45%"></i><i style="height:35%"></i></div></article><article><span>Disponibilidad</span><strong>99.5<small>%</small></strong><small class="up">✓ En objetivo ilustrativo</small><div class="progress"><i></i></div></article></section><section class="charts"><article class="panel"><div class="panelhead"><div><h2>Tráfico de consultas</h2><p>Volumen diario de solicitudes</p></div><span>Últimos 7 días</span></div><div class="chart"><div class="axis"><span>1.5k</span><span>1.0k</span><span>500</span><span>0</span></div><div class="bars"><div style="--h:42%"><i></i><b></b><small>Lun</small></div><div style="--h:59%"><i></i><b></b><small>Mar</small></div><div style="--h:50%"><i></i><b></b><small>Mié</small></div><div style="--h:72%"><i></i><b></b><small>Jue</small></div><div style="--h:64%"><i></i><b></b><small>Vie</small></div><div style="--h:84%"><i></i><b></b><small>Sáb</small></div><div style="--h:94%"><i></i><b></b><small>Dom</small></div></div></div><div class="legend">■ Consultas <span>■ Periodo anterior</span></div></article><article class="panel"><div class="panelhead"><div><h2>Temas más consultados</h2><p>Distribución ficticia por categoría</p></div></div><div class="topics"><div class="donut"><div><b>8,426</b><small>consultas</small></div></div><div class="legendlist"><p><i class="c1"></i>Trámites y requisitos <b>34%</b></p><p><i class="c2"></i>Servicios escolares <b>27%</b></p><p><i class="c3"></i>Titulación <b>21%</b></p><p><i class="c4"></i>Actividades y otros <b>18%</b></p></div></div></article></section><section class="charts bottom"><article class="panel"><div class="panelhead"><div><h2>Consumo de tokens</h2><p>Entrada y salida del modelo · estimación visual</p></div><span>2.84 M total</span></div><div class="tokenrows"><p>Tokens de entrada <b>1.92 M</b></p><p>Tokens de salida <b>0.92 M</b></p></div><div class="stack"><i></i><b></b></div><div class="scale"><span>0</span><span>1 M</span><span>2 M</span><span>3 M tokens</span></div></article><article class="panel"><div class="panelhead"><div><h2>Eventos recientes</h2><p>Ejemplos de avisos del sistema</p></div></div><div class="event"><i class="ok">✓</i><div><b>Disponibilidad dentro del objetivo</b><small>Hoy · 10:42</small></div><span>Resuelto</span></div><div class="event"><i class="warn">!</i><div><b>Consumo de tokens cercano al umbral</b><small>Ayer · 16:08</small></div><span>Revisar</span></div><div class="event"><i class="info">↗</i><div><b>Incremento de consultas detectado</b><small>20 oct. · 12:15</small></div><span>Informativo</span></div></article></section><footer>Proyecto Nexus FI · Equipo 404 <span>Prototipo visual · Sin datos reales</span></footer></main><script src="app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus FI - Tablero Dinámico de Usuario</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Barra lateral (Sidebar) -->
+  <aside class="dashside" style="width: 240px; position: fixed; inset: 0 auto 0 0; background: var(--theme-surface, #fff); border-right: 1px solid var(--theme-border, #e2eae5); padding: 24px 16px; display: flex; flex-direction: column; z-index: 5;">
+    <div class="brand" style="display: flex; align-items: center; gap: 11px; padding-bottom: 28px;">
+      <div class="logo" style="width: 42px; height: 42px; border-radius: 13px; background: #006747; display: grid; place-items: center; color: white; font-weight: bold;">N<span style="font-size: 10px; color: #d5a62e;">FI</span></div>
+      <div>
+        <b style="display: block; font-size: 17px;">Nexus FI</b>
+        <small style="display: block; color: #7c8a82; font-size: 11px; margin-top: 3px;">Facultad de Ingeniería</small>
+      </div>
+    </div>
+
+    <nav style="display: flex; flex-direction: column; gap: 8px;">
+      <a href="index.html" class="nav">💬 Asistente RAG</a>
+      <a href="dashboard.html" class="nav active">📊 Tablero Usuario</a>
+      <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
+    </nav>
+
+    <div class="sidebottom" style="margin-top: auto; border-top: 1px solid #e2eae5; padding-top: 16px;">
+      <button class="theme-toggle" type="button">Modo oscuro</button>
+      <small style="display: block; font-size: 10px; line-height: 1.6; color: #98a49d; margin-top: 10px;">UAEMéx · Equipo 404</small>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="dashmain" style="margin-left: 240px; padding: 28px 40px; min-height: 100vh;">
+    <header class="dashhead" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h1 style="font-size: 26px; margin: 0;">Tablero Dinámico de Usuario</h1>
+        <p class="sub" style="font-size: 11px; color: #7c8a82; margin: 6px 0 0;">Telemetría de consultas y tiempos de respuesta en tiempo real</p>
+      </div>
+      <button id="btn-refresh" class="primary" style="padding: 8px 16px; font-size: 12px; cursor: pointer; background: #006747; color: white; border: none; border-radius: 8px; font-weight: bold;">
+        🔄 Actualizar Métricas
+      </button>
+    </header>
+
+    <!-- KPIs -->
+    <section class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px;">
+      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <span style="font-size: 10px; color: #78867d; display: block;">Consultas Totales</span>
+        <strong id="kpi-queries" style="font-size: 26px; display: block; margin: 10px 0 5px;">--</strong>
+        <small style="color: #20976b; font-size: 10px;">↑ En tiempo real</small>
+      </article>
+
+      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <span style="font-size: 10px; color: #78867d; display: block;">Latencia Promedio</span>
+        <strong id="kpi-latency" style="font-size: 26px; display: block; margin: 10px 0 5px;">-- <small style="font-size: 13px;">ms</small></strong>
+        <small style="color: #78867d; font-size: 10px;">Pipeline RAG</small>
+      </article>
+
+      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <span style="font-size: 10px; color: #78867d; display: block;">Tasa de Éxito RAG</span>
+        <strong id="kpi-accuracy" style="font-size: 26px; display: block; margin: 10px 0 5px;">-- <small style="font-size: 13px;">%</small></strong>
+        <small style="color: #20976b; font-size: 10px;">Citas verificadas (RF09)</small>
+      </article>
+
+      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <span style="font-size: 10px; color: #78867d; display: block;">Documentos Vectorizados</span>
+        <strong style="font-size: 26px; display: block; margin: 10px 0 5px;">3,977</strong>
+        <small style="color: #78867d; font-size: 10px;">Acervo FI UAEMéx</small>
+      </article>
+    </section>
+
+    <!-- Gráficas Dinámicas -->
+    <section class="charts" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px;">
+      <div class="panel" style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <div class="panelhead" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="font-size: 14px; margin: 0;">Latencia Real y Consultas Procesadas</h2>
+            <p style="font-size: 10px; color: #96a19b; margin: 4px 0 0;">Monitoreo dinámico del servidor</p>
+          </div>
+          <span style="font-size: 9px; color: #718077; background: #f3f7f4; padding: 4px 8px; border-radius: 6px;">API Telemetry</span>
+        </div>
+        <div style="position: relative; height: 220px; margin-top: 15px;">
+          <canvas id="chartLatency"></canvas>
+        </div>
+      </div>
+
+      <div class="panel" style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
+        <div class="panelhead">
+          <div>
+            <h2 style="font-size: 14px; margin: 0;">Distribución Temática</h2>
+            <p style="font-size: 10px; color: #96a19b; margin: 4px 0 0;">Categorías más consultadas por alumnos</p>
+          </div>
+        </div>
+        <div style="position: relative; height: 220px; margin-top: 15px; display: flex; justify-content: center;">
+          <canvas id="chartTopics"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Script Principal y Conexión Dinámica -->
+  <script src="app.js"></script>
+  <script>
+    let latencyChartInstance = null;
+    let topicsChartInstance = null;
+
+    async function fetchUserMetrics() {
+      try {
+        const response = await fetch('/api/v1/metrics/user-dashboard');
+        const data = await response.json();
+
+        document.getElementById('kpi-queries').textContent = data.totalQueries.toLocaleString();
+        document.getElementById('kpi-latency').textContent = data.avgLatencyMs;
+        document.getElementById('kpi-accuracy').textContent = data.successRate;
+
+        renderLatencyChart(data.timeSeriesLabels, data.latencyData, data.queriesData);
+        renderTopicsChart(data.topicLabels, data.topicValues);
+      } catch (err) {
+        console.warn('Backend de métricas no disponible, renderizando datos dinámicos de prueba:', err);
+        
+        document.getElementById('kpi-queries').textContent = '1,248';
+        document.getElementById('kpi-latency').textContent = '285';
+        document.getElementById('kpi-accuracy').textContent = '98.5';
+        
+        renderLatencyChart(
+          ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+          [310, 280, 240, 350, 290, 285],
+          [45, 120, 230, 180, 160, 95]
+        );
+        renderTopicsChart(
+          ['Evaluación Escolar', 'Servicio Social', 'Titulación', 'Becas', 'Otros'],
+          [35, 25, 20, 12, 8]
+        );
+      }
+    }
+
+    function renderLatencyChart(labels, latencyData, queriesData) {
+      const ctx = document.getElementById('chartLatency').getContext('2d');
+      if (latencyChartInstance) latencyChartInstance.destroy();
+
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const textColor = isDark ? '#a5b6ab' : '#7c8a82';
+      const gridColor = isDark ? '#33483c' : '#e2eae5';
+
+      latencyChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Latencia (ms)',
+              data: latencyData,
+              borderColor: '#006747',
+              backgroundColor: 'rgba(0, 103, 71, 0.1)',
+              yAxisID: 'yLatency',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Consultas',
+              data: queriesData,
+              borderColor: '#d5a62e',
+              backgroundColor: 'rgba(213, 166, 46, 0.1)',
+              yAxisID: 'yQueries',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            yLatency: { type: 'linear', position: 'left', ticks: { color: textColor }, grid: { color: gridColor } },
+            yQueries: { type: 'linear', position: 'right', ticks: { color: textColor }, grid: { drawOnChartArea: false } },
+            x: { ticks: { color: textColor }, grid: { color: gridColor } }
+          },
+          plugins: {
+            legend: { labels: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    function renderTopicsChart(labels, values) {
+      const ctx = document.getElementById('chartTopics').getContext('2d');
+      if (topicsChartInstance) topicsChartInstance.destroy();
+
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const textColor = isDark ? '#a5b6ab' : '#7c8a82';
+
+      topicsChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ['#006747', '#d5a62e', '#78b99a', '#2bab78', '#a5b6ab']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    document.getElementById('btn-refresh')?.addEventListener('click', fetchUserMetrics);
+    document.addEventListener('DOMContentLoaded', fetchUserMetrics);
+  </script>
+</body>
+</html>

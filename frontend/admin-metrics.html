@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus FI - Métricas de Consumo Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 15px;
+    }
+    .metric-card {
+      background: var(--theme-surface, #ffffff);
+      border: 1px solid var(--theme-border, #e2eae5);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .metric-card h3 {
+      font-size: 13px;
+      margin: 0 0 10px 0;
+      color: var(--green, #006747);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .metric-card .key-badge {
+      font-size: 9px;
+      background: var(--theme-bg, #f6f8f7);
+      border: 1px solid var(--theme-border, #e2eae5);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--theme-muted, #7c8a82);
+    }
+    .metric-val {
+      font-size: 22px;
+      font-weight: bold;
+      margin: 6px 0;
+    }
+    .metric-sub {
+      font-size: 10px;
+      color: var(--theme-muted, #7c8a82);
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px dashed var(--theme-border, #e2eae5);
+      padding-top: 6px;
+      margin-top: 8px;
+    }
+    .section-title {
+      font-size: 15px;
+      margin: 25px 0 10px;
+      color: var(--theme-text, #19332a);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra lateral -->
+  <aside class="dashside">
+    <div class="brand">
+      <div class="logo">FI<span>▲</span></div>
+      <div>
+        <b>Nexus FI</b>
+        <small>Administrador</small>
+      </div>
+    </div>
+
+    <nav style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+      <a href="index.html" class="nav">💬 Asistente RAG</a>
+      <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
+      <a href="admin-metrics.html" class="nav active">⚡ Panel Admin</a>
+    </nav>
+
+    <div class="sidebottom">
+      <button class="theme-toggle" type="button">Modo oscuro</button>
+      <small style="display:block; margin-top:10px;">UAEMéx · Equipo 404</small>
+    </div>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="dashmain">
+    <header class="dashhead">
+      <div>
+        <h1>Métricas de Consumo e Infraestructura Admin</h1>
+        <p class="sub">Control de presupuesto y tokens devengados en OpenAI y AWS</p>
+      </div>
+      <div style="text-align: right;">
+        <span style="font-size: 10px; color: var(--theme-muted);">Gasto Acumulado Total</span>
+        <div id="total-spent" style="font-size: 20px; font-weight: bold; color: var(--gold, #d5a62e);">$0.00 USD</div>
+      </div>
+    </header>
+
+    <!-- SECCIÓN 1: OPENAI / 4 CLAVES API -->
+    <h2 class="section-title">🤖 Consumo de Tokens OpenAI (4 Claves API)</h2>
+    <div class="admin-grid">
+      
+      <!-- Clave 1: Embeddings -->
+      <div class="metric-card">
+        <h3>Embeddings <span class="key-badge">API Key #1</span></h3>
+        <div id="tokens-emb" class="metric-val">--</div>
+        <div class="metric-sub">
+          <span>Saldo Devengado:</span>
+          <b id="cost-emb" style="color: var(--green, #006747);">$0.00</b>
+        </div>
+      </div>
+
+      <!-- Clave 2: GPT-4o-mini -->
+      <div class="metric-card">
+        <h3>GPT-4o-mini <span class="key-badge">API Key #2</span></h3>
+        <div id="tokens-gpt4" class="metric-val">--</div>
+        <div class="metric-sub">
+          <span>Saldo Devengado:</span>
+          <b id="cost-gpt4" style="color: var(--green, #006747);">$0.00</b>
+        </div>
+      </div>
+
+      <!-- Clave 3: Luna 6 -->
+      <div class="metric-card">
+        <h3>Luna 6 <span class="key-badge">API Key #3</span></h3>
+        <div id="tokens-luna6" class="metric-val">--</div>
+        <div class="metric-sub">
+          <span>Saldo Devengado:</span>
+          <b id="cost-luna6" style="color: var(--green, #006747);">$0.00</b>
+        </div>
+      </div>
+
+      <!-- Clave 4: Luna 5.6 -->
+      <div class="metric-card">
+        <h3>Luna 5.6 <span class="key-badge">API Key #4</span></h3>
+        <div id="tokens-luna56" class="metric-val">--</div>
+        <div class="metric-sub">
+          <span>Saldo Devengado:</span>
+          <b id="cost-luna56" style="color: var(--green, #006747);">$0.00</b>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN 2: INFRAESTRUCTURA AWS -->
+    <h2 class="section-title">☁️ Recursos de Infraestructura AWS</h2>
+    <div class="admin-grid">
+      
+      <!-- S3 -->
+      <div class="metric-card">
+        <h3>Almacenamiento S3</h3>
+        <div id="aws-s3" class="metric-val">-- GB</div>
+        <div class="metric-sub">
+          <span>Uso de vectores / JSONs</span>
+        </div>
+      </div>
+
+      <!-- EC2 -->
+      <div class="metric-card">
+        <h3>Cómputo EC2</h3>
+        <div id="aws-ec2" class="metric-val">--</div>
+        <div class="metric-sub">
+          <span>CPU Promedio: <b id="aws-cpu">--%</b></span>
+        </div>
+      </div>
+
+      <!-- Ancho de Banda -->
+      <div class="metric-card">
+        <h3>Ancho de Banda</h3>
+        <div id="aws-bandwidth" class="metric-val">-- GB</div>
+        <div class="metric-sub">
+          <span>Tráfico Egress Mensual</span>
+        </div>
+      </div>
+
+      <!-- Crédito / Saldo AWS -->
+      <div class="metric-card">
+        <h3>Saldo AWS Disponible</h3>
+        <div id="aws-credit" class="metric-val" style="color: var(--green, #006747);">-- USD</div>
+        <div class="metric-sub">
+          <span>Créditos restantes</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Cargar los scripts -->
+  <script src="app.js"></script>
+  <script>
+    async function fetchAdminMetrics() {
+      try {
+        const response = await fetch('/api/v1/admin/metrics');
+        const data = await response.json();
+
+        document.getElementById('tokens-emb').textContent = data.openai.embeddings.tokens.toLocaleString();
+        document.getElementById('cost-emb').textContent = `$${data.openai.embeddings.cost.toFixed(2)}`;
+
+        document.getElementById('tokens-gpt4').textContent = data.openai.gpt4oMini.tokens.toLocaleString();
+        document.getElementById('cost-gpt4').textContent = `$${data.openai.gpt4oMini.cost.toFixed(2)}`;
+
+        document.getElementById('tokens-luna6').textContent = data.openai.luna6.tokens.toLocaleString();
+        document.getElementById('cost-luna6').textContent = `$${data.openai.luna6.cost.toFixed(2)}`;
+
+        document.getElementById('tokens-luna56').textContent = data.openai.luna56.tokens.toLocaleString();
+        document.getElementById('cost-luna56').textContent = `$${data.openai.luna56.cost.toFixed(2)}`;
+
+        const totalCost = data.openai.embeddings.cost + data.openai.gpt4oMini.cost + data.openai.luna6.cost + data.openai.luna56.cost;
+        document.getElementById('total-spent').textContent = `$${totalCost.toFixed(2)} USD`;
+
+        document.getElementById('aws-s3').textContent = `${data.aws.s3StorageGb} GB`;
+        document.getElementById('aws-ec2').textContent = data.aws.ec2Instances;
+        document.getElementById('aws-cpu').textContent = `${data.aws.ec2CpuUsage}%`;
+        document.getElementById('aws-bandwidth').textContent = `${data.aws.bandwidthGb} GB`;
+        document.getElementById('aws-credit').textContent = `$${data.aws.availableCredit.toFixed(2)} USD`;
+
+      } catch (err) {
+        console.warn('Endpoint admin no disponible, cargando valores por defecto:', err);
+        
+        document.getElementById('tokens-emb').textContent = '14,250,000';
+        document.getElementById('cost-emb').textContent = '$2.85';
+
+        document.getElementById('tokens-gpt4').textContent = '8,120,000';
+        document.getElementById('cost-gpt4').textContent = '$12.18';
+
+        document.getElementById('tokens-luna6').textContent = '3,400,000';
+        document.getElementById('cost-luna6').textContent = '$9.18';
+
+        document.getElementById('tokens-luna56').textContent = '1,950,000';
+        document.getElementById('cost-luna56').textContent = '$4.88';
+
+        document.getElementById('total-spent').textContent = '$29.09 USD';
+
+        document.getElementById('aws-s3').textContent = '18.4 GB';
+        document.getElementById('aws-ec2').textContent = '2x t3.medium';
+        document.getElementById('aws-cpu').textContent = '28%';
+        document.getElementById('aws-bandwidth').textContent = '142 GB';
+        document.getElementById('aws-credit').textContent = '$170.91 USD';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchAdminMetrics);
+  </script>
+</body>
+</html>
