@@ -210,12 +210,20 @@ python main.py --serve
 - **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 #### Modos de seguridad: desarrollo y FI
-El filtro de subredes de la FI (WBS 1.3.5) y el límite de consultas (WBS 1.4.2) se encienden o apagan con un interruptor, sin editar subredes en cada equipo:
+El filtro de subredes de la FI (WBS 1.3.5) y el límite de consultas (WBS 1.4.2) se encienden o apagan con un interruptor, sin editar subredes en cada equipo.
+
+**En Windows, lo más práctico es `start.bat`**: muestra un menú para elegir el modo (si no eliges, inicia la opción 1 a los 30 segundos) y abre el navegador con la dirección correcta:
+
+1. **Desarrollo, solo este equipo** (`http://127.0.0.1:8000`).
+2. **Desarrollo en la red**, accesible desde celulares u otros equipos con la IP que muestra el menú.
+3. **Modo FI** (prueba final / demo): filtro y límite activos. Avisa si el equipo no está conectado a la red de la Facultad.
+
+Equivalentes por línea de comandos:
 
 | Situación | Sin Docker | Con Docker |
 | :--- | :--- | :--- |
 | **Desarrollo** (cualquier equipo y red) | `python main.py --serve --dev` | `docker compose up -d` |
-| **Prueba final / demo en la FI** | `python main.py --serve --fi` (o `start.bat --fi`) | Solo en servidor Linux: `docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d` |
+| **Prueba final / demo en la FI** | `python main.py --serve --fi` (o `start.bat --fi`, sin menú) | Solo en servidor Linux: `docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d` |
 
 - Sin opciones, el modo lo deciden `IP_FILTER_ENABLED` y `RATE_LIMIT_ENABLED` en `.env`. Si no existen, quedan **activos** (seguro por defecto).
 - `--fi` también escucha en la red (`0.0.0.0`), para que otros dispositivos entren con la IP que muestra la consola. Para hacerlo en modo desarrollo: `--dev --host 0.0.0.0`.
