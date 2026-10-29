@@ -23,24 +23,33 @@ echo.
 
 :: ---------------------------------------------------------------------------
 :: 1. Detección robusta de Python >= 3.10 (descarta alias de WindowsApps)
+::    También descarta las versiones "free-threading" (p. ej. 3.14t, sin GIL):
+::    librerías como pymupdf no se pueden instalar en ellas. El lanzador "py"
+::    puede tener una de esas versiones como predeterminada, por eso se prueban
+::    versiones concretas y se guarda la ruta real del intérprete elegido.
 :: ---------------------------------------------------------------------------
 set "PYTHON_EXE="
+set "PY_OK=import sys, sysconfig; sys.exit(0 if sys.version_info >= (3, 10) and not sysconfig.get_config_var('Py_GIL_DISABLED') else 1)"
+set "PY_WHERE=import sys; print(sys.executable)"
 
-py -3 -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
-if %errorlevel% equ 0 (
-    set "PYTHON_EXE=py -3"
-    goto :python_found
+for %%V in (3.14 3.13 3.12 3.11 3.10 3) do (
+    py -%%V -c "%PY_OK%" >nul 2>&1
+    if !errorlevel! equ 0 (
+        for /f "delims=" %%E in ('py -%%V -c "%PY_WHERE%"') do set "PYTHON_EXE=%%E"
+        goto :python_found
+    )
 )
 
-python -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+python -c "%PY_OK%" >nul 2>&1
 if %errorlevel% equ 0 (
-    set "PYTHON_EXE=python"
+    for /f "delims=" %%E in ('python -c "%PY_WHERE%"') do set "PYTHON_EXE=%%E"
     goto :python_found
 )
 
 for %%P in (
     "%LOCALAPPDATA%\Python\pythoncore-3.14-64\python.exe"
     "%LOCALAPPDATA%\Python\pythoncore-3.13-64\python.exe"
+    "%LOCALAPPDATA%\Programs\Python\Python314\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python313\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
     "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
@@ -51,7 +60,7 @@ for %%P in (
     "%ProgramFiles%\Python310\python.exe"
 ) do (
     if exist "%%~P" (
-        "%%~P" -c "import sys; exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+        "%%~P" -c "%PY_OK%" >nul 2>&1
         if !errorlevel! equ 0 (
             set "PYTHON_EXE=%%~P"
             goto :python_found
@@ -70,24 +79,25 @@ exit /b 1
 
 :python_found
 echo [1/4] Python verificado correctamente:
-if "%PYTHON_EXE%"=="py -3" (
-    py -3 --version
-) else (
-    "%PYTHON_EXE%" --version
-)
+"%PYTHON_EXE%" --version
+echo       %PYTHON_EXE%
 echo.
 
 :: ---------------------------------------------------------------------------
 :: 2. Crear o verificar entorno virtual (.venv)
 :: ---------------------------------------------------------------------------
 echo [2/4] Verificando entorno virtual (.venv)...
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" -c "%PY_OK%" >nul 2>&1
+    if !errorlevel! neq 0 (
+        echo El .venv actual usa un Python no compatible ^(free-threading o ^< 3.10^).
+        echo Se elimina y se vuelve a crear con el Python detectado.
+        rmdir /s /q ".venv"
+    )
+)
 if not exist ".venv\Scripts\python.exe" (
     echo Creando nuevo entorno virtual aislado en .venv...
-    if "%PYTHON_EXE%"=="py -3" (
-        py -3 -m venv .venv
-    ) else (
-        "%PYTHON_EXE%" -m venv .venv
-    )
+    "%PYTHON_EXE%" -m venv .venv
     if !errorlevel! neq 0 (
         echo [ERROR] Falló la creación del entorno virtual .venv.
         echo Asegúrate de tener permisos de escritura en esta carpeta.
