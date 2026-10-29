@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +17,10 @@ load_dotenv(BASE_DIR / ".env")
 
 from nexus_ingestion.embedder import TextEmbedder
 from nexus_ingestion.vector_store import LanceDBVectorStore
+
+# Middlewares y utilidades de seguridad perimetral y control de cuotas (WBS 1.3.5 / WBS 1.4.2)
+from core.security.ip_filter import IPFilterMiddleware, is_ip_in_perimeter, get_client_ip, AUTHORIZED_CIDRS
+from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -35,6 +39,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middlewares de control perimetral y límite de uso (Starlette ejecuta en orden LIFO)
+# 1. RateLimiterMiddleware (WBS 1.4.2: 20 req/h, 60 req/d por huella de dispositivo)
+# 2. IPFilterMiddleware (WBS 1.3.5: filtrado perimetral por CIDRs institucionales de la FI)
+app.add_middleware(RateLimiterMiddleware)
+app.add_middleware(IPFilterMiddleware)
 
 # Rutas del sistema
 LANCEDB_DIR = BASE_DIR / "data" / "lancedb"
@@ -127,6 +137,53 @@ class ChatResponse(BaseModel):
 # -----------------------------------------------------------------------------
 # Endpoints de la API
 # -----------------------------------------------------------------------------
+
+def _get_device_id(request: Request) -> str:
+    """Obtiene el identificador de dispositivo o sesión para control de cuotas."""
+    return (
+        request.headers.get("X-Device-Fingerprint")
+        or request.headers.get("X-Session-ID")
+        or get_client_ip(request)
+    )
+
+
+@app.get("/health", summary="Health check público para balanceadores de carga AWS")
+def public_health():
+    """Endpoint público para health checks de AWS ALB/EC2 fuera de /api/."""
+    return {"status": "healthy", "service": "Nexus FI", "environment": "cloud/aws"}
+
+
+@app.get("/api/session/info", summary="Información de sesión y perímetro (WBS 1.3.5 / WBS 1.4.2)")
+async def session_info(request: Request):
+    """
+    Retorna la IP del cliente, si está en el perímetro institucional de la FI,
+    el device_id detectado y la cuota de consultas restante.
+    """
+    client_ip = get_client_ip(request)
+    in_perimeter = is_ip_in_perimeter(client_ip)
+    device_id = _get_device_id(request)
+    quota = check_rate_limit(device_id)
+
+    return {
+        "ok": True,
+        "client_ip": client_ip,
+        "in_perimeter": in_perimeter,
+        "device_id": device_id,
+        "perimeter_networks": AUTHORIZED_CIDRS,
+        "quota": {
+            "hourly_limit": quota["hourly_limit"],
+            "hourly_remaining": quota["hourly_remaining"],
+            "daily_limit": quota["daily_limit"],
+            "daily_remaining": quota["daily_remaining"],
+        },
+    }
+
+
+@app.get("/api/status", summary="Estado del sistema (alias de session/info)")
+async def status_endpoint(request: Request):
+    """Alias de /api/session/info para compatibilidad."""
+    return await session_info(request)
+
 
 @app.get("/api/health")
 def get_health():

@@ -24,3 +24,7 @@ python-dotenv>=1.0.0
 
 # Integración con Nube AWS (Telemetría y S3)
 boto3>=1.34.0
+
+# Suite de Pruebas Unitarias y Automatizadas (WBS 1.3.5 / WBS 1.4.2)
+pytest>=7.4.0
+httpx>=0.25.0

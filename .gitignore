@@ -41,3 +41,6 @@ desktop.ini
 *.tmp
 *.temp
 .vscode/
+
+Local/
+.pytest_cache/

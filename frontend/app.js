@@ -1,3 +1,50 @@
+// =============================================================================
+// SEGURIDAD Y FINGERPRINTING DE DISPOSITIVO (WBS 1.3.5 / WBS 1.4.2 - Joaquín Ulises)
+// =============================================================================
+function getOrCreateSessionUUID() {
+    const KEY = "nexus_session_uuid";
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+        id = typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : "sess_" + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem(KEY, id);
+    }
+    return id;
+}
+
+function getDeviceFingerprint() {
+    const KEY = "nexus_device_fingerprint";
+    let fp = localStorage.getItem(KEY);
+    if (fp) return fp;
+
+    const signals = [
+        screen.width + "x" + screen.height + "x" + screen.colorDepth,
+        navigator.userAgent,
+        navigator.language || "es",
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Mexico_City",
+        navigator.hardwareConcurrency || 4
+    ];
+
+    let hash = 0;
+    const str = signals.join("###");
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    fp = "fp_" + Math.abs(hash).toString(16).padStart(8, "0");
+    localStorage.setItem(KEY, fp);
+    return fp;
+}
+
+function getSecurityHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "X-Device-Fingerprint": getDeviceFingerprint(),
+        "X-Session-ID": getOrCreateSessionUUID()
+    };
+}
+
 const $ = s => document.querySelector(s);
 
 // Registro de Service Worker PWA
@@ -123,9 +170,22 @@ form?.addEventListener('submit', async e => {
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getSecurityHeaders(),
             body: JSON.stringify({ query: q, top_k: 4, use_llm: true })
         });
+
+        if (response.status === 403) {
+            const errData = await response.json().catch(() => ({}));
+            loadingRow.remove();
+            add(`🚫 Acceso Denegado (HTTP 403): Conexión fuera del perímetro institucional de la Facultad de Ingeniería (UAEMéx).\n\nSubredes permitidas: 148.215.X.X / 172.17.18.X (Edificios A, B, C y laboratorios FI). Conéctate a la red institucional para consultar.`, 'assistant');
+            return;
+        }
+
+        if (response.status === 429) {
+            loadingRow.remove();
+            add(`⚠️ Límite de consultas excedido (HTTP 429): Has alcanzado la cuota máxima permitida (20 consultas/hora o 60 consultas/día por dispositivo). Por favor espera unos momentos antes de realizar otra pregunta.`, 'assistant');
+            return;
+        }
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
