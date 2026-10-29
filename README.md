@@ -104,10 +104,10 @@ Nexus-FI/
 │   ├── corpus_chunks_para_embedding.jsonl # Dataset maestro (3,977 fragmentos con metadatos)
 │   └── manifest.json                      # Catálogo y manifiesto de auditoría del corpus
 │
-├── docs/                                  # Documentación técnica y académica de entrega
-│   ├── Documento Final Nexus FI.pdf       # Memoria y especificación de requisitos del proyecto
-│   ├── ENTREGA_BASE_DATOS_VECTORIAL_NEXUS_FI.md # Manual técnico del vector store
-│   └── plantilla_coordinacion_ico.md      # Plantilla normalizada para carga de trámites
+├── docs/                                  # Documentación académica y técnica (índice en docs/README.md)
+│   ├── 00_Formatos/                       # Plantillas oficiales y matrices de cumplimiento
+│   ├── 01_Planeacion/                     # Documento maestro e investigaciones previas
+│   └── 02_Ejecucion/                      # Asignaciones, entregas e informes por avance y especificaciones
 │
 ├── scripts/                               # Scripts de automatización y procesamiento masivo
 │   ├── vectorize_corpus.py                # Vectorización del dataset hacia LanceDB
