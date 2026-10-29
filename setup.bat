@@ -194,7 +194,7 @@ exit /b 0
 
 :ready
 echo.
-echo  ¡Instalación de Nexus FI completada! Para iniciar el servidor en el futuro,
+echo  Instalación de Nexus FI completada. Para iniciar el servidor en el futuro,
 echo  haz doble clic en start.bat (te dejará elegir el modo desarrollo o FI).
 echo.
 set /p START_NOW="¿Deseas iniciar Nexus FI ahora mismo? (S/N): "
