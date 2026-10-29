@@ -4,6 +4,9 @@ FROM python:3.11-slim
 # Directorio de trabajo en el contenedor
 WORKDIR /app
 
+# Mostrar los mensajes de Python en `docker compose logs` al momento
+ENV PYTHONUNBUFFERED=1
+
 # Copiar archivos de requerimientos e instalar dependencias
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

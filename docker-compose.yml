@@ -10,6 +10,12 @@ services:
       - "8000"
     env_file:
       - .env
+    # Modo de seguridad: desarrollo por defecto (o lo que diga el .env).
+    # Para la prueba final o producción:
+    #   docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d
+    environment:
+      IP_FILTER_ENABLED: ${IP_FILTER_ENABLED:-false}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-false}
 
   # Servicio Proxy (Nginx)
   nginx:

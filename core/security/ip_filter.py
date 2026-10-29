@@ -87,6 +87,28 @@ def is_ip_in_perimeter(ip: str) -> bool:
     return False
 
 
+_DOCKER_NAT_WARNED = False
+
+
+def _warn_if_docker_nat(ip: str) -> None:
+    """Avisa una sola vez si la IP bloqueada parece la puerta de enlace interna de Docker."""
+    global _DOCKER_NAT_WARNED
+    if _DOCKER_NAT_WARNED:
+        return
+    try:
+        addr = ipaddress.IPv4Address(ip)
+    except (ipaddress.AddressValueError, ValueError):
+        return
+    if addr in ipaddress.IPv4Network("172.16.0.0/12") and str(addr).endswith(".1"):
+        _DOCKER_NAT_WARNED = True
+        logger.warning(
+            "La IP %s parece la puerta de enlace de Docker: Docker Desktop (Windows/macOS) "
+            "oculta la IP real de los clientes y el filtro bloqueará a todos. Para probar el "
+            "filtro FI use `python main.py --serve --fi` o un servidor Linux.",
+            ip,
+        )
+
+
 class IPFilterMiddleware(BaseHTTPMiddleware):
     """
     WBS 1.3.5 — Middleware de Filtrado Perimetral por IP.
@@ -110,6 +132,7 @@ class IPFilterMiddleware(BaseHTTPMiddleware):
                 client_ip,
                 request.url.path,
             )
+            _warn_if_docker_nat(client_ip)
             return JSONResponse(
                 status_code=403,
                 content={

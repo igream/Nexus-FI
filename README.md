@@ -209,6 +209,26 @@ python main.py --serve
 - **Panel de Métricas:** [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
 - **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
+#### Modos de seguridad: desarrollo y FI
+El filtro de subredes de la FI (WBS 1.3.5) y el límite de consultas (WBS 1.4.2) se encienden o apagan con un interruptor, sin editar subredes en cada equipo:
+
+| Situación | Sin Docker | Con Docker |
+| :--- | :--- | :--- |
+| **Desarrollo** (cualquier equipo y red) | `python main.py --serve --dev` | `docker compose up -d` |
+| **Prueba final / demo en la FI** | `python main.py --serve --fi` (o `start.bat --fi`) | Solo en servidor Linux: `docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d` |
+
+- Sin opciones, el modo lo deciden `IP_FILTER_ENABLED` y `RATE_LIMIT_ENABLED` en `.env`. Si no existen, quedan **activos** (seguro por defecto).
+- `--fi` también escucha en la red (`0.0.0.0`), para que otros dispositivos entren con la IP que muestra la consola. Para hacerlo en modo desarrollo: `--dev --host 0.0.0.0`.
+- La consola y la insignia del chat indican el modo activo.
+- **Docker Desktop (Windows/macOS) oculta la IP real de los clientes**: en modo FI bloquearía a todos. Para la demo en una laptop use el modo nativo `--fi`.
+
+#### Montar el proyecto en otro equipo
+`git clone` no trae dos cosas que el chat necesita; cópialas desde un equipo donde ya funcione (USB o unidad compartida, nunca por Git):
+1. **`.env`** → raíz del proyecto (claves de OpenAI y `AUTHORIZED_SUBNETS`).
+2. **`data/lancedb/`** → carpeta completa (~59 MB, los 3,977 vectores). Regenerarla con `scripts/vectorize_corpus.py` cuesta tiempo y créditos de OpenAI.
+
+Después: `setup.bat` (o `pip install -r requirements.txt`), `python main.py --telemetry` para confirmar *LanceDB ONLINE* y *3,977 vectores*, y `python main.py --serve --dev`.
+
 #### B) Búsqueda Semántica desde Terminal (CLI)
 ```bash
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"

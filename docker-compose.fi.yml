@@ -1,0 +1,12 @@
+# Modo FI: activa el filtro de subredes (WBS 1.3.5) y el límite de uso (WBS 1.4.2).
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d
+#
+# Importante: en Docker Desktop (Windows/macOS) el contenedor no ve la IP real de los
+# clientes y el filtro bloquea a todos. Este modo está pensado para un servidor Linux
+# (por ejemplo, la instancia EC2). En una laptop use `python main.py --serve --fi`.
+services:
+  backend:
+    environment:
+      IP_FILTER_ENABLED: "true"
+      RATE_LIMIT_ENABLED: "true"

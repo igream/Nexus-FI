@@ -23,6 +23,15 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 HOURLY_LIMIT: int = 20
 DAILY_LIMIT: int = 60
+
+# Rutas informativas que no consumen cuota
+QUOTA_EXEMPT_PREFIXES: tuple[str, ...] = (
+    "/api/session/info",
+    "/api/status",
+    "/api/health",
+    "/api/v1/metrics/",
+    "/api/v1/admin/",
+)
 HOUR_SECONDS: int = 3600
 DAY_SECONDS: int = 86400
 
@@ -123,8 +132,10 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Solo aplicar a rutas /api/*
-        if not request.url.path.startswith("/api/"):
+        # Solo aplicar a rutas /api/*, excepto las de solo consulta (estado, salud y
+        # métricas), para que recargar la página o el tablero no gaste consultas.
+        path = request.url.path
+        if not path.startswith("/api/") or path.startswith(QUOTA_EXEMPT_PREFIXES):
             return await call_next(request)
 
         # Determinar device_id

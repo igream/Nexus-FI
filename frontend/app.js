@@ -108,6 +108,36 @@ document.querySelectorAll('.theme-toggle').forEach(button => {
 
 initializeTheme();
 
+// Insignias de red y cuota: muestran el modo de seguridad real del servidor
+async function refreshSecurityBadges() {
+    const net = document.getElementById('perimeter-status-badge');
+    const quota = document.getElementById('rate-limit-badge');
+    if (!net && !quota) return;
+    try {
+        const r = await fetch('/api/session/info', { headers: getSecurityHeaders() });
+        if (r.status === 403) {
+            if (net) net.textContent = '🚫 Fuera de la red FI';
+            if (quota) quota.textContent = '⏱️ Sin acceso';
+            return;
+        }
+        const s = await r.json();
+        if (net) {
+            net.textContent = !s.ip_filter_enabled
+                ? '🛠️ Modo desarrollo'
+                : (s.in_perimeter ? '🏛️ Red FI UAEMéx' : '🌐 Red externa');
+        }
+        if (quota) {
+            quota.textContent = !s.rate_limit_enabled
+                ? '⏱️ Sin límite'
+                : `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
+        }
+    } catch (error) {
+        if (net) net.textContent = '⚠️ Servidor sin conexión';
+    }
+}
+
+refreshSecurityBadges();
+
 
 // Registro de Service Worker PWA
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -256,6 +286,7 @@ form?.addEventListener('submit', async e => {
         const data = await response.json();
         loadingRow.remove();
         add(data.answer, 'assistant', data.citations, data.telemetry);
+        refreshSecurityBadges();
     } catch (err) {
         console.warn('Backend RAG no disponible o error en petición, activando fallback local:', err);
         loadingRow.remove();

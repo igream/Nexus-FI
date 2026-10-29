@@ -40,11 +40,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def _env_flag(name: str, default: bool) -> bool:
+    """Lee una variable booleana de entorno (true/false, 1/0, si/no, on/off)."""
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() in ("1", "true", "si", "sí", "yes", "on")
+
+
+# Interruptores de seguridad. Si no se definen quedan ACTIVOS (seguro por defecto);
+# en desarrollo se apagan con IP_FILTER_ENABLED=false y RATE_LIMIT_ENABLED=false en .env,
+# y se encienden para la prueba final con `python main.py --serve --fi` o el modo FI de Docker.
+IP_FILTER_ENABLED = _env_flag("IP_FILTER_ENABLED", True)
+RATE_LIMIT_ENABLED = _env_flag("RATE_LIMIT_ENABLED", True)
+SECURITY_MODE = "fi" if (IP_FILTER_ENABLED and RATE_LIMIT_ENABLED) else (
+    "desarrollo" if not (IP_FILTER_ENABLED or RATE_LIMIT_ENABLED) else "mixto"
+)
+
 # Middlewares de control perimetral y límite de uso (Starlette ejecuta en orden LIFO)
 # 1. RateLimiterMiddleware (WBS 1.4.2: 20 req/h, 60 req/d por huella de dispositivo)
 # 2. IPFilterMiddleware (WBS 1.3.5: filtrado perimetral por CIDRs institucionales de la FI)
-app.add_middleware(RateLimiterMiddleware)
-app.add_middleware(IPFilterMiddleware)
+if RATE_LIMIT_ENABLED:
+    app.add_middleware(RateLimiterMiddleware)
+if IP_FILTER_ENABLED:
+    app.add_middleware(IPFilterMiddleware)
+
+print(
+    f"[Seguridad] Modo {SECURITY_MODE.upper()} | "
+    f"Filtro IP FI (WBS 1.3.5): {'ACTIVO' if IP_FILTER_ENABLED else 'apagado'} | "
+    f"Límite de uso (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENABLED else 'apagado'}"
+)
 
 # Rutas del sistema
 LANCEDB_DIR = BASE_DIR / "data" / "lancedb"
@@ -223,6 +248,9 @@ async def session_info(request: Request):
 
     return {
         "ok": True,
+        "security_mode": SECURITY_MODE,
+        "ip_filter_enabled": IP_FILTER_ENABLED,
+        "rate_limit_enabled": RATE_LIMIT_ENABLED,
         "client_ip": client_ip,
         "in_perimeter": in_perimeter,
         "device_id": device_id,

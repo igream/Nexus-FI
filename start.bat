@@ -44,10 +44,11 @@ echo Presiona Ctrl+C en esta consola para detener el servidor web.
 echo ========================================================================
 echo.
 
+:: Argumentos opcionales: start.bat --fi (prueba final en la FI) o start.bat --dev
 if "%PYTHON_CMD%"=="py -3" (
-    py -3 main.py --serve
+    py -3 main.py --serve %*
 ) else (
-    "%PYTHON_CMD%" main.py --serve
+    "%PYTHON_CMD%" main.py --serve %*
 )
 
 pause

@@ -160,14 +160,28 @@ def run_cli_search(query: str, top_k: int = 4):
         print(f"Fragmento:\n{r['text'][:350]}...\n")
 
 
+def _lan_ip() -> str:
+    """IP de este equipo en la red local (sin enviar tráfico real)."""
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+
+
 def run_server(host: str = "127.0.0.1", port: int = 8000):
     """Inicia el servidor web FastAPI con la interfaz PWA y endpoints RAG."""
     import uvicorn
-    print(f"\n[+] Iniciando Servidor Web Nexus FI en http://{host}:{port}")
-    print(f"    - Interfaz de Chat:     http://{host}:{port}/")
-    print(f"    - Panel de Métricas:    http://{host}:{port}/dashboard")
-    print(f"    - Documentación API:    http://{host}:{port}/docs")
-    print(f"    - Endpoint de Salud:    http://{host}:{port}/api/health")
+    shown = _lan_ip() if host == "0.0.0.0" else host
+    print(f"\n[+] Iniciando Servidor Web Nexus FI en http://{shown}:{port}")
+    if host == "0.0.0.0":
+        print(f"    (accesible desde otros equipos de la red; en este equipo también http://127.0.0.1:{port})")
+    print(f"    - Interfaz de Chat:     http://{shown}:{port}/")
+    print(f"    - Panel de Métricas:    http://{shown}:{port}/dashboard")
+    print(f"    - Documentación API:    http://{shown}:{port}/docs")
+    print(f"    - Endpoint de Salud:    http://{shown}:{port}/api/health")
     print(f"    - Presiona Ctrl+C para detener el servidor.\n")
     uvicorn.run("backend.app:app", host=host, port=port, reload=False)
 
@@ -178,13 +192,26 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--serve", "-s", action="store_true", help="Inicia el servidor web y la API REST")
-    parser.add_argument("--host", default=os.getenv("HOST", "127.0.0.1"), help="Host para el servidor (def: 127.0.0.1)")
+    parser.add_argument("--host", default=None, help="Host para el servidor (def: HOST del .env o 127.0.0.1; con --fi, 0.0.0.0)")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8000")), help="Puerto para el servidor (def: 8000)")
+    modo = parser.add_mutually_exclusive_group()
+    modo.add_argument("--fi", action="store_true",
+                      help="Modo FI: activa filtro de subredes (WBS 1.3.5) y límite de uso (WBS 1.4.2), y escucha en la red")
+    modo.add_argument("--dev", action="store_true",
+                      help="Modo desarrollo: apaga filtro de subredes y límite de uso, sin importar el .env")
     parser.add_argument("--search", "-q", type=str, help="Ejecuta una consulta semántica directa en terminal")
     parser.add_argument("--telemetry", "-t", action="store_true", help="Ejecuta el diagnóstico de telemetría y seguridad DT-10")
     parser.add_argument("--audit", "-a", action="store_true", help="Ejecuta auditoría de claves y git")
 
     args = parser.parse_args()
+
+    # El modo se aplica como variables de entorno antes de que uvicorn importe backend.app
+    if args.fi or args.dev:
+        valor = "true" if args.fi else "false"
+        os.environ["IP_FILTER_ENABLED"] = valor
+        os.environ["RATE_LIMIT_ENABLED"] = valor
+    if args.host is None:
+        args.host = "0.0.0.0" if args.fi else os.getenv("HOST", "127.0.0.1")
 
     print_banner()
 
