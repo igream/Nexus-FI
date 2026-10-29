@@ -1,0 +1,4 @@
+# Finales de línea fijos para que los scripts funcionen en cualquier equipo
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh  text eol=lf

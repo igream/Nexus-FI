@@ -11,7 +11,14 @@ class BaseOCREngine(ABC):
 class LocalRapidOCREngine(BaseOCREngine):
     """Motor de OCR local basado en RapidOCR ONNX."""
     def __init__(self):
-        from rapidocr_onnxruntime import RapidOCR
+        try:
+            from rapidocr_onnxruntime import RapidOCR
+        except ImportError as e:
+            raise ImportError(
+                "RapidOCR no está instalado: el paquete rapidocr-onnxruntime solo existe para "
+                "Python < 3.12. Para regenerar la base con OCR usa Python 3.11 (o el contenedor "
+                "Docker) o el motor 'aws' (Textract). El servidor y el chat no lo necesitan."
+            ) from e
         self.engine = RapidOCR()
 
     def extract_text_from_bytes(self, image_bytes: bytes) -> str:
