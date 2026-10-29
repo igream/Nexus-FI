@@ -10,6 +10,18 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+if not os.getenv("AUTHORIZED_SUBNETS"):
+    os.environ["AUTHORIZED_SUBNETS"] = (
+        "172.17.18.0/24,148.215.12.0/24,148.215.18.0/24,148.215.30.0/24,148.215.31.0/24"
+    )
+
 from core.security.ip_filter import (
     get_client_ip,
     is_ip_in_perimeter,

@@ -169,7 +169,7 @@ async def session_info(request: Request):
         "client_ip": client_ip,
         "in_perimeter": in_perimeter,
         "device_id": device_id,
-        "perimeter_networks": AUTHORIZED_CIDRS,
+        "network_label": "Red Institucional FI UAEMéx" if in_perimeter else "Red Externa",
         "quota": {
             "hourly_limit": quota["hourly_limit"],
             "hourly_remaining": quota["hourly_remaining"],

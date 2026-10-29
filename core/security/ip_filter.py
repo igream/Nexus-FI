@@ -2,25 +2,30 @@
 WBS 1.3.5 - Middleware de Filtrado Perimetral por IP
 Facultad de Ingeniería UAEMéx — Equipo 404 — Nexus FI
 """
+import os
 import ipaddress
 import logging
+from pathlib import Path
 from typing import Callable
 
+from dotenv import load_dotenv
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
+# Cargar variables de entorno desde .env si existe
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
+
 # ---------------------------------------------------------------------------
 # Subredes institucionales autorizadas — Facultad de Ingeniería UAEMéx
+# Carga dinámica desde variable de entorno AUTHORIZED_SUBNETS (evita exposición en Git)
 # ---------------------------------------------------------------------------
+_raw_subnets = os.getenv("AUTHORIZED_SUBNETS", "")
 AUTHORIZED_CIDRS: list[str] = [
-    "172.17.18.0/24",
-    "148.215.12.0/24",
-    "148.215.18.0/24",
-    "148.215.30.0/24",
-    "148.215.31.0/24",
+    cidr.strip() for cidr in _raw_subnets.split(",") if cidr.strip()
 ]
 
 # Pre-compilar objetos de red para mayor eficiencia
