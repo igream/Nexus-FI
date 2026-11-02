@@ -25,6 +25,8 @@ docs/
     │   ├── Asignaciones/
     │   ├── Entregas/
     │   └── ESTADO_ENTREGAS_AVANCE2_SC001.md
+    ├── Avance_3_100/               # Cierre del 100 % de la ejecución (03/11/2026)
+    │   └── Asignaciones/
     ├── Control_Cambios/            # Solicitudes de cambio aprobadas (SC-001, ...)
     └── Especificaciones_Tecnicas/  # Base vectorial, plantilla ICO y pipeline Apify + OCR
 ```
@@ -88,6 +90,9 @@ Formatos institucionales en Times New Roman y texto negro:
   * `OFICIO_SOLICITUD_META_API_AVANCE2_SANTIAGO_CUEVAS_Y_AZULEICA_DE_LA_CRUZ.docx`: oficio a la Coordinación de Difusión para solicitar el token institucional de la Meta API.
 * `ESTADO_ENTREGAS_AVANCE2_SC001.md`: qué entregas del 50 % siguen vigentes y cuáles se descartan por la SC-001 (filtro IP e investigación de subredes). Nada se borra.
 * *Pendientes:* Formato Universal del 50 % de Santiago Cuevas Sánchez, Azuleica Betsabel de la Cruz González y Aarón Nevid Domínguez Fuentes; Solicitud de Cambio por el pipeline Apify + OCR (SC-002).
+
+### `02_Ejecucion/Avance_3_100/` (entrega del 3 de noviembre de 2026, Carpeta Digital)
+* `Asignaciones/`: `FORMATO_ASIGNACION_AVANCE3_` + `JOAQUIN_GARCIA` (backend del login), `DANIEL_AGUILAR_Y_JOAN_OCANA` (pantallas de login y sesión en el chat), `SANTIAGO_CUEVAS_Y_AZULEICA_DE_LA_CRUZ` (fuentes de la prueba piloto y oficios), `ANGEL_DE_LA_CRUZ` (despliegue en EC2 y reporte de consumo), `AARON_DOMINGUEZ` (pruebas y control de cambios). Cada formato incluye una guía paso a paso con prompts para el IDE de Google Antigravity.
 
 ### `02_Ejecucion/Control_Cambios/`
 * `SOLICITUD_CAMBIO_SC001_PRUEBA_PILOTO_ICO.docx`: SC-001, aprobada el 29/10/2026. Acota el proyecto a una prueba piloto en ICO, descarta el control por IP y define el nuevo alcance, los nuevos objetivos y las partes de la planeación afectadas.
