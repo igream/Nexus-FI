@@ -209,30 +209,28 @@ python main.py --serve
 - **Panel de Métricas:** [http://127.0.0.1:8000/dashboard](http://127.0.0.1:8000/dashboard)
 - **Documentación Interactiva Swagger:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-#### Modos de seguridad: desarrollo y FI
-El filtro de subredes de la FI (WBS 1.3.5) y el límite de consultas (WBS 1.4.2) se encienden o apagan con un interruptor, sin editar subredes en cada equipo.
+#### Acceso y límite de consultas (SC-001)
+Desde la Solicitud de Cambio SC-001 (29/10/2026) el proyecto es una prueba piloto en ICO: **ya no hay filtro por IP ni modo FI**. El acceso será por inicio de sesión con número de cuenta (tarea del Avance 3) y cada usuario registrado tendrá un límite de **20 consultas por hora y 60 por día** (WBS 1.4.2). La versión con filtro IP quedó en la etiqueta de Git `pre-SC-001`.
 
-**En Windows, lo más práctico es `start.bat`**: muestra un menú para elegir el modo (si no eliges, inicia la opción 1 a los 30 segundos) y abre el navegador con la dirección correcta:
+**En Windows, lo más práctico es `start.bat`**: muestra un menú (si no eliges, inicia la opción 1 a los 30 segundos) y abre el navegador con la dirección correcta:
 
-1. **Desarrollo, solo este equipo** (`http://127.0.0.1:8000`).
-2. **Desarrollo en la red**, accesible desde celulares u otros equipos con la IP que muestra el menú.
-3. **Modo FI** (prueba final / demo): filtro y límite activos. Avisa si el equipo no está conectado a la red de la Facultad.
+1. **Solo este equipo** (`http://127.0.0.1:8000`).
+2. **En la red**, accesible desde celulares u otros equipos con la IP que muestra el menú.
 
 Equivalentes por línea de comandos:
 
 | Situación | Sin Docker | Con Docker |
 | :--- | :--- | :--- |
-| **Desarrollo** (cualquier equipo y red) | `python main.py --serve --dev` | `docker compose up -d` |
-| **Prueba final / demo en la FI** | `python main.py --serve --fi` (o `start.bat --fi`, sin menú) | Solo en servidor Linux: `docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d` |
+| **Servidor local** | `python main.py --serve` | `docker compose up -d` |
+| **En la red** | `python main.py --serve --host 0.0.0.0` (o `start.bat --host 0.0.0.0`, sin menú) | `docker compose up -d` |
+| **Desarrollo sin límite de consultas** | `python main.py --serve --dev` | `RATE_LIMIT_ENABLED=false` en `.env` |
 
-- Sin opciones, el modo lo deciden `IP_FILTER_ENABLED` y `RATE_LIMIT_ENABLED` en `.env`. Si no existen, quedan **activos** (seguro por defecto).
-- `--fi` también escucha en la red (`0.0.0.0`), para que otros dispositivos entren con la IP que muestra la consola. Para hacerlo en modo desarrollo: `--dev --host 0.0.0.0`.
-- La consola y la insignia del chat indican el modo activo.
-- **Docker Desktop (Windows/macOS) oculta la IP real de los clientes**: en modo FI bloquearía a todos. Para la demo en una laptop use el modo nativo `--fi`.
+- El límite lo controla `RATE_LIMIT_ENABLED` en `.env`; si no existe, queda **activo**. Solo cuenta las peticiones de un usuario con sesión iniciada, así que surte efecto cuando exista el login.
+- La consola y la insignia de cuota del chat indican si el límite está activo.
 
 #### Montar el proyecto en otro equipo
 `git clone` no trae dos cosas que el chat necesita; cópialas desde un equipo donde ya funcione (USB o unidad compartida, nunca por Git):
-1. **`.env`** → raíz del proyecto (claves de OpenAI y `AUTHORIZED_SUBNETS`).
+1. **`.env`** → raíz del proyecto (claves de OpenAI).
 2. **`data/lancedb/`** → carpeta completa (~59 MB, los 3,977 vectores). Regenerarla con `scripts/vectorize_corpus.py` cuesta tiempo y créditos de OpenAI.
 
 Después: `setup.bat` (o `pip install -r requirements.txt`), `python main.py --telemetry` para confirmar *LanceDB ONLINE* y *3,977 vectores*, y `python main.py --serve --dev`.

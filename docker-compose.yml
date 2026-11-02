@@ -4,18 +4,14 @@ services:
     build: .
     container_name: nexus_backend
     restart: always
-    # Solo accesible dentro de la red de Docker: todo el tráfico entra por Nginx,
-    # así el filtro perimetral (WBS 1.3.5) siempre recibe la IP real del cliente.
+    # Solo accesible dentro de la red de Docker: todo el tráfico entra por Nginx.
     expose:
       - "8000"
     env_file:
       - .env
-    # Modo de seguridad: desarrollo por defecto (o lo que diga el .env).
-    # Para la prueba final o producción:
-    #   docker compose -f docker-compose.yml -f docker-compose.fi.yml up -d
+    # Límite de consultas por usuario registrado (WBS 1.4.2): activo salvo que el .env diga false.
     environment:
-      IP_FILTER_ENABLED: ${IP_FILTER_ENABLED:-false}
-      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-false}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
 
   # Servicio Proxy (Nginx)
   nginx:

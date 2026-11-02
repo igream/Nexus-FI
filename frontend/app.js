@@ -1,47 +1,11 @@
 // =============================================================================
-// SEGURIDAD Y FINGERPRINTING DE DISPOSITIVO (WBS 1.3.5 / WBS 1.4.2 - Joaquín Ulises)
+// CABECERAS DE LAS PETICIONES A LA API
+// El límite de consultas es por usuario registrado (SC-001). Cuando exista el
+// inicio de sesión (Avance 3), aquí se agregará el token de la sesión.
 // =============================================================================
-function getOrCreateSessionUUID() {
-    const KEY = "nexus_session_uuid";
-    let id = localStorage.getItem(KEY);
-    if (!id) {
-        id = typeof crypto !== "undefined" && crypto.randomUUID
-            ? crypto.randomUUID()
-            : "sess_" + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem(KEY, id);
-    }
-    return id;
-}
-
-function getDeviceFingerprint() {
-    const KEY = "nexus_device_fingerprint";
-    let fp = localStorage.getItem(KEY);
-    if (fp) return fp;
-
-    const signals = [
-        screen.width + "x" + screen.height + "x" + screen.colorDepth,
-        navigator.userAgent,
-        navigator.language || "es",
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Mexico_City",
-        navigator.hardwareConcurrency || 4
-    ];
-
-    let hash = 0;
-    const str = signals.join("###");
-    for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-    }
-    fp = "fp_" + Math.abs(hash).toString(16).padStart(8, "0");
-    localStorage.setItem(KEY, fp);
-    return fp;
-}
-
 function getSecurityHeaders() {
     return {
-        "Content-Type": "application/json",
-        "X-Device-Fingerprint": getDeviceFingerprint(),
-        "X-Session-ID": getOrCreateSessionUUID()
+        "Content-Type": "application/json"
     };
 }
 
@@ -108,31 +72,22 @@ document.querySelectorAll('.theme-toggle').forEach(button => {
 
 initializeTheme();
 
-// Insignias de red y cuota: muestran el modo de seguridad real del servidor
+// Insignia de cuota: consultas restantes del usuario en sesión
 async function refreshSecurityBadges() {
-    const net = document.getElementById('perimeter-status-badge');
     const quota = document.getElementById('rate-limit-badge');
-    if (!net && !quota) return;
+    if (!quota) return;
     try {
         const r = await fetch('/api/session/info', { headers: getSecurityHeaders() });
-        if (r.status === 403) {
-            if (net) net.textContent = '🚫 Fuera de la red FI';
-            if (quota) quota.textContent = '⏱️ Sin acceso';
-            return;
-        }
         const s = await r.json();
-        if (net) {
-            net.textContent = !s.ip_filter_enabled
-                ? '🛠️ Modo desarrollo'
-                : (s.in_perimeter ? '🏛️ Red FI UAEMéx' : '🌐 Red externa');
-        }
-        if (quota) {
-            quota.textContent = !s.rate_limit_enabled
-                ? '⏱️ Sin límite'
-                : `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
+        if (!s.rate_limit_enabled) {
+            quota.textContent = '⏱️ Sin límite';
+        } else if (!s.quota) {
+            quota.textContent = '⏱️ Sin sesión';
+        } else {
+            quota.textContent = `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
         }
     } catch (error) {
-        if (net) net.textContent = '⚠️ Servidor sin conexión';
+        quota.textContent = '⚠️ Servidor sin conexión';
     }
 }
 
@@ -266,16 +221,9 @@ form?.addEventListener('submit', async e => {
             body: JSON.stringify({ query: q, top_k: 4, use_llm: true })
         });
 
-        if (response.status === 403) {
-            const errData = await response.json().catch(() => ({}));
-            loadingRow.remove();
-            add(`🚫 Acceso Denegado (HTTP 403): Conexión fuera del perímetro institucional de la Facultad de Ingeniería (UAEMéx).\n\nSubredes permitidas: 148.215.X.X / 172.17.18.X (Edificios A, B, C y laboratorios FI). Conéctate a la red institucional para consultar.`, 'assistant');
-            return;
-        }
-
         if (response.status === 429) {
             loadingRow.remove();
-            add(`⚠️ Límite de consultas excedido (HTTP 429): Has alcanzado la cuota máxima permitida (20 consultas/hora o 60 consultas/día por dispositivo). Por favor espera unos momentos antes de realizar otra pregunta.`, 'assistant');
+            add(`⚠️ Límite de consultas excedido (HTTP 429): Alcanzaste la cuota de tu cuenta (20 consultas por hora o 60 por día). Por favor espera unos momentos antes de realizar otra pregunta.`, 'assistant');
             return;
         }
 

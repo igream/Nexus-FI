@@ -1,6 +1,6 @@
 // Service Worker de Nexus FI: red primero, caché solo como respaldo sin conexión.
 // Así cada actualización del servidor llega al navegador sin borrar datos a mano.
-const CACHE = 'nexus-fi-v2';
+const CACHE = 'nexus-fi-v3';
 const FILES = ['./', './index.html', './dashboard.html', './admin-metrics.html', './styles.css',
                './app.js', './manifest.webmanifest', './assets/nexus-icon.svg'];
 

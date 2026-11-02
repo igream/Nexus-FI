@@ -18,9 +18,8 @@ load_dotenv(BASE_DIR / ".env")
 from nexus_ingestion.embedder import TextEmbedder
 from nexus_ingestion.vector_store import LanceDBVectorStore
 
-# Middlewares y utilidades de seguridad perimetral y control de cuotas (WBS 1.3.5 / WBS 1.4.2)
-from core.security.ip_filter import IPFilterMiddleware, is_ip_in_perimeter, get_client_ip, AUTHORIZED_CIDRS
-from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit
+# Límite de consultas por usuario registrado (WBS 1.4.2, SC-001)
+from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit, get_user_id
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -48,28 +47,16 @@ def _env_flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in ("1", "true", "si", "sí", "yes", "on")
 
 
-# Interruptores de seguridad. Si no se definen quedan ACTIVOS (seguro por defecto);
-# en desarrollo se apagan con IP_FILTER_ENABLED=false y RATE_LIMIT_ENABLED=false en .env,
-# y se encienden para la prueba final con `python main.py --serve --fi` o el modo FI de Docker.
-IP_FILTER_ENABLED = _env_flag("IP_FILTER_ENABLED", True)
+# Límite de consultas por usuario registrado: 20 por hora y 60 por día (WBS 1.4.2, SC-001).
+# Activo por defecto; solo cuenta peticiones con usuario en sesión, así que surte efecto
+# cuando exista el inicio de sesión (Avance 3). Se apaga con RATE_LIMIT_ENABLED=false.
+# El control de acceso por IP se retiró con la SC-001 (ver etiqueta git pre-SC-001).
 RATE_LIMIT_ENABLED = _env_flag("RATE_LIMIT_ENABLED", True)
-SECURITY_MODE = "fi" if (IP_FILTER_ENABLED and RATE_LIMIT_ENABLED) else (
-    "desarrollo" if not (IP_FILTER_ENABLED or RATE_LIMIT_ENABLED) else "mixto"
-)
 
-# Middlewares de control perimetral y límite de uso (Starlette ejecuta en orden LIFO)
-# 1. RateLimiterMiddleware (WBS 1.4.2: 20 req/h, 60 req/d por huella de dispositivo)
-# 2. IPFilterMiddleware (WBS 1.3.5: filtrado perimetral por CIDRs institucionales de la FI)
 if RATE_LIMIT_ENABLED:
     app.add_middleware(RateLimiterMiddleware)
-if IP_FILTER_ENABLED:
-    app.add_middleware(IPFilterMiddleware)
 
-print(
-    f"[Seguridad] Modo {SECURITY_MODE.upper()} | "
-    f"Filtro IP FI (WBS 1.3.5): {'ACTIVO' if IP_FILTER_ENABLED else 'apagado'} | "
-    f"Límite de uso (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENABLED else 'apagado'}"
-)
+print(f"[Seguridad] Límite por usuario (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENABLED else 'apagado'}")
 
 # Rutas del sistema
 LANCEDB_DIR = BASE_DIR / "data" / "lancedb"
@@ -220,47 +207,35 @@ class ChatResponse(BaseModel):
 # Endpoints de la API
 # -----------------------------------------------------------------------------
 
-def _get_device_id(request: Request) -> str:
-    """Obtiene el identificador de dispositivo o sesión para control de cuotas."""
-    return (
-        request.headers.get("X-Device-Fingerprint")
-        or request.headers.get("X-Session-ID")
-        or get_client_ip(request)
-    )
-
-
 @app.get("/health", summary="Health check público para balanceadores de carga AWS")
 def public_health():
     """Endpoint público para health checks de AWS ALB/EC2 fuera de /api/."""
     return {"status": "healthy", "service": "Nexus FI", "environment": "cloud/aws"}
 
 
-@app.get("/api/session/info", summary="Información de sesión y perímetro (WBS 1.3.5 / WBS 1.4.2)")
+@app.get("/api/session/info", summary="Información de sesión y cuota del usuario (WBS 1.4.2)")
 async def session_info(request: Request):
     """
-    Retorna la IP del cliente, si está en el perímetro institucional de la FI,
-    el device_id detectado y la cuota de consultas restante.
+    Indica si hay un usuario en sesión y, si lo hay, su cuota de consultas restante.
+    Sin inicio de sesión, `user_id` y `quota` vienen en null.
     """
-    client_ip = get_client_ip(request)
-    in_perimeter = is_ip_in_perimeter(client_ip)
-    device_id = _get_device_id(request)
-    quota = check_rate_limit(device_id)
+    user_id = get_user_id(request)
+    quota = None
+    if user_id:
+        q = check_rate_limit(user_id)
+        quota = {
+            "hourly_limit": q["hourly_limit"],
+            "hourly_remaining": q["hourly_remaining"],
+            "daily_limit": q["daily_limit"],
+            "daily_remaining": q["daily_remaining"],
+        }
 
     return {
         "ok": True,
-        "security_mode": SECURITY_MODE,
-        "ip_filter_enabled": IP_FILTER_ENABLED,
         "rate_limit_enabled": RATE_LIMIT_ENABLED,
-        "client_ip": client_ip,
-        "in_perimeter": in_perimeter,
-        "device_id": device_id,
-        "network_label": "Red Institucional FI UAEMéx" if in_perimeter else "Red Externa",
-        "quota": {
-            "hourly_limit": quota["hourly_limit"],
-            "hourly_remaining": quota["hourly_remaining"],
-            "daily_limit": quota["daily_limit"],
-            "daily_remaining": quota["daily_remaining"],
-        },
+        "authenticated": bool(user_id),
+        "user_id": user_id,
+        "quota": quota,
     }
 
 
@@ -397,7 +372,6 @@ def get_admin_metrics():
             "active_connections": 45,
             "query_distribution": {"administrative": 60, "academic": 40},
             "proxy": "nginx",
-            "ip_forwarding": "enabled",
         },
         "dataSource": "openai: baseline_demo + consumo real en memoria; aws/server: valores de referencia estáticos",
     }

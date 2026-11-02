@@ -170,7 +170,7 @@ echo   [OK]    Python, entorno virtual .venv y dependencias
 if "%ENV_OK%"=="1" (
     echo   [OK]    Archivo .env
 ) else (
-    echo   [FALTA] Archivo .env  ^(claves de OpenAI y subredes de la FI^)
+    echo   [FALTA] Archivo .env  ^(claves de OpenAI^)
 )
 if "%DB_OK%"=="1" (
     echo   [OK]    Base vectorial data\lancedb

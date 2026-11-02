@@ -192,26 +192,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--serve", "-s", action="store_true", help="Inicia el servidor web y la API REST")
-    parser.add_argument("--host", default=None, help="Host para el servidor (def: HOST del .env o 127.0.0.1; con --fi, 0.0.0.0)")
+    parser.add_argument("--host", default=None, help="Host para el servidor (def: HOST del .env o 127.0.0.1; 0.0.0.0 para la red)")
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8000")), help="Puerto para el servidor (def: 8000)")
-    modo = parser.add_mutually_exclusive_group()
-    modo.add_argument("--fi", action="store_true",
-                      help="Modo FI: activa filtro de subredes (WBS 1.3.5) y límite de uso (WBS 1.4.2), y escucha en la red")
-    modo.add_argument("--dev", action="store_true",
-                      help="Modo desarrollo: apaga filtro de subredes y límite de uso, sin importar el .env")
+    parser.add_argument("--dev", action="store_true",
+                        help="Modo desarrollo: apaga el límite de consultas por usuario, sin importar el .env")
     parser.add_argument("--search", "-q", type=str, help="Ejecuta una consulta semántica directa en terminal")
     parser.add_argument("--telemetry", "-t", action="store_true", help="Ejecuta el diagnóstico de telemetría y seguridad DT-10")
     parser.add_argument("--audit", "-a", action="store_true", help="Ejecuta auditoría de claves y git")
 
     args = parser.parse_args()
 
-    # El modo se aplica como variables de entorno antes de que uvicorn importe backend.app
-    if args.fi or args.dev:
-        valor = "true" if args.fi else "false"
-        os.environ["IP_FILTER_ENABLED"] = valor
-        os.environ["RATE_LIMIT_ENABLED"] = valor
+    # El modo se aplica como variable de entorno antes de que uvicorn importe backend.app
+    if args.dev:
+        os.environ["RATE_LIMIT_ENABLED"] = "false"
     if args.host is None:
-        args.host = "0.0.0.0" if args.fi else os.getenv("HOST", "127.0.0.1")
+        args.host = os.getenv("HOST", "127.0.0.1")
 
     print_banner()
 

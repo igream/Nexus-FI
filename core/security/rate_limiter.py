@@ -1,20 +1,24 @@
 """
-WBS 1.4.2 - Control de Sesión con Límite de Uso (Rate Limiter)
+WBS 1.4.2 - Límite de consultas por usuario registrado
 Facultad de Ingeniería UAEMéx — Equipo 404 — Nexus FI
 
-Protege los créditos de inferencia limitando el número de consultas
-por dispositivo/sesión: 20/hora y 60/día.
+Protege los créditos de inferencia limitando las consultas de cada usuario
+registrado: 20 por hora y 60 por día (SC-001, 29/10/2026).
+
+El usuario lo identifica el inicio de sesión (tarea del Avance 3), que debe
+guardar su identificador en `request.state.user_id`. Mientras no exista el
+login, las peticiones sin usuario no consumen cuota. El límite ya no se mide
+por IP ni por huella de dispositivo; esa versión quedó en la etiqueta
+`pre-SC-001` del repositorio.
 """
 import logging
 import time
 from collections import deque
-from typing import Callable
+from typing import Callable, Optional
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
-
-from .ip_filter import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -36,24 +40,29 @@ HOUR_SECONDS: int = 3600
 DAY_SECONDS: int = 86400
 
 # ---------------------------------------------------------------------------
-# Storage en memoria
-# Estructura: { device_id: {"hourly": deque[timestamps], "daily": deque[timestamps]} }
+# Almacén en memoria
+# Estructura: { user_id: {"hourly": deque[timestamps], "daily": deque[timestamps]} }
 # ---------------------------------------------------------------------------
 _rate_limit_store: dict[str, dict[str, deque]] = {}
 
 
-def _get_or_create_store(device_id: str) -> dict[str, deque]:
-    """Obtiene o inicializa el registro de timestamps para un device_id."""
-    if device_id not in _rate_limit_store:
-        _rate_limit_store[device_id] = {
+def get_user_id(request: Request) -> Optional[str]:
+    """Identificador del usuario que dejó el inicio de sesión, o None si no hay sesión."""
+    return getattr(request.state, "user_id", None)
+
+
+def _get_or_create_store(user_id: str) -> dict[str, deque]:
+    """Obtiene o inicializa el registro de timestamps de un usuario."""
+    if user_id not in _rate_limit_store:
+        _rate_limit_store[user_id] = {
             "hourly": deque(),
             "daily": deque(),
         }
-    return _rate_limit_store[device_id]
+    return _rate_limit_store[user_id]
 
 
 def _cleanup_old_timestamps(store: dict[str, deque], now: float) -> None:
-    """Elimina timestamps expirados para mantener el store limpio."""
+    """Elimina timestamps expirados para mantener el almacén limpio."""
     hour_cutoff = now - HOUR_SECONDS
     day_cutoff = now - DAY_SECONDS
 
@@ -66,16 +75,16 @@ def _cleanup_old_timestamps(store: dict[str, deque], now: float) -> None:
         daily_queue.popleft()
 
 
-def check_rate_limit(device_id: str) -> dict:
+def check_rate_limit(user_id: str) -> dict:
     """
-    Verifica el estado de cuota para un device_id sin registrar una nueva consulta.
+    Verifica la cuota de un usuario sin registrar una nueva consulta.
 
     Returns:
         dict con campos: allowed, hourly_used, hourly_remaining, daily_used,
         daily_remaining, retry_after
     """
     now = time.time()
-    store = _get_or_create_store(device_id)
+    store = _get_or_create_store(user_id)
     _cleanup_old_timestamps(store, now)
 
     hourly_used = len(store["hourly"])
@@ -86,11 +95,13 @@ def check_rate_limit(device_id: str) -> dict:
 
     allowed = hourly_used < HOURLY_LIMIT and daily_used < DAILY_LIMIT
 
-    # Calcular segundos hasta que expira la consulta más antigua de la ventana horaria
+    # Segundos hasta que expire la consulta más antigua de la ventana que se agotó
     retry_after = 0
-    if not allowed and store["hourly"]:
-        oldest_in_hour = store["hourly"][0]
-        retry_after = max(0, int(HOUR_SECONDS - (now - oldest_in_hour)) + 1)
+    if not allowed:
+        if hourly_used >= HOURLY_LIMIT and store["hourly"]:
+            retry_after = max(0, int(HOUR_SECONDS - (now - store["hourly"][0])) + 1)
+        elif store["daily"]:
+            retry_after = max(0, int(DAY_SECONDS - (now - store["daily"][0])) + 1)
 
     return {
         "allowed": allowed,
@@ -104,55 +115,50 @@ def check_rate_limit(device_id: str) -> dict:
     }
 
 
-def record_request(device_id: str) -> None:
-    """Registra una nueva consulta para el device_id dado."""
+def record_request(user_id: str) -> None:
+    """Registra una nueva consulta del usuario."""
     now = time.time()
-    store = _get_or_create_store(device_id)
+    store = _get_or_create_store(user_id)
     store["hourly"].append(now)
     store["daily"].append(now)
 
 
+def usage_snapshot() -> dict[str, dict]:
+    """Consumo actual de cada usuario, para el monitoreo por usuario registrado."""
+    return {user_id: check_rate_limit(user_id) for user_id in list(_rate_limit_store)}
+
+
 def clear_store_for_testing() -> None:
-    """Limpia el store completo. Solo usar en pruebas unitarias."""
+    """Limpia el almacén completo. Solo usar en pruebas unitarias."""
     _rate_limit_store.clear()
 
 
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     """
-    WBS 1.4.2 — Middleware de Control de Sesión con Límite de Uso.
+    WBS 1.4.2 — Límite de consultas por usuario registrado.
 
-    Limita el número de consultas por dispositivo/sesión:
     - 20 consultas por hora
     - 60 consultas por día
 
-    El device_id se determina con la siguiente prioridad:
-    1. Header X-Device-Fingerprint
-    2. Header X-Session-ID
-    3. IP del cliente
+    Solo cuenta peticiones a /api/* (salvo las informativas) que traen un
+    usuario en `request.state.user_id`.
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Solo aplicar a rutas /api/*, excepto las de solo consulta (estado, salud y
-        # métricas), para que recargar la página o el tablero no gaste consultas.
         path = request.url.path
         if not path.startswith("/api/") or path.startswith(QUOTA_EXEMPT_PREFIXES):
             return await call_next(request)
 
-        # Determinar device_id
-        device_id = (
-            request.headers.get("X-Device-Fingerprint")
-            or request.headers.get("X-Session-ID")
-            or get_client_ip(request)
-        )
+        user_id = get_user_id(request)
+        if not user_id:
+            return await call_next(request)
 
-        # Verificar cuota actual
-        quota = check_rate_limit(device_id)
+        quota = check_rate_limit(user_id)
 
         if not quota["allowed"]:
             logger.warning(
-                "Rate limit excedido [WBS 1.4.2] — device_id: %s | "
-                "hora: %d/%d | día: %d/%d",
-                device_id,
+                "Límite de consultas excedido [WBS 1.4.2] — usuario: %s | hora: %d/%d | día: %d/%d",
+                user_id,
                 quota["hourly_used"],
                 HOURLY_LIMIT,
                 quota["daily_used"],
@@ -164,10 +170,9 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                     "ok": False,
                     "error": "HTTP_429_TOO_MANY_REQUESTS",
                     "detail": (
-                        "Has alcanzado el límite de consultas permitidas por "
-                        "dispositivo/sesión para proteger los créditos de inferencia de Nexus FI."
+                        "Has alcanzado el límite de consultas de tu cuenta "
+                        "(20 por hora y 60 por día) para proteger los créditos de inferencia de Nexus FI."
                     ),
-                    "device_id": device_id,
                     "quota": {
                         "hourly_limit": HOURLY_LIMIT,
                         "hourly_remaining": quota["hourly_remaining"],
@@ -179,24 +184,19 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
                 },
             )
             response.headers["Retry-After"] = str(quota["retry_after"])
-            response.headers["X-RateLimit-Limit-Hour"] = str(HOURLY_LIMIT)
-            response.headers["X-RateLimit-Remaining-Hour"] = str(quota["hourly_remaining"])
-            response.headers["X-RateLimit-Limit-Day"] = str(DAILY_LIMIT)
-            response.headers["X-RateLimit-Remaining-Day"] = str(quota["daily_remaining"])
+            _quota_headers(response, quota)
             return response
 
-        # Registrar la consulta
-        record_request(device_id)
-
-        # Obtener cuota actualizada para headers
-        updated_quota = check_rate_limit(device_id)
+        record_request(user_id)
+        updated_quota = check_rate_limit(user_id)
 
         response = await call_next(request)
-
-        # Agregar headers de cuota a la respuesta exitosa
-        response.headers["X-RateLimit-Limit-Hour"] = str(HOURLY_LIMIT)
-        response.headers["X-RateLimit-Remaining-Hour"] = str(updated_quota["hourly_remaining"])
-        response.headers["X-RateLimit-Limit-Day"] = str(DAILY_LIMIT)
-        response.headers["X-RateLimit-Remaining-Day"] = str(updated_quota["daily_remaining"])
-
+        _quota_headers(response, updated_quota)
         return response
+
+
+def _quota_headers(response: Response, quota: dict) -> None:
+    response.headers["X-RateLimit-Limit-Hour"] = str(HOURLY_LIMIT)
+    response.headers["X-RateLimit-Remaining-Hour"] = str(quota["hourly_remaining"])
+    response.headers["X-RateLimit-Limit-Day"] = str(DAILY_LIMIT)
+    response.headers["X-RateLimit-Remaining-Day"] = str(quota["daily_remaining"])

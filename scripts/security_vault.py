@@ -5,7 +5,7 @@ Facultad de Ingeniería UAEMéx — Nexus FI (Equipo 404)
 Project Manager: Fernando Azuara Ibarra
 
 Funcionalidades:
-1. Migrar API Keys y Subredes de .env a Variables de Entorno de Usuario de Windows (HKCU).
+1. Migrar API Keys de .env a Variables de Entorno de Usuario de Windows (HKCU).
 2. Instalar Pre-Commit Hook en Git para bloquear commits accidentales con secretos.
 3. Verificar el estado de seguridad de credenciales locales.
 4. Rotar una credencial comprometida (--rotate VAR) sin mostrarla en pantalla.
@@ -38,7 +38,6 @@ SENSITIVE_KEYS = [
     "GEMINI_API_KEY",
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
-    "AUTHORIZED_SUBNETS",
 ]
 
 
