@@ -23,14 +23,16 @@ docs/
     │   └── INFORME_EJECUCION_AVANCE1.docx
     ├── Avance_2_50/                # Corte del 50 % (28/10/2026)
     │   ├── Asignaciones/
-    │   └── Entregas/
+    │   ├── Entregas/
+    │   └── ESTADO_ENTREGAS_AVANCE2_SC001.md
+    ├── Control_Cambios/            # Solicitudes de cambio aprobadas (SC-001, ...)
     └── Especificaciones_Tecnicas/  # Base vectorial, plantilla ICO y pipeline Apify + OCR
 ```
 
 ### Convención de nombres
 - Archivos en **MAYÚSCULAS_CON_GUIONES_BAJOS**, sin espacios ni acentos: `<TIPO>_<TEMA>_AVANCE<n>_<INTEGRANTES>.<ext>`.
 - Integrantes con **nombre y primer apellido** (`JOAQUIN_GARCIA`, `ANGEL_DE_LA_CRUZ_Y_AARON_DOMINGUEZ`); los nombres completos van dentro de cada documento.
-- Tipos: `FORMATO_ASIGNACION` (asigna el PM), `FORMATO_UNIVERSAL` (entrega del integrante), `ESPECIFICACION`, `OFICIO`, `RESUMEN`, `INFORME_EJECUCION`.
+- Tipos: `FORMATO_ASIGNACION` (asigna el PM), `FORMATO_UNIVERSAL` (entrega del integrante), `ESPECIFICACION`, `OFICIO`, `RESUMEN`, `INFORME_EJECUCION`, `SOLICITUD_CAMBIO_SC<nnn>_<TEMA>`.
 - `n = 1` para el 25 %, `2` para el 50 %, `3` para el 75 % y `4` para el 100 %.
 - Excepción: los archivos que genera un script (`nexus_fi.db`, `informe_proceso.md`) conservan el nombre que usa el código.
 - Los originales tal como se recibieron se guardan en `Local/Avances <fecha>/`, fuera del control de versiones.
@@ -60,7 +62,7 @@ Formatos institucionales en Times New Roman y texto negro:
 * `Matrices_Cumplimiento/`: matriz de cumplimiento individual, evaluación del Project Manager, matriz de desempeño por actividades (cada una en una cuartilla, con Excel incrustado y escala de color), anexo de rúbricas y Excel maestro.
 
 ### `01_Planeacion/`
-* `DOCUMENTO_MAESTRO_NEXUS_FI.docx` / `.pdf`: documento maestro de planificación y gestión (problema, objetivos, RF/RNF, trazabilidad y gobernanza PMBOK).
+* `DOCUMENTO_MAESTRO_NEXUS_FI.docx` / `.pdf`: documento maestro de planificación y gestión (problema, objetivos, RF/RNF, trazabilidad y gobernanza PMBOK). Versión 6.0 de uso interno: las secciones afectadas por la SC-001 llevan una «Nota de control de cambios»; el texto de la v5.0 se conserva como línea base.
 * `Investigaciones_Previas/`
   * `BITACORA_RECOLECCION_DATOS_FERNANDO_AZUARA.docx`: bitácora de acopio documental y normativo.
   * `INVESTIGACION_APIFY_OCR_SANTIAGO_CUEVAS.pdf`: estudio de extracción de redes sociales con Apify y OCR Tesseract.
@@ -79,12 +81,16 @@ Formatos institucionales en Times New Roman y texto negro:
 ### `02_Ejecucion/Avance_2_50/` (entrega interna del 28 de octubre de 2026)
 * `Asignaciones/`: `FORMATO_ASIGNACION_AVANCE2_` + `ANGEL_DE_LA_CRUZ_Y_AARON_DOMINGUEZ`, `DANIEL_AGUILAR_Y_JOAN_OCANA`, `JOAQUIN_GARCIA`, `SANTIAGO_CUEVAS_Y_AZULEICA_DE_LA_CRUZ`.
 * `Entregas/`
-  * `FORMATO_UNIVERSAL_AVANCE2_JOAQUIN_GARCIA.docx` y `RESUMEN_AVANCE2_JOAQUIN_GARCIA.md`: filtrado perimetral por IP y límite de uso.
+  * `FORMATO_UNIVERSAL_AVANCE2_JOAQUIN_GARCIA.docx` y `RESUMEN_AVANCE2_JOAQUIN_GARCIA.md`: filtrado perimetral por IP y límite de uso. *Descartado por la SC-001* (el límite de uso se reutiliza por usuario).
   * `FORMATO_UNIVERSAL_AVANCE2_DANIEL_AGUILAR_Y_JOAN_OCANA.docx`: modo oscuro, tablero de usuario y panel de métricas.
   * `FORMATO_UNIVERSAL_AVANCE2_ANGEL_DE_LA_CRUZ.docx`: Nginx como proxy inverso y Docker Compose.
   * `ESPECIFICACION_ARQUITECTURA_AWS_AVANCE2_ANGEL_DE_LA_CRUZ_Y_AARON_DOMINGUEZ.docx`: arquitectura cloud, contenedores y despliegue en AWS (WBS 1.5.3).
   * `OFICIO_SOLICITUD_META_API_AVANCE2_SANTIAGO_CUEVAS_Y_AZULEICA_DE_LA_CRUZ.docx`: oficio a la Coordinación de Difusión para solicitar el token institucional de la Meta API.
-* *Pendientes:* Formato Universal del 50 % de Santiago Cuevas Sánchez, Azuleica Betsabel de la Cruz González y Aarón Nevid Domínguez Fuentes; Solicitud de Cambio por el pipeline Apify + OCR.
+* `ESTADO_ENTREGAS_AVANCE2_SC001.md`: qué entregas del 50 % siguen vigentes y cuáles se descartan por la SC-001 (filtro IP e investigación de subredes). Nada se borra.
+* *Pendientes:* Formato Universal del 50 % de Santiago Cuevas Sánchez, Azuleica Betsabel de la Cruz González y Aarón Nevid Domínguez Fuentes; Solicitud de Cambio por el pipeline Apify + OCR (SC-002).
+
+### `02_Ejecucion/Control_Cambios/`
+* `SOLICITUD_CAMBIO_SC001_PRUEBA_PILOTO_ICO.docx`: SC-001, aprobada el 29/10/2026. Acota el proyecto a una prueba piloto en ICO, descarta el control por IP y define el nuevo alcance, los nuevos objetivos y las partes de la planeación afectadas.
 
 ### `02_Ejecucion/Especificaciones_Tecnicas/`
 * `ENTREGA_BASE_DATOS_VECTORIAL_NEXUS_FI.md`: dictamen de entrega de la base vectorial LanceDB (3,977 fragmentos y umbral RF13).
