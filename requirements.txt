@@ -26,6 +26,11 @@ uvicorn[standard]>=0.28.0
 pydantic>=2.6.0
 python-dotenv>=1.0.0
 
+# Inicio de sesión con número de cuenta (WBS 1.3.4, SC-001)
+bcrypt>=4.1
+cryptography>=42
+PyJWT>=2.8
+
 # Integración con Nube AWS (Telemetría y S3)
 boto3>=1.34.0
 
