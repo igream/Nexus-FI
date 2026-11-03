@@ -62,6 +62,29 @@ if RATE_LIMIT_ENABLED:
 # Va después del limitador: Starlette ejecuta los middlewares al revés, así la sesión se lee primero
 app.add_middleware(AuthMiddleware)
 
+
+@app.middleware("http")
+async def _revalidar_frontend(request: Request, call_next):
+    """Las páginas, scripts y estilos se revalidan con el servidor en cada carga.
+
+    Sin esta cabecera el navegador decide solo cuánto tiempo guardar cada archivo y puede
+    seguir mostrando una versión vieja (por ejemplo en http://127.0.0.1:8000, que es otro
+    sitio distinto de http://localhost:8000). Con no-cache, si el archivo no cambió el
+    servidor responde 304 y no se vuelve a descargar.
+    """
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        return response
+    if "cache-control" not in response.headers:
+        response.headers["Cache-Control"] = "no-cache"
+    # Si el navegador ya tiene esta misma versión, basta con un 304 sin contenido
+    etag = response.headers.get("etag")
+    if (request.method == "GET" and response.status_code == 200 and etag
+            and etag in [e.strip() for e in request.headers.get("if-none-match", "").split(",")]):
+        from fastapi.responses import Response as _Respuesta
+        return _Respuesta(status_code=304, headers={"ETag": etag, "Cache-Control": response.headers["Cache-Control"]})
+    return response
+
 print(f"[Seguridad] Límite por usuario (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENABLED else 'apagado'}")
 
 # Base de usuarios (data/usuarios.db). Si faltan las claves en .env, el login responde 503.
