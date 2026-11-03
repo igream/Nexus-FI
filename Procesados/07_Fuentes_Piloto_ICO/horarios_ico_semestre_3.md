@@ -15,7 +15,11 @@ total_chunks: 12
 # horarios_ico_semestre_3
 
 <!-- Página 1 -->
-# Horarios ICO - Semestre 3 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez
+# Horario de clases de ICO, semestre 3, periodo 2026-B
+- Fuente: PLANTILLA_ICO_SALONES_2026B.pdf, horario oficial proporcionado por la Coordinación de la Licenciatura en Ingeniería en Computación (Mtra. Beatriz Orozco Garduño)
+- Fecha de la información: Periodo 2026-B
+- Carrera: ICO
+- Responsable de la limpieza: Santiago Cuevas Sánchez
 
 | Materia | Grupo | Profesor | Día | Horario | Aula |
 |---|---|---|---|---|---|

@@ -11,14 +11,14 @@
     "periodo": "2026B",
     "total_paginas": 1,
     "es_ocr": false,
-    "fecha_procesamiento": "2026-11-02 20:15:20",
+    "fecha_procesamiento": "2026-11-02 20:55:52",
     "total_tokens": 801,
     "total_chunks": 4
   },
   "pages": [
     {
       "page_number": 1,
-      "text": "# Horarios ICO - Semestre 10 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez\n\n| Materia | Grupo | Profesor | Día | Horario | Aula |\n|---|---|---|---|---|---|\n| PRACTICA PROFESIONAL | CO01 | ING. LEYVA PELAEZ CAROL | Viernes | 14:00 - 16:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO02 | ING. GONZALEZ MIRELES CINTIA | Lunes | 11:00 - 13:00 | Mediación Tecnológica/ C- 404 |\n| PRACTICA PROFESIONAL | CO03 | DRA. MONDRAGON IXTLAHUAC MONICA MARINA | Lunes | 17:00 - 19:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO04 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Viernes | 09:00 - 11:00 | Mediación Tecnológica |",
+      "text": "# Horario de clases de ICO, semestre 10, periodo 2026-B\n- Fuente: PLANTILLA_ICO_SALONES_2026B.pdf, horario oficial proporcionado por la Coordinación de la Licenciatura en Ingeniería en Computación (Mtra. Beatriz Orozco Garduño)\n- Fecha de la información: Periodo 2026-B\n- Carrera: ICO\n- Responsable de la limpieza: Santiago Cuevas Sánchez\n\n| Materia | Grupo | Profesor | Día | Horario | Aula |\n|---|---|---|---|---|---|\n| PRACTICA PROFESIONAL | CO01 | ING. LEYVA PELAEZ CAROL | Viernes | 14:00 - 16:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO02 | ING. GONZALEZ MIRELES CINTIA | Lunes | 11:00 - 13:00 | Mediación Tecnológica/ C- 404 |\n| PRACTICA PROFESIONAL | CO03 | DRA. MONDRAGON IXTLAHUAC MONICA MARINA | Lunes | 17:00 - 19:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO04 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Viernes | 09:00 - 11:00 | Mediación Tecnológica |",
       "is_ocr": false
     }
   ],
