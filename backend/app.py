@@ -481,6 +481,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         top_k=req.top_k,
         similarity_threshold=0.52,
         filter_dict=filter_dict if filter_dict else None,
+        query_text=user_query,   # acepta nombres propios poco comunes que aparecen tal cual
     )
     search_latency_ms = round((time.time() - t0_search) * 1000, 2)
 
@@ -583,9 +584,15 @@ def chat_endpoint(req: ChatRequest, request: Request):
                     {"role": "user", "content": user_content},
                 ],
                 temperature=0.2,
-                max_tokens=600,
+                # 1,200 alcanza para listas largas (p. ej. todas las clases de un día); ~0.0007 USD como máximo
+                max_tokens=1200,
             )
             generated_answer = chat_completion.choices[0].message.content or ""
+            if getattr(chat_completion.choices[0], "finish_reason", "") == "length":
+                generated_answer = generated_answer.rstrip() + (
+                    "\n\n*(La respuesta se recortó por su extensión. Haz una pregunta más específica "
+                    "para ver el resto.)*"
+                )
             usage = getattr(chat_completion, "usage", None)
             if usage:
                 record_token_usage(

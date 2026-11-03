@@ -45,6 +45,38 @@ def build_safe_where_clause(filter_dict: Dict[str, str]) -> str:
     return " AND ".join(clauses)
 
 
+# ---------------------------------------------------------------------------
+# Coincidencia exacta de términos poco comunes (complemento de RF13)
+# Las preguntas muy cortas sobre un nombre propio («¿Qué es Potropath?») dan una similitud
+# coseno baja aunque el fragmento correcto salga primero. Si la pregunta contiene una palabra
+# que aparece en muy pocos fragmentos del acervo y un candidato la contiene tal cual, se acepta
+# aunque quede bajo el umbral, siempre que supere un piso mínimo. Las preguntas fuera de tema
+# no se ven afectadas: sus palabras no aparecen en el acervo.
+# ---------------------------------------------------------------------------
+TERMINO_MIN_LETRAS = 5
+TERMINO_MAX_FRAGMENTOS = 5      # una palabra es «poco común» si aparece en 5 fragmentos o menos
+SIMILITUD_MINIMA_TERMINO = 0.30
+CANDIDATOS_TERMINO = 10
+
+_PALABRAS_COMUNES: Set[str] = {
+    "cuales", "cuando", "donde", "quien", "quienes", "puedo", "podria", "tengo", "tiene", "tienen",
+    "sobre", "entre", "hacer", "hacen", "necesito", "debo", "deben", "existe", "existen", "informacion",
+    "facultad", "ingenieria", "computacion", "uaemex", "alumno", "alumnos", "estudiante", "estudiantes",
+    "tramite", "tramites", "requisitos", "semestre", "materia", "materias", "horario", "horarios",
+}
+
+
+def _normalizar(texto: str) -> str:
+    import unicodedata
+    t = unicodedata.normalize("NFKD", texto or "")
+    return "".join(c for c in t if not unicodedata.combining(c)).lower()
+
+
+def _palabras(texto: str) -> Set[str]:
+    return {p for p in re.findall(r"[a-z0-9]+", _normalizar(texto))
+            if len(p) >= TERMINO_MIN_LETRAS and p not in _PALABRAS_COMUNES and not p.isdigit()}
+
+
 def get_vector_schema(embedding_dim: int = 1536) -> pa.Schema:
     """Esquema explícito Apache Arrow para garantizar consistencia de tipos en LanceDB."""
     return pa.schema([
@@ -152,19 +184,41 @@ class LanceDBVectorStore:
                 self.table.delete(f"documento = '{escaped_doc}'")
             self.table.add(data)
 
+    def _frecuencia_terminos(self) -> Dict[str, int]:
+        """En cuántos fragmentos aparece cada palabra (se calcula una vez por proceso)."""
+        if getattr(self, "_df_terminos", None) is None:
+            frecuencia: Dict[str, int] = {}
+            if self.table is not None:
+                for texto in self.table.to_arrow().column("text").to_pylist():
+                    for p in _palabras(texto):
+                        frecuencia[p] = frecuencia.get(p, 0) + 1
+            self._df_terminos = frecuencia
+        return self._df_terminos
+
+    def terminos_distintivos(self, query_text: str) -> Set[str]:
+        """Palabras de la pregunta que aparecen en pocos fragmentos del acervo (p. ej. un nombre propio)."""
+        frecuencia = self._frecuencia_terminos()
+        return {p for p in _palabras(query_text) if 0 < frecuencia.get(p, 0) <= TERMINO_MAX_FRAGMENTOS}
+
     def search(
         self,
         query_vector: List[float],
         top_k: int = 5,
         similarity_threshold: float = 0.52,
         filter_dict: Optional[Dict[str, str]] = None,
+        query_text: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Búsqueda por similitud vectorial con pre-filtrado seguro por metadatos (prefilter=True)
         y calibración de umbral anti-alucinaciones (RF13: Xbase = 0.52).
+
+        Si se pasa query_text, también se aceptan fragmentos bajo el umbral (pero sobre
+        SIMILITUD_MINIMA_TERMINO) que contienen tal cual una palabra poco común de la pregunta.
         """
         if self.table is None:
             return []
+
+        terminos = self.terminos_distintivos(query_text) if query_text else set()
 
         query = self.table.search(query_vector).metric("cosine")
 
@@ -174,14 +228,22 @@ class LanceDBVectorStore:
             if where_clause:
                 query = query.where(where_clause, prefilter=True)
 
-        results = query.limit(top_k).to_pandas()
+        limite = max(top_k, CANDIDATOS_TERMINO) if terminos else top_k
+        results = query.limit(limite).to_pandas()
 
         filtered_results = []
         for _, row in results.iterrows():
             distance = float(row.get("_distance", 1.0))
             similarity = 1.0 - distance
 
-            if similarity >= similarity_threshold:
+            coincidencia = (
+                similarity < similarity_threshold
+                and similarity >= SIMILITUD_MINIMA_TERMINO
+                and bool(terminos & _palabras(row["text"]))
+            )
+            if similarity >= similarity_threshold or coincidencia:
+                if len(filtered_results) >= top_k:
+                    break
                 filtered_results.append({
                     "id": row["id"],
                     "documento": row["documento"],
@@ -194,6 +256,7 @@ class LanceDBVectorStore:
                     "text": row["text"],
                     "raw_text": row.get("raw_text", ""),
                     "similarity": round(similarity, 4),
+                    "coincidencia_exacta": coincidencia,
                 })
 
         return filtered_results
