@@ -21,6 +21,10 @@ from nexus_ingestion.vector_store import LanceDBVectorStore
 # Límite de consultas por usuario registrado (WBS 1.4.2, SC-001)
 from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit, get_user_id
 
+# Inicio de sesión con número de cuenta (WBS 1.3.4, SC-001)
+from core.auth import AuthMiddleware, init_db, obtener_usuario, requiere_admin, router as auth_router
+from core.auth.store import ClavesNoConfiguradas
+
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
     title="Nexus FI - API Asistente Inteligente RAG",
@@ -55,8 +59,48 @@ RATE_LIMIT_ENABLED = _env_flag("RATE_LIMIT_ENABLED", True)
 
 if RATE_LIMIT_ENABLED:
     app.add_middleware(RateLimiterMiddleware)
+# Va después del limitador: Starlette ejecuta los middlewares al revés, así la sesión se lee primero
+app.add_middleware(AuthMiddleware)
+
+
+@app.middleware("http")
+async def _revalidar_frontend(request: Request, call_next):
+    """Las páginas, scripts y estilos se revalidan con el servidor en cada carga.
+
+    Sin esta cabecera el navegador decide solo cuánto tiempo guardar cada archivo y puede
+    seguir mostrando una versión vieja (por ejemplo en http://127.0.0.1:8000, que es otro
+    sitio distinto de http://localhost:8000). Con no-cache, si el archivo no cambió el
+    servidor responde 304 y no se vuelve a descargar.
+    """
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        return response
+    if "cache-control" not in response.headers:
+        response.headers["Cache-Control"] = "no-cache"
+    # Si el navegador ya tiene esta misma versión, basta con un 304 sin contenido
+    etag = response.headers.get("etag")
+    if (request.method == "GET" and response.status_code == 200 and etag
+            and etag in [e.strip() for e in request.headers.get("if-none-match", "").split(",")]):
+        from fastapi.responses import Response as _Respuesta
+        return _Respuesta(status_code=304, headers={"ETag": etag, "Cache-Control": response.headers["Cache-Control"]})
+    return response
 
 print(f"[Seguridad] Límite por usuario (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENABLED else 'apagado'}")
+
+# Base de usuarios (data/usuarios.db). Si faltan las claves en .env, el login responde 503.
+try:
+    init_db()
+    print("[Seguridad] Inicio de sesión: base de usuarios lista")
+except ClavesNoConfiguradas as e:
+    print(f"[Seguridad] Inicio de sesión sin configurar: {e}")
+
+app.include_router(auth_router)
+
+
+@app.exception_handler(ClavesNoConfiguradas)
+async def _claves_no_configuradas(request: Request, exc: ClavesNoConfiguradas):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=503, content={"detail": "El inicio de sesión no está configurado en el servidor."})
 
 # Rutas del sistema
 LANCEDB_DIR = BASE_DIR / "data" / "lancedb"
@@ -230,11 +274,19 @@ async def session_info(request: Request):
             "daily_remaining": q["daily_remaining"],
         }
 
+    usuario = None
+    if user_id:
+        try:
+            usuario = obtener_usuario(user_id)
+        except ClavesNoConfiguradas:
+            usuario = None
+
     return {
         "ok": True,
         "rate_limit_enabled": RATE_LIMIT_ENABLED,
         "authenticated": bool(user_id),
         "user_id": user_id,
+        "usuario": usuario,
         "quota": quota,
     }
 
@@ -352,8 +404,9 @@ def get_user_dashboard_metrics():
 
 
 @app.get("/api/v1/admin/metrics", summary="Consumo de tokens y costos por clave segregada (WBS 1.3.4 / DT-10)")
-def get_admin_metrics():
-    """Devuelve el consumo por clave segregada de OpenAI y los datos de infraestructura AWS."""
+def get_admin_metrics(request: Request):
+    """Devuelve el consumo por clave segregada de OpenAI y los datos de infraestructura AWS. Solo administradores."""
+    requiere_admin(request)
     return {
         "status": "healthy",
         "environment": "aws-docker",
@@ -378,11 +431,15 @@ def get_admin_metrics():
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat_endpoint(req: ChatRequest):
+def chat_endpoint(req: ChatRequest, request: Request):
     """
     Atiende consultas institucionales mediante búsqueda semántica vectorial (LanceDB)
     y generación aumentada por recuperación (RAG), garantizando segregación estricta de consumo.
+    Requiere sesión iniciada (Authorization: Bearer <token>).
     """
+    if not get_user_id(request):
+        raise HTTPException(status_code=401, detail="Inicia sesión para consultar.")
+
     start_time = time.time()
     user_query = req.query.strip()
 
@@ -608,6 +665,15 @@ if FRONTEND_DIR.exists():
         if admin_file.exists():
             return FileResponse(str(admin_file))
         return {"message": "Frontend admin-metrics.html no encontrado."}
+
+    @app.get("/login")
+    @app.get("/login.html")
+    def serve_login():
+        return FileResponse(str(FRONTEND_DIR / "login.html"))
+
+    @app.get("/login.js")
+    def serve_login_js():
+        return FileResponse(str(FRONTEND_DIR / "login.js"))
 
     @app.get("/styles.css")
     def serve_styles():

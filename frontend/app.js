@@ -1,12 +1,44 @@
 // =============================================================================
-// CABECERAS DE LAS PETICIONES A LA API
-// El límite de consultas es por usuario registrado (SC-001). Cuando exista el
-// inicio de sesión (Avance 3), aquí se agregará el token de la sesión.
+// SESIÓN DEL USUARIO (Anexo B del Avance 3)
+// Sin token se va a /login. Cada petición a la API lleva el token; si la API
+// responde 401 (sesión vencida o cerrada), se borra y se regresa a /login.
 // =============================================================================
+const TOKEN_KEY = 'nexus_token';
+const CARRERA_KEY = 'nexus_carrera';
+
+function getToken() {
+    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+
+function borrarSesion() {
+    try {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(CARRERA_KEY);
+    } catch { /* sin almacenamiento */ }
+}
+
+function irALogin() {
+    borrarSesion();
+    location.replace('/login');
+}
+
+if (!getToken()) {
+    location.replace('/login');
+    throw new Error('Sin sesión: redirigiendo a /login');
+}
+
 function getSecurityHeaders() {
-    return {
-        "Content-Type": "application/json"
-    };
+    const headers = { "Content-Type": "application/json" };
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    return headers;
+}
+
+async function cerrarSesion() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST', headers: getSecurityHeaders() });
+    } catch { /* aunque falle, la sesión local se borra */ }
+    irALogin();
 }
 
 const $ = s => document.querySelector(s);
@@ -77,13 +109,192 @@ document.querySelectorAll('.theme-toggle').forEach(button => {
 
 initializeTheme();
 
-// Insignia de cuota: consultas restantes del usuario en sesión
+// Datos del usuario en sesión (nombre y carrera) e insignia de cuota
+function iniciales(nombre) {
+    const conectores = ['de', 'del', 'la', 'las', 'los', 'y'];
+    const partes = (nombre || '').trim().split(/\s+/).filter(p => p && !conectores.includes(p.toLowerCase()));
+    return ((partes[0]?.[0] || '') + (partes[1]?.[0] || '')).toUpperCase() || 'FI';
+}
+
+// Opciones de administrador en el menú lateral: usuarios registrados y reinicio de registro
+function montarHerramientasAdmin() {
+    const side = document.getElementById('sidebar');
+    const abajo = side?.querySelector('.sidebottom');
+    if (!side || !abajo || document.getElementById('admin-tools')) return;
+
+    const caja = document.createElement('div');
+    caja.id = 'admin-tools';
+    caja.className = 'admin-tools';
+    caja.setAttribute('data-admin-only', '');
+    caja.innerHTML = '<p class="label">ADMINISTRACIÓN</p>' +
+        '<button type="button" class="nav" id="btn-usuarios">👥 Usuarios registrados</button>';
+    side.insertBefore(caja, abajo);
+
+    const dlg = document.createElement('dialog');
+    dlg.className = 'modal modal-usuarios';
+    dlg.setAttribute('aria-labelledby', 'usuarios-titulo');
+    dlg.innerHTML = `
+      <div class="modal-body">
+        <div class="modal-head">
+          <h2 id="usuarios-titulo">Usuarios registrados</h2>
+          <button type="button" class="side-close" id="usuarios-cerrar" aria-label="Cerrar">✕</button>
+        </div>
+        <p>Cuentas que ya crearon su contraseña. Si alguien se registró con una cuenta que no es suya, reinicia el registro: la contraseña se borra, sus sesiones se cierran y el dueño puede registrarse de nuevo.</p>
+        <label for="usuarios-buscar">Buscar por número de cuenta o nombre</label>
+        <input id="usuarios-buscar" type="search" autocomplete="off" placeholder="Escribe para filtrar">
+        <div id="usuarios-msg" class="auth-msg" role="status" hidden></div>
+        <ul id="usuarios-lista" class="user-list" aria-live="polite"></ul>
+      </div>`;
+    document.body.appendChild(dlg);
+
+    const buscar = dlg.querySelector('#usuarios-buscar');
+    const lista = dlg.querySelector('#usuarios-lista');
+    const msg = dlg.querySelector('#usuarios-msg');
+    let usuarios = [];
+
+    const aviso = (t, tipo = 'ok') => { msg.textContent = t; msg.className = 'auth-msg ' + tipo; msg.hidden = !t; };
+    const fecha = iso => {
+        const d = new Date(iso);
+        return isNaN(d) ? '' : d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    function pintarLista() {
+        const q = buscar.value.trim().toLowerCase();
+        const visibles = usuarios.filter(u => !q || u.numero_cuenta.includes(q) || u.nombre.toLowerCase().includes(q));
+        lista.replaceChildren();
+        if (!visibles.length) {
+            const li = document.createElement('li');
+            li.className = 'user-empty';
+            li.textContent = usuarios.length ? 'Ninguna cuenta registrada coincide con la búsqueda.' : 'Todavía no hay cuentas registradas.';
+            lista.append(li);
+            return;
+        }
+        for (const u of visibles) {
+            const li = document.createElement('li');
+            li.className = 'user-row';
+
+            const datos = document.createElement('div');
+            datos.className = 'user-data';
+            const nombre = document.createElement('b');
+            nombre.textContent = u.nombre || 'Sin nombre';
+            const det = document.createElement('small');
+            det.textContent = `${u.numero_cuenta} · ${u.rol === 'admin' ? 'Admin' : 'Alumno'} · registrado ${fecha(u.registrado_en)}`;
+            datos.append(nombre, det);
+
+            const acciones = document.createElement('div');
+            acciones.className = 'user-actions';
+            if (u.es_tu_cuenta) {
+                const tag = document.createElement('span');
+                tag.className = 'tag';
+                tag.textContent = 'Tu cuenta';
+                acciones.append(tag);
+            } else {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-sec';
+                btn.textContent = 'Reiniciar';
+                btn.addEventListener('click', () => pedirConfirmacion(acciones, u));
+                acciones.append(btn);
+            }
+            li.append(datos, acciones);
+            lista.append(li);
+        }
+    }
+
+    // Confirmación dentro de la misma fila (sin ventanas del navegador)
+    function pedirConfirmacion(acciones, u) {
+        acciones.replaceChildren();
+        const no = document.createElement('button');
+        no.type = 'button';
+        no.className = 'btn-sec';
+        no.textContent = 'Cancelar';
+        no.addEventListener('click', pintarLista);
+        const si = document.createElement('button');
+        si.type = 'button';
+        si.className = 'btn-danger';
+        si.textContent = 'Sí, reiniciar';
+        si.addEventListener('click', () => reiniciar(u, si));
+        acciones.append(no, si);
+        si.focus();
+    }
+
+    async function reiniciar(u, boton) {
+        boton.disabled = true;
+        boton.textContent = 'Reiniciando…';
+        try {
+            const r = await fetch('/api/auth/admin/reiniciar-registro', {
+                method: 'POST', headers: getSecurityHeaders(), body: JSON.stringify({ numero_cuenta: u.numero_cuenta })
+            });
+            if (r.status === 401) return irALogin();
+            const data = await r.json().catch(() => ({}));
+            if (r.ok && data.reiniciado) {
+                usuarios = usuarios.filter(x => x.numero_cuenta !== u.numero_cuenta);
+                aviso(`Registro de ${u.nombre || u.numero_cuenta} reiniciado. Ya puede registrarse de nuevo.`, 'ok');
+            } else {
+                aviso(typeof data.detail === 'string' ? data.detail : 'No se pudo reiniciar el registro.', 'error');
+                await cargar();
+            }
+        } catch {
+            aviso('No hay conexión con el servidor.', 'error');
+        }
+        pintarLista();
+        buscar.focus();
+    }
+
+    async function cargar() {
+        lista.innerHTML = '<li class="user-empty">Cargando…</li>';
+        try {
+            const r = await fetch('/api/auth/admin/usuarios', { headers: getSecurityHeaders() });
+            if (r.status === 401) return irALogin();
+            const data = await r.json();
+            usuarios = Array.isArray(data.usuarios) ? data.usuarios : [];
+        } catch {
+            usuarios = [];
+            aviso('No hay conexión con el servidor.', 'error');
+        }
+        pintarLista();
+    }
+
+    buscar.addEventListener('input', pintarLista);
+    dlg.querySelector('#usuarios-cerrar').addEventListener('click', () => dlg.close());
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+    // Al cerrar, la lista descifrada no se queda en la página
+    dlg.addEventListener('close', () => { usuarios = []; lista.replaceChildren(); });
+    document.getElementById('btn-usuarios').addEventListener('click', () => {
+        buscar.value = '';
+        aviso('');
+        setMenu(false);
+        dlg.showModal();
+        buscar.focus();
+        cargar();
+    });
+}
+
+function pintarUsuario(usuario) {
+    if (!usuario) return;
+    const esAdmin = usuario.rol === 'admin';
+    document.documentElement.classList.toggle('es-admin', esAdmin);
+    if (esAdmin) montarHerramientasAdmin();
+    // El panel admin solo es para administradores
+    if (!esAdmin && /admin-metrics/.test(location.pathname)) { location.replace('/'); return; }
+    document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = usuario.nombre || 'Usuario'; });
+    document.querySelectorAll('[data-user-career]').forEach(el => { el.textContent = usuario.carrera_nombre || usuario.carrera || ''; });
+    document.querySelectorAll('[data-user-initials]').forEach(el => {
+        el.textContent = iniciales(usuario.nombre);
+        el.title = usuario.nombre || '';
+    });
+}
+
+document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', cerrarSesion));
+
 async function refreshSecurityBadges() {
     const quota = document.getElementById('rate-limit-badge');
-    if (!quota) return;
     try {
         const r = await fetch('/api/session/info', { headers: getSecurityHeaders() });
         const s = await r.json();
+        if (!s.authenticated) { irALogin(); return; }
+        pintarUsuario(s.usuario);
+        if (!quota) return;
         if (!s.rate_limit_enabled) {
             quota.textContent = '⏱️ Sin límite';
         } else if (!s.quota) {
@@ -92,7 +303,7 @@ async function refreshSecurityBadges() {
             quota.textContent = `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
         }
     } catch (error) {
-        quota.textContent = '⚠️ Servidor sin conexión';
+        if (quota) quota.textContent = '⚠️ Servidor sin conexión';
     }
 }
 
@@ -130,6 +341,91 @@ const input = $('#input'),
       welcome = $('#welcome'),
       count = $('#count');
 
+// =============================================================================
+// MARKDOWN SEGURO PARA LAS RESPUESTAS DEL ASISTENTE
+// Primero se escapa todo el HTML; después solo se convierten los elementos
+// permitidos (títulos, negritas, cursivas, listas, citas, código, separadores
+// y enlaces http/https). Así el texto del modelo no puede inyectar código.
+// =============================================================================
+function escaparHTML(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function markdownEnLinea(s) {
+    const codigos = [];
+    s = s.replace(/`([^`]+)`/g, (_, c) => `\u0000${codigos.push(c) - 1}\u0000`);
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        (_, texto, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${texto}</a>`);
+    s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/__([^_]+?)__/g, '<strong>$1</strong>');
+    // Cursiva solo con asterisco: el guion bajo aparece en nombres de archivo (Guia_Tramites.pdf)
+    s = s.replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)\*(?!\w)/g, '$1<em>$2</em>');
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codigos[i]}</code>`);
+}
+
+function renderMarkdown(texto) {
+    const lineas = escaparHTML(String(texto || '').replace(/\r\n?/g, '\n')).split('\n');
+    const html = [];
+    let parrafo = [], lista = null, cita = [], bloque = null;
+
+    const cerrarParrafo = () => {
+        if (parrafo.length) html.push(`<p>${parrafo.map(markdownEnLinea).join('<br>')}</p>`);
+        parrafo = [];
+    };
+    const cerrarLista = () => {
+        if (!lista) return;
+        const inicio = lista.tipo === 'ol' && lista.inicio !== 1 ? ` start="${lista.inicio}"` : '';
+        html.push(`<${lista.tipo}${inicio}>${lista.items.map(i => `<li>${markdownEnLinea(i)}</li>`).join('')}</${lista.tipo}>`);
+        lista = null;
+    };
+    const cerrarCita = () => {
+        if (cita.length) html.push(`<blockquote>${cita.map(markdownEnLinea).join('<br>')}</blockquote>`);
+        cita = [];
+    };
+    const cerrarTodo = () => { cerrarParrafo(); cerrarLista(); cerrarCita(); };
+
+    for (const linea of lineas) {
+        if (bloque) {
+            if (/^\s*```/.test(linea)) { html.push(`<pre><code>${bloque.join('\n')}</code></pre>`); bloque = null; }
+            else bloque.push(linea);
+            continue;
+        }
+        if (/^\s*```/.test(linea)) { cerrarTodo(); bloque = []; continue; }
+        if (!linea.trim()) { cerrarTodo(); continue; }
+
+        let m;
+        if ((m = linea.match(/^\s*(#{1,6})\s+(.*)$/))) {
+            cerrarTodo();
+            const nivel = Math.min(m[1].length + 2, 6);   // # → h3 … para no competir con el título de la página
+            html.push(`<h${nivel}>${markdownEnLinea(m[2])}</h${nivel}>`);
+        } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(linea)) {
+            cerrarTodo();
+            html.push('<hr>');
+        } else if ((m = linea.match(/^\s*[-*+•]\s+(.*)$/))) {
+            cerrarParrafo(); cerrarCita();
+            if (!lista || lista.tipo !== 'ul') { cerrarLista(); lista = { tipo: 'ul', items: [] }; }
+            lista.items.push(m[1]);
+        } else if ((m = linea.match(/^\s*(\d+)[.)]\s+(.*)$/))) {
+            cerrarParrafo(); cerrarCita();
+            if (!lista || lista.tipo !== 'ol') { cerrarLista(); lista = { tipo: 'ol', inicio: Number(m[1]), items: [] }; }
+            lista.items.push(m[2]);
+        } else if ((m = linea.match(/^\s*&gt;\s?(.*)$/))) {
+            cerrarParrafo(); cerrarLista();
+            cita.push(m[1]);
+        } else if (lista && /^\s{2,}\S/.test(linea)) {
+            // Continuación de un elemento de la lista
+            lista.items[lista.items.length - 1] += ' ' + linea.trim();
+        } else {
+            cerrarLista(); cerrarCita();
+            parrafo.push(linea.trim());
+        }
+    }
+    if (bloque) html.push(`<pre><code>${bloque.join('\n')}</code></pre>`);
+    cerrarTodo();
+    return html.join('');
+}
+
 // Renderizado de burbujas en el feed de mensajes
 function add(t, who, citations = [], telemetry = null) {
     let row = document.createElement('div');
@@ -141,7 +437,13 @@ function add(t, who, citations = [], telemetry = null) {
 
     let b = document.createElement('div');
     b.className = 'bubble';
-    b.textContent = t;
+    if (who === 'assistant') {
+        // Respuesta del asistente: Markdown con el HTML escapado de antemano
+        b.classList.add('md');
+        b.innerHTML = renderMarkdown(t);
+    } else {
+        b.textContent = t;
+    }
 
     // Si existen citas oficiales verificadas (RF09), agregarlas en un bloque institucional
     if (who === 'assistant' && citations && citations.length > 0) {
@@ -229,6 +531,11 @@ form?.addEventListener('submit', async e => {
             headers: getSecurityHeaders(),
             body: JSON.stringify({ query: q, top_k: 4, use_llm: true })
         });
+
+        if (response.status === 401) {
+            irALogin();
+            return;
+        }
 
         if (response.status === 429) {
             loadingRow.remove();

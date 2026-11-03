@@ -25,10 +25,15 @@
     <nav class="side-nav">
       <a href="index.html" class="nav">💬 Asistente RAG</a>
       <a href="dashboard.html" class="nav active" aria-current="page">📊 Tablero Usuario</a>
-      <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
+      <a href="admin-metrics.html" data-admin-only class="nav">⚡ Panel Admin</a>
     </nav>
 
     <div class="sidebottom">
+      <div class="user-box">
+        <div class="avatar" data-user-initials>··</div>
+        <div><b data-user-name>Cargando…</b><small data-user-career></small></div>
+      </div>
+      <button type="button" class="logout" data-logout>↩ Cerrar sesión</button>
       <small>UAEMéx · Equipo 404</small>
     </div>
   </aside>

@@ -217,6 +217,8 @@ Desde la Solicitud de Cambio SC-001 (29/10/2026) el proyecto es una prueba pilot
 1. **Solo este equipo** (`http://127.0.0.1:8000`).
 2. **En la red**, accesible desde celulares u otros equipos con la IP que muestra el menú.
 
+**Para detener los servidores, `stop.bat`**: cierra todos los servidores de Nexus FI que estén corriendo (útil si al iniciar aparece *«solo se permite un uso de cada dirección de socket»*, que indica que el puerto 8000 sigue ocupado). Solo afecta procesos que ejecutan `main.py --serve`. Con `stop.bat -Listar` muestra cuáles hay sin detenerlos.
+
 Equivalentes por línea de comandos:
 
 | Situación | Sin Docker | Con Docker |

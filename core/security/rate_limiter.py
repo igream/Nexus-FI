@@ -31,6 +31,7 @@ DAILY_LIMIT: int = 60
 # Rutas informativas que no consumen cuota
 QUOTA_EXEMPT_PREFIXES: tuple[str, ...] = (
     "/api/session/info",
+    "/api/auth/",
     "/api/status",
     "/api/health",
     "/api/v1/metrics/",
