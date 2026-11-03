@@ -1,0 +1,102 @@
+{
+  "metadata": {
+    "id": "ico_capitulos_estudiantiles_ico",
+    "clean_id": "ico_capitulos_estudiantiles_ico",
+    "titulo": "capitulos_estudiantiles_ico",
+    "documento_original": "capitulos_estudiantiles_ico.md",
+    "ruta_relativa_fuente": "fuentes_piloto/capitulos_estudiantiles_ico.md",
+    "categoria": "vida_estudiantil",
+    "subcategoria": "capitulos_estudiantiles",
+    "carrera": "ICO",
+    "periodo": "2026B",
+    "total_paginas": 1,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-11-02 20:15:20",
+    "total_tokens": 988,
+    "total_chunks": 5
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "# Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n- Fuente: comunicación directa con integrantes de la mesa directiva de la Rama Estudiantil IEEE UAEMéx (noviembre de 2026)\n- Fecha de la información: noviembre de 2026\n- Carrera: ICO\n- Responsable de la limpieza: Azuleica Betsabel de la Cruz González\n\n## ¿Qué es la Rama Estudiantil IEEE UAEMéx?\nEs una rama estudiantil del IEEE (Institute of Electrical and Electronics Engineers), una sociedad técnica profesional. Funciona como un capítulo estudiantil en conjunto y está abierta a estudiantes de la Facultad de Ingeniería de la UAEMéx.\n\nLa rama tiene actualmente tres capítulos:\n- **Computer Society (CS):** el capítulo más afín a Ingeniería en Computación. Sus objetivos están alineados con los de la rama: impulsar el avance de la tecnología y el desarrollo profesional. Sitio de la sociedad internacional: https://www.computer.org/\n- **Robotics and Automation Society (RAS):** robótica y automatización. Sitio de la sociedad internacional: https://www.ieee-ras.org/\n- **Women in Engineering (WIE):** Mujeres en la Ingeniería. Sitio de la sociedad internacional: https://wie.ieee.org/\n\n## Objetivo\nFomentar el crecimiento académico, técnico y profesional de los estudiantes de la Facultad de Ingeniería mediante proyectos de impacto social, innovación y trabajo multidisciplinario, cerrando la brecha entre la universidad y las exigencias de la industria tecnológica.\n\n## Actividades principales\n- **Talleres y laboratorios técnicos:** capacitaciones prácticas en herramientas de vanguardia, como inteligencia artificial, desarrollo web y electrónica.\n- **Competencias y hackatones:** preparación y participación en retos de innovación y desarrollo de software, por ejemplo el Reto Innovatics.\n- **Desarrollo de proyectos:** creación de soluciones tecnológicas reales para la comunidad estudiantil y la sociedad.\n- **Networking profesional:** conexión con líderes de la industria, programas globales y otras comunidades, como Global Shapers, GitHub Campus Experts o Google Student Ambassadors.\n- **Otras actividades:** cursos, asistencia a eventos, concursos y actividades formativas y de networking. La rama ha tenido alianzas con ramas estudiantiles de otros países, como Perú.\n\n## ¿Cómo unirse?\nCualquier estudiante interesado en la tecnología puede formar parte. Hay que estar atento a las convocatorias de reclutamiento que se publican al inicio de cada semestre en las redes sociales de la rama, o acercarse directamente a los integrantes de la mesa directiva para integrarse a los proyectos activos.\n\n## Contacto institucional\n- **Presidencia de la rama:** Emilio Zdenko Abarca Cruz (los datos de contacto se actualizan en cada cambio de mesa directiva).\n- **Correo electrónico:** ramaestudiantiluaemex@gmail.com\n- **Redes sociales:** IEEE UAEMéx\n- **Página informativa de la rama:** https://canva.link/cp4fgc5wjdspgy3 (versión anterior; la rama planea actualizarla).\n\nPara cualquier duda, lo más rápido es escribir directamente a la presidencia de la rama.",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "ico_capitulos_estudiantiles_ico_c001",
+      "content_hash": "4814ee84e2f1d69baf3392e4c37e442815a28ce49aaf6e0cb59ec9f7d6110888",
+      "text": "[DOCUMENTO: capitulos_estudiantiles_ico.md | CATEGORÍA: VIDA_ESTUDIANTIL | PÁG: 1-1 | ¿Qué es la Rama Estudiantil IEEE UAEMéx?]\n\nCapítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## ¿Qué es la Rama Estudiantil IEEE UAEMéx?\nEs una rama estudiantil del IEEE (Institute of Electrical and Electronics Engineers), una sociedad técnica profesional. Funciona como un capítulo estudiantil en conjunto y está abierta a estudiantes de la Facultad de Ingeniería de la UAEMéx.\n\nLa rama tiene actualmente tres capítulos:\n- **Computer Society (CS):** el capítulo más afín a Ingeniería en Computación. Sus objetivos están alineados con los de la rama: impulsar el avance de la tecnología y el desarrollo profesional. Sitio de la sociedad internacional: https://www.computer.org/\n- **Robotics and Automation Society (RAS):** robótica y automatización. Sitio de la sociedad internacional: https://www.ieee-ras.org/\n- **Women in Engineering (WIE):** Mujeres en la Ingeniería. Sitio de la sociedad internacional: https://wie.ieee.org/",
+      "raw_text": "Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## ¿Qué es la Rama Estudiantil IEEE UAEMéx?\nEs una rama estudiantil del IEEE (Institute of Electrical and Electronics Engineers), una sociedad técnica profesional. Funciona como un capítulo estudiantil en conjunto y está abierta a estudiantes de la Facultad de Ingeniería de la UAEMéx.\n\nLa rama tiene actualmente tres capítulos:\n- **Computer Society (CS):** el capítulo más afín a Ingeniería en Computación. Sus objetivos están alineados con los de la rama: impulsar el avance de la tecnología y el desarrollo profesional. Sitio de la sociedad internacional: https://www.computer.org/\n- **Robotics and Automation Society (RAS):** robótica y automatización. Sitio de la sociedad internacional: https://www.ieee-ras.org/\n- **Women in Engineering (WIE):** Mujeres en la Ingeniería. Sitio de la sociedad internacional: https://wie.ieee.org/",
+      "token_count": 286,
+      "documento": "capitulos_estudiantiles_ico.md",
+      "categoria": "vida_estudiantil",
+      "subcategoria": "capitulos_estudiantiles",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "¿Qué es la Rama Estudiantil IEEE UAEMéx?",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_capitulos_estudiantiles_ico_c002",
+      "content_hash": "c0c3c6f522c8c3c801f0e472ba618607ce86a32b11a27ae5e26cfaff0b743e0b",
+      "text": "[DOCUMENTO: capitulos_estudiantiles_ico.md | CATEGORÍA: VIDA_ESTUDIANTIL | PÁG: 1-1 | Objetivo]\n\nCapítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Objetivo\nFomentar el crecimiento académico, técnico y profesional de los estudiantes de la Facultad de Ingeniería mediante proyectos de impacto social, innovación y trabajo multidisciplinario, cerrando la brecha entre la universidad y las exigencias de la industria tecnológica.",
+      "raw_text": "Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Objetivo\nFomentar el crecimiento académico, técnico y profesional de los estudiantes de la Facultad de Ingeniería mediante proyectos de impacto social, innovación y trabajo multidisciplinario, cerrando la brecha entre la universidad y las exigencias de la industria tecnológica.",
+      "token_count": 127,
+      "documento": "capitulos_estudiantiles_ico.md",
+      "categoria": "vida_estudiantil",
+      "subcategoria": "capitulos_estudiantiles",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Objetivo",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_capitulos_estudiantiles_ico_c003",
+      "content_hash": "a40b3720617934154304a49b3842cbd1bef7c308ca400d12e991bda8a33328cb",
+      "text": "[DOCUMENTO: capitulos_estudiantiles_ico.md | CATEGORÍA: VIDA_ESTUDIANTIL | PÁG: 1-1 | Actividades principales]\n\nCapítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Actividades principales\n- **Talleres y laboratorios técnicos:** capacitaciones prácticas en herramientas de vanguardia, como inteligencia artificial, desarrollo web y electrónica.\n- **Competencias y hackatones:** preparación y participación en retos de innovación y desarrollo de software, por ejemplo el Reto Innovatics.\n- **Desarrollo de proyectos:** creación de soluciones tecnológicas reales para la comunidad estudiantil y la sociedad.\n- **Networking profesional:** conexión con líderes de la industria, programas globales y otras comunidades, como Global Shapers, GitHub Campus Experts o Google Student Ambassadors.\n- **Otras actividades:** cursos, asistencia a eventos, concursos y actividades formativas y de networking. La rama ha tenido alianzas con ramas estudiantiles de otros países, como Perú.",
+      "raw_text": "Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Actividades principales\n- **Talleres y laboratorios técnicos:** capacitaciones prácticas en herramientas de vanguardia, como inteligencia artificial, desarrollo web y electrónica.\n- **Competencias y hackatones:** preparación y participación en retos de innovación y desarrollo de software, por ejemplo el Reto Innovatics.\n- **Desarrollo de proyectos:** creación de soluciones tecnológicas reales para la comunidad estudiantil y la sociedad.\n- **Networking profesional:** conexión con líderes de la industria, programas globales y otras comunidades, como Global Shapers, GitHub Campus Experts o Google Student Ambassadors.\n- **Otras actividades:** cursos, asistencia a eventos, concursos y actividades formativas y de networking. La rama ha tenido alianzas con ramas estudiantiles de otros países, como Perú.",
+      "token_count": 242,
+      "documento": "capitulos_estudiantiles_ico.md",
+      "categoria": "vida_estudiantil",
+      "subcategoria": "capitulos_estudiantiles",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Actividades principales",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_capitulos_estudiantiles_ico_c004",
+      "content_hash": "cbb9abd9f8c38342bba0c2def3dc1c01ce043ae0f478e5cbb86c3fc4acdfc2b0",
+      "text": "[DOCUMENTO: capitulos_estudiantiles_ico.md | CATEGORÍA: VIDA_ESTUDIANTIL | PÁG: 1-1 | ¿Cómo unirse?]\n\nCapítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## ¿Cómo unirse?\nCualquier estudiante interesado en la tecnología puede formar parte. Hay que estar atento a las convocatorias de reclutamiento que se publican al inicio de cada semestre en las redes sociales de la rama, o acercarse directamente a los integrantes de la mesa directiva para integrarse a los proyectos activos.",
+      "raw_text": "Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## ¿Cómo unirse?\nCualquier estudiante interesado en la tecnología puede formar parte. Hay que estar atento a las convocatorias de reclutamiento que se publican al inicio de cada semestre en las redes sociales de la rama, o acercarse directamente a los integrantes de la mesa directiva para integrarse a los proyectos activos.",
+      "token_count": 139,
+      "documento": "capitulos_estudiantiles_ico.md",
+      "categoria": "vida_estudiantil",
+      "subcategoria": "capitulos_estudiantiles",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "¿Cómo unirse?",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_capitulos_estudiantiles_ico_c005",
+      "content_hash": "db8dedd70d17dc28b9525ed00ab1f7a4ead9e706b1a1c0ae2720b47a6fe5c71c",
+      "text": "[DOCUMENTO: capitulos_estudiantiles_ico.md | CATEGORÍA: VIDA_ESTUDIANTIL | PÁG: 1-1 | Contacto institucional]\n\nCapítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Contacto institucional\n- **Presidencia de la rama:** Emilio Zdenko Abarca Cruz (los datos de contacto se actualizan en cada cambio de mesa directiva).\n- **Correo electrónico:** ramaestudiantiluaemex@gmail.com\n- **Redes sociales:** IEEE UAEMéx\n- **Página informativa de la rama:** https://canva.link/cp4fgc5wjdspgy3 (versión anterior; la rama planea actualizarla).\n\nPara cualquier duda, lo más rápido es escribir directamente a la presidencia de la rama.",
+      "raw_text": "Capítulos estudiantiles: Rama Estudiantil IEEE UAEMéx\n\n## Contacto institucional\n- **Presidencia de la rama:** Emilio Zdenko Abarca Cruz (los datos de contacto se actualizan en cada cambio de mesa directiva).\n- **Correo electrónico:** ramaestudiantiluaemex@gmail.com\n- **Redes sociales:** IEEE UAEMéx\n- **Página informativa de la rama:** https://canva.link/cp4fgc5wjdspgy3 (versión anterior; la rama planea actualizarla).\n\nPara cualquier duda, lo más rápido es escribir directamente a la presidencia de la rama.",
+      "token_count": 194,
+      "documento": "capitulos_estudiantiles_ico.md",
+      "categoria": "vida_estudiantil",
+      "subcategoria": "capitulos_estudiantiles",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Contacto institucional",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    }
+  ]
+}

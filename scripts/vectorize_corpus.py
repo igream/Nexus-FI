@@ -32,6 +32,14 @@ def main():
         help="Modo de guardado en LanceDB: 'overwrite' o 'upsert'",
     )
 
+    parser.add_argument(
+        "--categorias",
+        type=str,
+        default="",
+        help="Solo vectoriza estas categorías, separadas por coma (p. ej. horarios,avisos,vida_estudiantil). "
+             "Usar con --mode upsert para actualizar esos documentos sin tocar el resto de la base.",
+    )
+
     args = parser.parse_args()
 
     api_key = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
@@ -59,6 +67,14 @@ def main():
         for line in f:
             if line.strip():
                 chunks.append(json.loads(line))
+
+    if args.categorias:
+        if args.mode != "upsert":
+            print("Error: --categorias solo se usa con --mode upsert (overwrite borraría el resto de la base).")
+            sys.exit(1)
+        elegidas = {c.strip() for c in args.categorias.split(",") if c.strip()}
+        chunks = [c for c in chunks if c.get("categoria") in elegidas]
+        print(f"Categorías seleccionadas: {', '.join(sorted(elegidas))}")
 
     total_chunks = len(chunks)
     if args.limit > 0:

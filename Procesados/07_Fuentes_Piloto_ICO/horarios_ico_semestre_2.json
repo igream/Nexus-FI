@@ -1,0 +1,117 @@
+{
+  "metadata": {
+    "id": "ico_horarios_ico_semestre_2",
+    "clean_id": "ico_horarios_ico_semestre_2",
+    "titulo": "horarios_ico_semestre_2",
+    "documento_original": "horarios_ico_semestre_2.md",
+    "ruta_relativa_fuente": "fuentes_piloto/horarios_ico_semestre_2.md",
+    "categoria": "horarios",
+    "subcategoria": "horario_clases",
+    "carrera": "ICO",
+    "periodo": "2026B",
+    "total_paginas": 1,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-11-02 20:15:20",
+    "total_tokens": 855,
+    "total_chunks": 6
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "# Horarios ICO - Semestre 2 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez\n\n| Materia | Grupo | Profesor | Día | Horario | Aula |\n|---|---|---|---|---|---|\n| PROGRAMACION II | CO01 | M. EN F. DOC. CONTRERAS SALAZAR FABIOLA | Martes | 13:00 - 15:00 | SALA 4 |\n| PROGRAMACION II | CO01 | M. EN F. DOC. CONTRERAS SALAZAR FABIOLA | Jueves | 13:00 - 15:00 | SALA 4 |\n| PROGRAMACION II | CO02 | ING. GUTIERREZ OCAMPO ELFEGO | Lunes | 07:00 - 09:00 | SALA 2 |\n| PROGRAMACION II | CO02 | ING. GUTIERREZ OCAMPO ELFEGO | Miércoles | 07:00 - 09:00 | Mediación Tecnológica |",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c001",
+      "content_hash": "da0374a156610c55e9e7538a447fd303497b26d247ee8451d59fdc64795dbf04",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · materias]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nMaterias que se imparten en el semestre 2 y sus grupos:\n- PROGRAMACION II: grupos CO01, CO02",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nMaterias que se imparten en el semestre 2 y sus grupos:\n- PROGRAMACION II: grupos CO01, CO02",
+      "token_count": 97,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · materias",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c002",
+      "content_hash": "aa501eca5794a21782bde9fcc1d79bf419e963a43b51ceb15c42e94114636a6c",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · PROGRAMACION II]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nMateria: PROGRAMACION II (semestre 2 de ICO).\nGrupos, profesores, días, horarios y aulas:\n- Grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA:\n  - Martes de 13:00 a 15:00, en SALA 4\n  - Jueves de 13:00 a 15:00, en SALA 4\n- Grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO:\n  - Lunes de 07:00 a 09:00, en SALA 2\n  - Miércoles de 07:00 a 09:00, por mediación tecnológica (en línea)",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nMateria: PROGRAMACION II (semestre 2 de ICO).\nGrupos, profesores, días, horarios y aulas:\n- Grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA:\n  - Martes de 13:00 a 15:00, en SALA 4\n  - Jueves de 13:00 a 15:00, en SALA 4\n- Grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO:\n  - Lunes de 07:00 a 09:00, en SALA 2\n  - Miércoles de 07:00 a 09:00, por mediación tecnológica (en línea)",
+      "token_count": 238,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · PROGRAMACION II",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c003",
+      "content_hash": "7c85d27fd88c3c96f58b542fa2564334d64e82802010f2781e9daba72f38bc43",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · Lunes]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días lunes:\n- De 07:00 a 09:00: PROGRAMACION II, grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO, en SALA 2",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días lunes:\n- De 07:00 a 09:00: PROGRAMACION II, grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO, en SALA 2",
+      "token_count": 127,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · Lunes",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c004",
+      "content_hash": "2f4988afe738c9bd0a73ca4a64fb10d97b5ea5a617604dea3dd3def404796a02",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · Martes]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días martes:\n- De 13:00 a 15:00: PROGRAMACION II, grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA, en SALA 4",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días martes:\n- De 13:00 a 15:00: PROGRAMACION II, grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA, en SALA 4",
+      "token_count": 129,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · Martes",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c005",
+      "content_hash": "1e76b059b19f99f894691324ca3b98c581a9d0d0e1f1978ac27714dad519c1b9",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · Miércoles]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días miércoles:\n- De 07:00 a 09:00: PROGRAMACION II, grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO, por mediación tecnológica (en línea)",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días miércoles:\n- De 07:00 a 09:00: PROGRAMACION II, grupo CO02, profesor(a) ING. GUTIERREZ OCAMPO ELFEGO, por mediación tecnológica (en línea)",
+      "token_count": 134,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · Miércoles",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_2_c006",
+      "content_hash": "871a134e13131bd803623410a7964278f66c03cb89c9f1e0c4e859c1c67fc524",
+      "text": "[DOCUMENTO: horarios_ico_semestre_2.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 2 · Jueves]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días jueves:\n- De 13:00 a 15:00: PROGRAMACION II, grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA, en SALA 4",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 2.\nClases del semestre 2 de ICO los días jueves:\n- De 13:00 a 15:00: PROGRAMACION II, grupo CO01, profesor(a) M. EN F. DOC. CONTRERAS SALAZAR FABIOLA, en SALA 4",
+      "token_count": 130,
+      "documento": "horarios_ico_semestre_2.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 2 · Jueves",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    }
+  ]
+}

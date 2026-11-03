@@ -12,11 +12,14 @@ from nexus_ingestion.extractors.ocr_engine import get_ocr_engine
 from nexus_ingestion.extractors.pdf_extractor import PDFExtractor
 from nexus_ingestion.extractors.html_extractor import HTMLExtractor
 from nexus_ingestion.extractors.text_normalizer import normalize_text
+from nexus_ingestion.fuentes_piloto import fragmentar_fuente_piloto
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_INPUT = str(BASE_DIR / "Pre Procesados")
 BASE_OUTPUT = str(BASE_DIR / "Procesados")
 TEMPLATE_FILE = str(BASE_DIR / "docs" / "02_Ejecucion" / "Especificaciones_Tecnicas" / "PLANTILLA_COORDINACION_ICO.md")
+FUENTES_PILOTO = str(BASE_DIR / "fuentes_piloto")
+INCLUIR_PLANTILLA = False
 
 _worker_pdf: PDFExtractor = None
 _worker_html: HTMLExtractor = None
@@ -67,7 +70,14 @@ def process_single_file(item: Tuple[str, str]) -> Dict[str, Any]:
     json_path = os.path.join(target_dir, f"{clean_name}.json")
     md_path = os.path.join(target_dir, f"{clean_name}.md")
 
-    if os.path.exists(json_path) and os.path.exists(md_path):
+    # Las fuentes en Markdown se vuelven a procesar si cambiaron después del último procesamiento
+    md_fuente_modificada = (
+        ext in (".md", ".txt")
+        and os.path.exists(json_path)
+        and os.path.getmtime(full_path) > os.path.getmtime(json_path)
+    )
+
+    if os.path.exists(json_path) and os.path.exists(md_path) and not md_fuente_modificada:
         try:
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -123,7 +133,13 @@ def process_single_file(item: Tuple[str, str]) -> Dict[str, Any]:
         "fecha_procesamiento": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
-    chunks = _worker_chunker.chunk_document(doc_name, pages_content, meta)
+    if rel_path.replace("\\", "/").startswith("fuentes_piloto/"):
+        # Fuentes de la prueba piloto: un fragmento por materia, día o sección (ver fuentes_piloto.py).
+        # Se usa el texto original, sin normalizar, para conservar las tablas y los títulos «## ».
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            chunks = fragmentar_fuente_piloto(doc_name, f.read(), meta, _worker_chunker)
+    else:
+        chunks = _worker_chunker.chunk_document(doc_name, pages_content, meta)
     total_tokens = sum(c["token_count"] for c in chunks)
     meta["total_tokens"] = total_tokens
     meta["total_chunks"] = len(chunks)
@@ -194,13 +210,22 @@ def main():
                     rel_p = os.path.relpath(full_p, BASE_INPUT)
                     files_to_process.append((full_p, rel_p))
 
-    if os.path.exists(TEMPLATE_FILE):
+    # La plantilla de la Coordinación de ICO tiene datos de ejemplo ([Nombre], cubículos ficticios);
+    # ya no se vectoriza para que el chat no responda con información inventada.
+    if INCLUIR_PLANTILLA and os.path.exists(TEMPLATE_FILE):
         files_to_process.append((TEMPLATE_FILE, "plantilla_coordinacion_ico.md"))
+
+    # Fuentes limpias de la prueba piloto ICO (SC-001); INVENTARIO.md es solo un índice
+    if os.path.isdir(FUENTES_PILOTO):
+        for f in sorted(os.listdir(FUENTES_PILOTO)):
+            if f.lower().endswith(".md") and not f.upper().startswith("INVENTARIO"):
+                files_to_process.append((os.path.join(FUENTES_PILOTO, f), f"fuentes_piloto/{f}"))
 
     print(f"Total de documentos a procesar: {len(files_to_process)}")
 
     t_start = time.time()
     all_chunks = []
+    vistos = set()
     doc_manifest = []
     stats = {
         "total_documentos": len(files_to_process),
@@ -233,10 +258,17 @@ def main():
                 cat = res.get("categoria", "general")
                 stats["por_categoria"][cat] = stats["por_categoria"].get(cat, 0) + len(res["chunks"])
 
-                all_chunks.extend(res["chunks"])
+                # Dos archivos con el mismo nombre en carpetas distintas (p. ej. ACUERDOS/01.pdf)
+                # pueden compartir el mismo procesado: no se agregan fragmentos repetidos
+                nuevos = [c for c in res["chunks"] if c["chunk_id"] not in vistos]
+                vistos.update(c["chunk_id"] for c in nuevos)
+                if len(nuevos) < len(res["chunks"]):
+                    print(f"  [AVISO] {res['file']}: comparte nombre con otro documento; se omiten {len(res['chunks']) - len(nuevos)} fragmentos repetidos")
+                all_chunks.extend(nuevos)
                 if "metadata" in res:
                     doc_manifest.append(res["metadata"])
 
+    stats["total_chunks"] = len(all_chunks)
     stats["total_tokens"] = sum(c["token_count"] for c in all_chunks)
     total_elapsed = time.time() - t_start
 

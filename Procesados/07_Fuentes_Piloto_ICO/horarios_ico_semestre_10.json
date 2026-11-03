@@ -1,0 +1,87 @@
+{
+  "metadata": {
+    "id": "ico_horarios_ico_semestre_10",
+    "clean_id": "ico_horarios_ico_semestre_10",
+    "titulo": "horarios_ico_semestre_10",
+    "documento_original": "horarios_ico_semestre_10.md",
+    "ruta_relativa_fuente": "fuentes_piloto/horarios_ico_semestre_10.md",
+    "categoria": "horarios",
+    "subcategoria": "horario_clases",
+    "carrera": "ICO",
+    "periodo": "2026B",
+    "total_paginas": 1,
+    "es_ocr": false,
+    "fecha_procesamiento": "2026-11-02 20:15:20",
+    "total_tokens": 801,
+    "total_chunks": 4
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "text": "# Horarios ICO - Semestre 10 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez\n\n| Materia | Grupo | Profesor | Día | Horario | Aula |\n|---|---|---|---|---|---|\n| PRACTICA PROFESIONAL | CO01 | ING. LEYVA PELAEZ CAROL | Viernes | 14:00 - 16:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO02 | ING. GONZALEZ MIRELES CINTIA | Lunes | 11:00 - 13:00 | Mediación Tecnológica/ C- 404 |\n| PRACTICA PROFESIONAL | CO03 | DRA. MONDRAGON IXTLAHUAC MONICA MARINA | Lunes | 17:00 - 19:00 | Mediación Tecnológica |\n| PRACTICA PROFESIONAL | CO04 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Viernes | 09:00 - 11:00 | Mediación Tecnológica |",
+      "is_ocr": false
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": "ico_horarios_ico_semestre_10_c001",
+      "content_hash": "0313be980e766b56505635263539ac4aea643586a7a00113f410cd9443c863f2",
+      "text": "[DOCUMENTO: horarios_ico_semestre_10.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 10 · materias]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nMaterias que se imparten en el semestre 10 y sus grupos:\n- PRACTICA PROFESIONAL: grupos CO01, CO02, CO03, CO04",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nMaterias que se imparten en el semestre 10 y sus grupos:\n- PRACTICA PROFESIONAL: grupos CO01, CO02, CO03, CO04",
+      "token_count": 107,
+      "documento": "horarios_ico_semestre_10.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 10 · materias",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_10_c002",
+      "content_hash": "94b2cf483b89899a907089f7ff49b16ff1bfd1d2152cbea7d5348858e73c4ff4",
+      "text": "[DOCUMENTO: horarios_ico_semestre_10.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 10 · PRACTICA PROFESIONAL]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nMateria: PRACTICA PROFESIONAL (semestre 10 de ICO).\nGrupos, profesores, días, horarios y aulas:\n- Grupo CO01, profesor(a) ING. LEYVA PELAEZ CAROL:\n  - Viernes de 14:00 a 16:00, por mediación tecnológica (en línea)\n- Grupo CO02, profesor(a) ING. GONZALEZ MIRELES CINTIA:\n  - Lunes de 11:00 a 13:00, por mediación tecnológica (en línea)\n- Grupo CO03, profesor(a) DRA. MONDRAGON IXTLAHUAC MONICA MARINA:\n  - Lunes de 17:00 a 19:00, por mediación tecnológica (en línea)\n- Grupo CO04, profesor(a) M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE:\n  - Viernes de 09:00 a 11:00, por mediación tecnológica (en línea)",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nMateria: PRACTICA PROFESIONAL (semestre 10 de ICO).\nGrupos, profesores, días, horarios y aulas:\n- Grupo CO01, profesor(a) ING. LEYVA PELAEZ CAROL:\n  - Viernes de 14:00 a 16:00, por mediación tecnológica (en línea)\n- Grupo CO02, profesor(a) ING. GONZALEZ MIRELES CINTIA:\n  - Lunes de 11:00 a 13:00, por mediación tecnológica (en línea)\n- Grupo CO03, profesor(a) DRA. MONDRAGON IXTLAHUAC MONICA MARINA:\n  - Lunes de 17:00 a 19:00, por mediación tecnológica (en línea)\n- Grupo CO04, profesor(a) M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE:\n  - Viernes de 09:00 a 11:00, por mediación tecnológica (en línea)",
+      "token_count": 309,
+      "documento": "horarios_ico_semestre_10.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 10 · PRACTICA PROFESIONAL",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_10_c003",
+      "content_hash": "338c8549a67b6dda01f2f40cee95c9e507276bc99c36d5018605afa9af045471",
+      "text": "[DOCUMENTO: horarios_ico_semestre_10.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 10 · Lunes]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nClases del semestre 10 de ICO los días lunes:\n- De 11:00 a 13:00: PRACTICA PROFESIONAL, grupo CO02, profesor(a) ING. GONZALEZ MIRELES CINTIA, por mediación tecnológica (en línea)\n- De 17:00 a 19:00: PRACTICA PROFESIONAL, grupo CO03, profesor(a) DRA. MONDRAGON IXTLAHUAC MONICA MARINA, por mediación tecnológica (en línea)",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nClases del semestre 10 de ICO los días lunes:\n- De 11:00 a 13:00: PRACTICA PROFESIONAL, grupo CO02, profesor(a) ING. GONZALEZ MIRELES CINTIA, por mediación tecnológica (en línea)\n- De 17:00 a 19:00: PRACTICA PROFESIONAL, grupo CO03, profesor(a) DRA. MONDRAGON IXTLAHUAC MONICA MARINA, por mediación tecnológica (en línea)",
+      "token_count": 190,
+      "documento": "horarios_ico_semestre_10.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 10 · Lunes",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    },
+    {
+      "chunk_id": "ico_horarios_ico_semestre_10_c004",
+      "content_hash": "9489bf7f8c0fc229a20044970a5c1c956ce666517fa6793d0246da8648940d6b",
+      "text": "[DOCUMENTO: horarios_ico_semestre_10.md | CATEGORÍA: HORARIOS | PÁG: 1-1 | Semestre 10 · Viernes]\n\nHorario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nClases del semestre 10 de ICO los días viernes:\n- De 09:00 a 11:00: PRACTICA PROFESIONAL, grupo CO04, profesor(a) M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE, por mediación tecnológica (en línea)\n- De 14:00 a 16:00: PRACTICA PROFESIONAL, grupo CO01, profesor(a) ING. LEYVA PELAEZ CAROL, por mediación tecnológica (en línea)",
+      "raw_text": "Horario del periodo 2026B de la Licenciatura en Ingeniería en Computación (ICO), semestre 10.\nClases del semestre 10 de ICO los días viernes:\n- De 09:00 a 11:00: PRACTICA PROFESIONAL, grupo CO04, profesor(a) M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE, por mediación tecnológica (en línea)\n- De 14:00 a 16:00: PRACTICA PROFESIONAL, grupo CO01, profesor(a) ING. LEYVA PELAEZ CAROL, por mediación tecnológica (en línea)",
+      "token_count": 195,
+      "documento": "horarios_ico_semestre_10.md",
+      "categoria": "horarios",
+      "subcategoria": "horario_clases",
+      "carrera": "ICO",
+      "periodo": "2026B",
+      "articulo": "Semestre 10 · Viernes",
+      "pagina_inicio": 1,
+      "pagina_fin": 1
+    }
+  ]
+}

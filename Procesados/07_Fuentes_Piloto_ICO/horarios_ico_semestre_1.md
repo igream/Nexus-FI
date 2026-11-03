@@ -1,0 +1,47 @@
+---
+id: "ico_horarios_ico_semestre_1"
+titulo: "horarios_ico_semestre_1"
+categoria: "horarios"
+subcategoria: "horario_clases"
+carrera: "ICO"
+periodo: "2026B"
+archivo_fuente: "fuentes_piloto/horarios_ico_semestre_1.md"
+total_paginas: 1
+es_ocr: false
+total_tokens: 2882
+total_chunks: 8
+---
+
+# horarios_ico_semestre_1
+
+<!-- Página 1 -->
+# Horarios ICO - Semestre 1 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez
+
+| Materia | Grupo | Profesor | Día | Horario | Aula |
+|---|---|---|---|---|---|
+| FISICA | CO01 | DRA. QUINTANA GUERRA MARIA ROSA | Lunes | 09:00 - 11:00 | C-404/LAB FIS |
+| FISICA | CO01 | DRA. QUINTANA GUERRA MARIA ROSA | Miércoles | 09:00 - 11:00 | Mediación Tecnológica |
+| FISICA | CO02 | FIS. GUTIERREZ GARCIA ERIC | Martes | 09:00 - 11:00 | C-405 |
+| FISICA | CO02 | FIS. GUTIERREZ GARCIA ERIC | Jueves | 09:00 - 11:00 | C-405/ LAB FISI |
+| FISICA | CO03 | DRA. JIMENEZ MANCILLA NALLELY PATRICIA | Martes | 17:00 - 19:00 | C-406 |
+| FISICA | CO03 | DRA. JIMENEZ MANCILLA NALLELY PATRICIA | Jueves | 17:00 - 19:00 | C-406 / LAB FIS |
+| FISICA | CO04 | M. EN CQ. SAMANTHA DEL ROCIO SANTIBAÑEZ VILLEGAS | Martes | 11:00 - 13:00 | C-407 LAB FIS |
+| FISICA | CO04 | M. EN CQ. SAMANTHA DEL ROCIO SANTIBAÑEZ VILLEGAS | Jueves | 11:00 - 13:00 | SALA 7 |
+| FISICA | CO05 | ING . JESUS GUTIERREZ ALVA | Miércoles | 09:00 - 11:00 | Mediación Tecnológica |
+| FISICA | CO05 | ING . JESUS GUTIERREZ ALVA | Jueves | 09:00 - 11:00 | C-408/LAB FIS |
+| FISICA | CO06 | FIS. GUTIERREZ GARCIA ERIC | Jueves | 11:00 - 13:00 | C-406 |
+| FISICA | CO06 | FIS. GUTIERREZ GARCIA ERIC | Viernes | 09:00 - 11:00 | C-406 |
+| PROGRAMACION I | CO01 | ING. CHAVEZ CASTAÑEDA FRANCISCO IGNACIO | Martes | 09:00 - 11:00 | SALA 4 |
+| PROGRAMACION I | CO01 | ING. CHAVEZ CASTAÑEDA FRANCISCO IGNACIO | Jueves | 09:00 - 11:00 | SALA 4 |
+| PROGRAMACION I | CO02 | M. EN A.E. Y G. OROZCO GARDUÑO BEATRIZ | Lunes | 11:00 - 13:00 | C-303 |
+| PROGRAMACION I | CO02 | M. EN A.E. Y G. OROZCO GARDUÑO BEATRIZ | Miércoles | 07:00 - 09:00 | SALA 4 |
+| PROGRAMACION I | CO03 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Lunes | 15:00 - 17:00 | SALA 4 |
+| PROGRAMACION I | CO03 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Miércoles | 15:00 - 17:00 | SALA 4 |
+| PROGRAMACION I | CO04 | ING. ARZATE TREJO ALVARO | Martes | 17:00 - 19:00 | C-403 |
+| PROGRAMACION I | CO04 | ING. ARZATE TREJO ALVARO | Jueves | 17:00 - 19:00 | SALA 4 |
+| PROGRAMACION I | CO05 | ING. JOSÉ ARTURO CONDE SÁNCHEZ | Martes | 11:00 - 13:00 | SALA 2 |
+| PROGRAMACION I | CO05 | ING. JOSÉ ARTURO CONDE SÁNCHEZ | Jueves | 11:00 - 13:00 | SALA 2 |
+| PROGRAMACION I | CO06 | M. EN I. VERA NOGUEZ SARA | Martes | 11:00 - 13:00 | SALA 5 |
+| PROGRAMACION I | CO06 | M. EN I. VERA NOGUEZ SARA | Jueves | 11:00 - 13:00 | SALA 5 |
+| PROGRAMACION I | CO07 | ING. ANGEL ADAN LARA BERNAL | Lunes | 11:00 - 13:00 | SALA 6 |
+| PROGRAMACION I | CO07 | ING. ANGEL ADAN LARA BERNAL | Miércoles | 11:00 - 13:00 | SALA 6 |

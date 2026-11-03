@@ -1,0 +1,42 @@
+---
+id: "ico_horarios_ico_semestre_4"
+titulo: "horarios_ico_semestre_4"
+categoria: "horarios"
+subcategoria: "horario_clases"
+carrera: "ICO"
+periodo: "2026B"
+archivo_fuente: "fuentes_piloto/horarios_ico_semestre_4.md"
+total_paginas: 1
+es_ocr: false
+total_tokens: 2878
+total_chunks: 11
+---
+
+# horarios_ico_semestre_4
+
+<!-- Página 1 -->
+# Horarios ICO - Semestre 4 - Fuente: PLANTILLA_ICO_SALONES_2026B.pdf - Fecha de la información: Periodo 2026-B - Carrera: ICO - Responsable de la limpieza: Santiago Cuevas Sánchez
+
+| Materia | Grupo | Profesor | Día | Horario | Aula |
+|---|---|---|---|---|---|
+| ARQUITECTURA DE COMPUTADORAS | CO01 | M. EN ED. DIAZGONZALEZ BOYER OMAR | Lunes | 07:00 - 09:00 | C-303 |
+| ARQUITECTURA DE COMPUTADORAS | CO01 | M. EN ED. DIAZGONZALEZ BOYER OMAR | Viernes | 07:00 - 09:00 | C-303 |
+| ARQUITECTURA DE COMPUTADORAS | CO02 | M.EN ED. VALENCIA PEREZ PEDRO | Martes | 09:00 - 11:00 | C-407 |
+| ARQUITECTURA DE COMPUTADORAS | CO02 | M.EN ED. VALENCIA PEREZ PEDRO | Jueves | 09:00 - 11:00 | C-407 |
+| ARQUITECTURA DE COMPUTADORAS | CO03 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Lunes | 07:00 - 09:00 | SALA 5 |
+| ARQUITECTURA DE COMPUTADORAS | CO03 | M. EN M. Y T. RODRIGUEZ CAMACHO GUADALUPE | Miércoles | 07:00 - 09:00 | Mediación Tecnológica |
+| BASES DE DATOS II | CO01 | ING. SARABIA ORTIZ VICTOR | Lunes | 07:00 - 09:00 | SALA 6 |
+| BASES DE DATOS II | CO01 | ING. SARABIA ORTIZ VICTOR | Miércoles | 07:00 - 09:00 | Mediación Tecnológica |
+| BASES DE DATOS II | CO02 | ING. SALAS CASTILLO PABLO | Sábado | 09:00 - 13:00 | LAB NUBE |
+| BASES DE DATOS II | CO03 | M. EN I. RIVAS ARZALUZ MARIA DE LOURDES | Lunes | 18:00 - 20:00 | C-303 |
+| BASES DE DATOS II | CO03 | M. EN I. RIVAS ARZALUZ MARIA DE LOURDES | Sábado | 09:00 - 11:00 | C-303 |
+| METODOS ESTADISTICOS | CO01 | DR. ROMERO HUERTAS MARCELO | Lunes | 15:00 - 17:00 | C-303 |
+| METODOS ESTADISTICOS | CO01 | DR. ROMERO HUERTAS MARCELO | Viernes | 15:00 - 17:00 | C-303 |
+| METODOS ESTADISTICOS | CO02 | DRA. SALGADO GALLEGOS MIREYA | Lunes | 09:00 - 11:00 | SALA 7 |
+| METODOS ESTADISTICOS | CO02 | DRA. SALGADO GALLEGOS MIREYA | Miércoles | 09:00 - 11:00 | Mediación Tecnológica |
+| METODOS ESTADISTICOS | CO03 | DRA. JIMENEZ MANCILLA NALLELY PATRICIA | Lunes | 17:00 - 19:00 | C-405 |
+| METODOS ESTADISTICOS | CO03 | DRA. JIMENEZ MANCILLA NALLELY PATRICIA | Miércoles | 17:00 - 19:00 | Mediación Tecnológica |
+| PARADIGMAS DE PROGRAMACION II | CO01 | ING. GUTIERREZ OCAMPO ELFEGO | Martes | 07:00 - 09:00 | SALA 2 |
+| PARADIGMAS DE PROGRAMACION II | CO01 | ING. GUTIERREZ OCAMPO ELFEGO | Jueves | 07:00 - 09:00 | SALA 2 |
+| PARADIGMAS DE PROGRAMACION II | CO02 | DR. EN TEC. EDUC. LEDEZMA FUENTES LUIS ENRIQUE | Martes | 18:30 - 20:30 | SALA 8 |
+| PARADIGMAS DE PROGRAMACION II | CO02 | DR. EN TEC. EDUC. LEDEZMA FUENTES LUIS ENRIQUE | Jueves | 18:30 - 20:30 | SALA 8 |

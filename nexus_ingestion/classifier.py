@@ -31,7 +31,30 @@ class DocumentClassifier:
         tags = []
 
         # 1. Clasificación por Ruta y Patrones de Nombre
-        if "becas" in rel_path or "beca" in fn_lower:
+        if "fuentes_piloto" in rel_path:
+            # Fuentes limpias de la prueba piloto ICO (SC-001), en Markdown
+            cat_dir = "07_Fuentes_Piloto_ICO"
+            carrera = "ICO"
+            periodo = "2026B"
+            if "horario" in fn_lower:
+                categoria = "horarios"
+                subcategoria = "horario_clases"
+                tags.extend(["horarios", "grupos", "profesores", "aulas", "ico"])
+            elif "aviso" in fn_lower or "redes" in fn_lower:
+                categoria = "avisos"
+                subcategoria = "redes_sociales"
+                carrera = "GENERAL_FI"
+                tags.extend(["avisos", "convocatorias", "eventos", "redes_sociales"])
+            elif "capitulo" in fn_lower:
+                categoria = "vida_estudiantil"
+                subcategoria = "capitulos_estudiantiles"
+                tags.extend(["capitulos_estudiantiles", "ieee", "comunidad"])
+            else:
+                categoria = "coordinacion_ico"
+                subcategoria = "fuente_piloto"
+                tags.extend(["coordinacion", "ico"])
+
+        elif "becas" in rel_path or "beca" in fn_lower:
             cat_dir = "03_Becas_y_Apoyos"
             categoria = "becas"
             subcategoria = (
