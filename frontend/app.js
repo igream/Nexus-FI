@@ -27,7 +27,10 @@ document.documentElement.dataset.theme = selectedTheme;
 document.querySelectorAll('.theme-toggle').forEach(button => {
     const isDark = selectedTheme === 'dark';
 
-    button.textContent = isDark ? ' Modo claro' : ' Modo oscuro';
+    // Ícono + texto; en celular el CSS oculta el texto (.tt-label)
+    button.innerHTML = isDark
+        ? '<span aria-hidden="true">☀️</span><span class="tt-label">Modo claro</span>'
+        : '<span aria-hidden="true">🌙</span><span class="tt-label">Modo oscuro</span>';
     button.setAttribute('aria-pressed', String(isDark));
     button.setAttribute(
         'aria-label',
@@ -35,6 +38,8 @@ document.querySelectorAll('.theme-toggle').forEach(button => {
     );
 });
 
+// Aviso para que las gráficas del tablero se redibujen con los colores del tema
+document.dispatchEvent(new CustomEvent('nexus-theme', { detail: selectedTheme }));
 
 }
 
@@ -99,16 +104,24 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
 }
 
-// Control del menú lateral y cortina móvil
-const side = $('#sidebar'), shade = $('#shade');
-$('#menu')?.addEventListener('click', () => {
-    side?.classList.add('open');
-    shade?.classList.add('show');
-});
-shade?.addEventListener('click', () => {
-    side?.classList.remove('open');
-    shade?.classList.remove('show');
-});
+// Control del menú lateral (desplegable en celular y tablet) y cortina
+const side = $('#sidebar'), shade = $('#shade'), menuBtn = $('#menu');
+
+function setMenu(open) {
+    side?.classList.toggle('open', open);
+    shade?.classList.toggle('show', open);
+    document.body.classList.toggle('no-scroll', open);
+    menuBtn?.setAttribute('aria-expanded', String(open));
+}
+
+menuBtn?.addEventListener('click', () => setMenu(true));
+shade?.addEventListener('click', () => setMenu(false));
+$('.side-close')?.addEventListener('click', () => setMenu(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+// Al elegir una opción del menú en celular, se cierra
+side?.querySelectorAll('.nav, .history, #new').forEach(el => el.addEventListener('click', () => setMenu(false)));
+// Si la pantalla crece a escritorio con el menú abierto, se limpia el estado
+window.matchMedia('(min-width: 961px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
 
 // Elementos principales de la interfaz
 const input = $('#input'),
@@ -133,32 +146,28 @@ function add(t, who, citations = [], telemetry = null) {
     // Si existen citas oficiales verificadas (RF09), agregarlas en un bloque institucional
     if (who === 'assistant' && citations && citations.length > 0) {
         let citeBox = document.createElement('div');
-        citeBox.style.marginTop = '10px';
-        citeBox.style.paddingTop = '8px';
-        citeBox.style.borderTop = '1px dashed #d1e2d7';
-        citeBox.style.fontSize = '10px';
-        citeBox.style.color = '#42574b';
+        citeBox.className = 'cites';
 
-        let citeTitle = document.createElement('div');
-        citeTitle.innerHTML = '<strong> Fuentes oficiales consultadas (RF09):</strong>';
+        let citeTitle = document.createElement('strong');
+        citeTitle.textContent = 'Fuentes oficiales consultadas (RF09):';
         citeBox.appendChild(citeTitle);
 
         citations.forEach(c => {
             let item = document.createElement('div');
-            item.style.marginTop = '4px';
-            item.style.padding = '3px 6px';
-            item.style.background = '#f2f8f4';
-            item.style.borderRadius = '5px';
+            item.className = 'cite';
             let simPercent = Math.round(c.similarity * 100);
-            item.innerHTML = `• <b>${c.documento}</b> [${c.categoria}] ${c.articulo ? '· ' + c.articulo : ''} <span style="color:#006747;font-weight:bold;">(${simPercent}% relevancia)</span>`;
+            let doc = document.createElement('b');
+            doc.textContent = c.documento;
+            let rel = document.createElement('span');
+            rel.className = 'rel';
+            rel.textContent = `(${simPercent}% relevancia)`;
+            item.append('• ', doc, ` [${c.categoria}] ${c.articulo ? '· ' + c.articulo : ''} `, rel);
             citeBox.appendChild(item);
         });
 
         if (telemetry && telemetry.total_latency_ms) {
             let telDiv = document.createElement('div');
-            telDiv.style.marginTop = '6px';
-            telDiv.style.fontSize = '9px';
-            telDiv.style.color = '#8a9890';
+            telDiv.className = 'cite-tel';
             telDiv.textContent = ` Latencia RAG: ${telemetry.total_latency_ms} ms · Modelo: ${telemetry.model || 'LanceDB + GPT'}`;
             citeBox.appendChild(telDiv);
         }
@@ -173,7 +182,7 @@ function add(t, who, citations = [], telemetry = null) {
     }
 
     messages.append(row);
-    messages.scrollTop = messages.scrollHeight;
+    row.scrollIntoView({ block: 'end', behavior: 'smooth' });
     return row;
 }
 

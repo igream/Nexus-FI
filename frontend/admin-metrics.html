@@ -2,189 +2,115 @@
 <html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#006747">
   <title>Nexus FI - Métricas de Consumo Admin</title>
+  <link rel="icon" href="assets/nexus-icon.svg">
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .admin-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 14px;
-      margin-top: 15px;
-    }
-    .metric-card {
-      background: var(--theme-surface, #ffffff);
-      border: 1px solid var(--theme-border, #e2eae5);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .metric-card h3 {
-      font-size: 13px;
-      margin: 0 0 10px 0;
-      color: var(--green, #006747);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .metric-card .key-badge {
-      font-size: 9px;
-      background: var(--theme-bg, #f6f8f7);
-      border: 1px solid var(--theme-border, #e2eae5);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: var(--theme-muted, #7c8a82);
-    }
-    .metric-val {
-      font-size: 22px;
-      font-weight: bold;
-      margin: 6px 0;
-    }
-    .metric-sub {
-      font-size: 10px;
-      color: var(--theme-muted, #7c8a82);
-      display: flex;
-      justify-content: space-between;
-      border-top: 1px dashed var(--theme-border, #e2eae5);
-      padding-top: 6px;
-      margin-top: 8px;
-    }
-    .section-title {
-      font-size: 15px;
-      margin: 25px 0 10px;
-      color: var(--theme-text, #19332a);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-  </style>
 </head>
 <body>
 
-  <!-- Barra lateral -->
-  <aside class="dashside">
+  <!-- Barra lateral (menú desplegable en móvil) -->
+  <aside class="sidebar" id="sidebar" aria-label="Menú principal">
     <div class="brand">
-      <div class="logo">FI<span>▲</span></div>
+      <div class="logo">N<span>FI</span></div>
       <div>
         <b>Nexus FI</b>
         <small>Administrador</small>
       </div>
+      <button type="button" class="side-close" aria-label="Cerrar menú">✕</button>
     </div>
 
-    <nav style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+    <nav class="side-nav">
       <a href="index.html" class="nav">💬 Asistente RAG</a>
       <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
-      <a href="admin-metrics.html" class="nav active">⚡ Panel Admin</a>
+      <a href="admin-metrics.html" class="nav active" aria-current="page">⚡ Panel Admin</a>
     </nav>
 
     <div class="sidebottom">
-      <button class="theme-toggle" type="button">Modo oscuro</button>
-      <small style="display:block; margin-top:10px;">UAEMéx · Equipo 404</small>
+      <small>UAEMéx · Equipo 404</small>
     </div>
   </aside>
 
-  <!-- Contenido Principal -->
-  <main class="dashmain">
-    <header class="dashhead">
-      <div>
-        <h1>Métricas de Consumo e Infraestructura Admin</h1>
-        <p class="sub">Control de presupuesto y tokens devengados en OpenAI y AWS</p>
+  <main>
+    <header class="topbar">
+      <button id="menu" class="menu" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">☰</button>
+      <div class="mini">N</div>
+      <div class="topbar-title">
+        <b>Panel Admin</b>
+        <small>Nexus FI · UAEMéx</small>
       </div>
-      <div style="text-align: right;">
-        <span style="font-size: 10px; color: var(--theme-muted);">Gasto Acumulado Total</span>
-        <div id="total-spent" style="font-size: 20px; font-weight: bold; color: var(--gold, #d5a62e);">$0.00 USD</div>
+      <div class="topbar-actions">
+        <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Activar modo oscuro">Modo oscuro</button>
       </div>
     </header>
 
-    <!-- SECCIÓN 1: OPENAI / 4 CLAVES API -->
-    <h2 class="section-title">🤖 Consumo de Tokens OpenAI (4 Claves API)</h2>
-    <div class="admin-grid">
-      
-      <!-- Clave 1: Embeddings -->
-      <div class="metric-card">
-        <h3>Embeddings <span class="key-badge">API Key #1</span></h3>
-        <div id="tokens-emb" class="metric-val">--</div>
-        <div class="metric-sub">
-          <span>Saldo Devengado:</span>
-          <b id="cost-emb" style="color: var(--green, #006747);">$0.00</b>
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1>Métricas de Consumo e Infraestructura</h1>
+          <p class="sub">Control de presupuesto y tokens devengados en OpenAI y AWS</p>
+        </div>
+        <div class="card total-card">
+          <span>Gasto Acumulado Total</span>
+          <strong id="total-spent">$0.00 USD</strong>
         </div>
       </div>
 
-      <!-- Clave 2: GPT-4o-mini -->
-      <div class="metric-card">
-        <h3>GPT-4o-mini <span class="key-badge">API Key #2</span></h3>
-        <div id="tokens-gpt4" class="metric-val">--</div>
-        <div class="metric-sub">
-          <span>Saldo Devengado:</span>
-          <b id="cost-gpt4" style="color: var(--green, #006747);">$0.00</b>
+      <!-- SECCIÓN 1: OPENAI / 4 CLAVES API -->
+      <h2 class="section-title">🤖 Consumo de Tokens OpenAI (4 Claves API)</h2>
+      <div class="admin-grid">
+        <div class="card metric-card">
+          <h3>Embeddings <span class="key-badge">API Key #1</span></h3>
+          <div id="tokens-emb" class="metric-val">--</div>
+          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-emb">$0.00</b></div>
+        </div>
+        <div class="card metric-card">
+          <h3>GPT-4o-mini <span class="key-badge">API Key #2</span></h3>
+          <div id="tokens-gpt4" class="metric-val">--</div>
+          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-gpt4">$0.00</b></div>
+        </div>
+        <div class="card metric-card">
+          <h3>Luna 6 <span class="key-badge">API Key #3</span></h3>
+          <div id="tokens-luna6" class="metric-val">--</div>
+          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-luna6">$0.00</b></div>
+        </div>
+        <div class="card metric-card">
+          <h3>Luna 5.6 <span class="key-badge">API Key #4</span></h3>
+          <div id="tokens-luna56" class="metric-val">--</div>
+          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-luna56">$0.00</b></div>
         </div>
       </div>
 
-      <!-- Clave 3: Luna 6 -->
-      <div class="metric-card">
-        <h3>Luna 6 <span class="key-badge">API Key #3</span></h3>
-        <div id="tokens-luna6" class="metric-val">--</div>
-        <div class="metric-sub">
-          <span>Saldo Devengado:</span>
-          <b id="cost-luna6" style="color: var(--green, #006747);">$0.00</b>
+      <!-- SECCIÓN 2: INFRAESTRUCTURA AWS -->
+      <h2 class="section-title">☁️ Recursos de Infraestructura AWS</h2>
+      <div class="admin-grid">
+        <div class="card metric-card">
+          <h3>Almacenamiento S3</h3>
+          <div id="aws-s3" class="metric-val">-- GB</div>
+          <div class="metric-sub"><span>Uso de vectores / JSONs</span></div>
+        </div>
+        <div class="card metric-card">
+          <h3>Cómputo EC2</h3>
+          <div id="aws-ec2" class="metric-val">--</div>
+          <div class="metric-sub"><span>CPU Promedio: <b id="aws-cpu">--%</b></span></div>
+        </div>
+        <div class="card metric-card">
+          <h3>Ancho de Banda</h3>
+          <div id="aws-bandwidth" class="metric-val">-- GB</div>
+          <div class="metric-sub"><span>Tráfico Egress Mensual</span></div>
+        </div>
+        <div class="card metric-card">
+          <h3>Saldo AWS Disponible</h3>
+          <div id="aws-credit" class="metric-val ok">-- USD</div>
+          <div class="metric-sub"><span>Créditos restantes</span></div>
         </div>
       </div>
-
-      <!-- Clave 4: Luna 5.6 -->
-      <div class="metric-card">
-        <h3>Luna 5.6 <span class="key-badge">API Key #4</span></h3>
-        <div id="tokens-luna56" class="metric-val">--</div>
-        <div class="metric-sub">
-          <span>Saldo Devengado:</span>
-          <b id="cost-luna56" style="color: var(--green, #006747);">$0.00</b>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SECCIÓN 2: INFRAESTRUCTURA AWS -->
-    <h2 class="section-title">☁️ Recursos de Infraestructura AWS</h2>
-    <div class="admin-grid">
-      
-      <!-- S3 -->
-      <div class="metric-card">
-        <h3>Almacenamiento S3</h3>
-        <div id="aws-s3" class="metric-val">-- GB</div>
-        <div class="metric-sub">
-          <span>Uso de vectores / JSONs</span>
-        </div>
-      </div>
-
-      <!-- EC2 -->
-      <div class="metric-card">
-        <h3>Cómputo EC2</h3>
-        <div id="aws-ec2" class="metric-val">--</div>
-        <div class="metric-sub">
-          <span>CPU Promedio: <b id="aws-cpu">--%</b></span>
-        </div>
-      </div>
-
-      <!-- Ancho de Banda -->
-      <div class="metric-card">
-        <h3>Ancho de Banda</h3>
-        <div id="aws-bandwidth" class="metric-val">-- GB</div>
-        <div class="metric-sub">
-          <span>Tráfico Egress Mensual</span>
-        </div>
-      </div>
-
-      <!-- Crédito / Saldo AWS -->
-      <div class="metric-card">
-        <h3>Saldo AWS Disponible</h3>
-        <div id="aws-credit" class="metric-val" style="color: var(--green, #006747);">-- USD</div>
-        <div class="metric-sub">
-          <span>Créditos restantes</span>
-        </div>
-      </div>
-
     </div>
   </main>
 
-  <!-- Cargar los scripts -->
+  <div id="shade"></div>
+
   <script src="app.js"></script>
   <script>
     async function fetchAdminMetrics() {
@@ -215,7 +141,7 @@
 
       } catch (err) {
         console.warn('Endpoint admin no disponible, cargando valores por defecto:', err);
-        
+
         document.getElementById('tokens-emb').textContent = '14,250,000';
         document.getElementById('cost-emb').textContent = '$2.85';
 

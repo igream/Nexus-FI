@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#006747">
   <title>Nexus FI | Asistente Inteligente UAEMéx</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -10,18 +10,19 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar" id="sidebar" aria-label="Menú principal">
     <div class="brand">
       <div class="logo">N<span>FI</span></div>
       <div>
         <b>Nexus FI</b>
         <small>Facultad de Ingeniería</small>
       </div>
+      <button type="button" class="side-close" aria-label="Cerrar menú">✕</button>
     </div>
-    
+
     <!-- Menú de Navegación Principal del Proyecto -->
-    <nav class="space-y-1" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px;">
-      <a href="index.html" class="nav active">💬 Asistente RAG</a>
+    <nav class="side-nav">
+      <a href="index.html" class="nav active" aria-current="page">💬 Asistente RAG</a>
       <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
       <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
     </nav>
@@ -38,28 +39,23 @@
   </aside>
 
   <main>
-    <header>
-      <button id="menu" class="menu">☰</button>
+    <header class="topbar">
+      <button id="menu" class="menu" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">☰</button>
       <div class="mini">N</div>
-      <div>
+      <div class="topbar-title">
         <b>Nexus FI</b>
         <small>Asistente institucional UAEMéx</small>
       </div>
 
-      <!-- Insignia de cuota por usuario registrado (WBS 1.4.2, SC-001) -->
-      <span id="rate-limit-badge" class="demo">⏱️ Consultando cuota...</span>
+      <div class="topbar-actions">
+        <!-- Insignia de cuota por usuario registrado (WBS 1.4.2, SC-001) -->
+        <span id="rate-limit-badge" class="demo">⏱️ Consultando cuota...</span>
 
-      <div class="avatar">ICO</div>
-      
-      <!-- Botón de Modo Oscuro de Daniel -->
-      <button
-        type="button"
-        class="theme-toggle"
-        aria-pressed="false"
-        aria-label="Activar modo oscuro"
-      >
-        Modo oscuro
-      </button>
+        <div class="avatar">ICO</div>
+
+        <!-- Botón de Modo Oscuro de Daniel -->
+        <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Activar modo oscuro">Modo oscuro</button>
+      </div>
     </header>
 
     <section class="content">
@@ -96,7 +92,7 @@
       <form id="form" class="composer">
         <button type="button" class="attach">＋</button>
         <textarea id="input" rows="1" maxlength="500" placeholder="Pregunta sobre servicios o información de la Facultad…"></textarea>
-        <button class="send" aria-label="Enviar">↑</button>
+        <button type="submit" class="send" aria-label="Enviar">↑</button>
       </form>
 
       <div class="caption">
@@ -105,8 +101,8 @@
       </div>
     </section>
 
-    <footer>
-      Proyecto de Titulación Nexus FI · Equipo 404 (UAEMéx)
+    <footer class="app-footer">
+      <span>Proyecto de Titulación Nexus FI · Equipo 404 (UAEMéx)</span>
       <span>Ingeniería en Computación · LanceDB + OpenAI RAG</span>
     </footer>
   </main>

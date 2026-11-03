@@ -2,183 +2,189 @@
 <html lang="es" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#006747">
   <title>Nexus FI - Tablero Dinámico de Usuario</title>
+  <link rel="icon" href="assets/nexus-icon.svg">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-  <!-- Barra lateral (Sidebar) -->
-  <aside class="dashside" style="width: 240px; position: fixed; inset: 0 auto 0 0; background: var(--theme-surface, #fff); border-right: 1px solid var(--theme-border, #e2eae5); padding: 24px 16px; display: flex; flex-direction: column; z-index: 5;">
-    <div class="brand" style="display: flex; align-items: center; gap: 11px; padding-bottom: 28px;">
-      <div class="logo" style="width: 42px; height: 42px; border-radius: 13px; background: #006747; display: grid; place-items: center; color: white; font-weight: bold;">N<span style="font-size: 10px; color: #d5a62e;">FI</span></div>
+  <!-- Barra lateral (menú desplegable en móvil) -->
+  <aside class="sidebar" id="sidebar" aria-label="Menú principal">
+    <div class="brand">
+      <div class="logo">N<span>FI</span></div>
       <div>
-        <b style="display: block; font-size: 17px;">Nexus FI</b>
-        <small style="display: block; color: #7c8a82; font-size: 11px; margin-top: 3px;">Facultad de Ingeniería</small>
+        <b>Nexus FI</b>
+        <small>Facultad de Ingeniería</small>
       </div>
+      <button type="button" class="side-close" aria-label="Cerrar menú">✕</button>
     </div>
 
-    <nav style="display: flex; flex-direction: column; gap: 8px;">
+    <nav class="side-nav">
       <a href="index.html" class="nav">💬 Asistente RAG</a>
-      <a href="dashboard.html" class="nav active">📊 Tablero Usuario</a>
+      <a href="dashboard.html" class="nav active" aria-current="page">📊 Tablero Usuario</a>
       <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
     </nav>
 
-    <div class="sidebottom" style="margin-top: auto; border-top: 1px solid #e2eae5; padding-top: 16px;">
-      <button class="theme-toggle" type="button">Modo oscuro</button>
-      <small style="display: block; font-size: 10px; line-height: 1.6; color: #98a49d; margin-top: 10px;">UAEMéx · Equipo 404</small>
+    <div class="sidebottom">
+      <small>UAEMéx · Equipo 404</small>
     </div>
   </aside>
 
-  <!-- Contenido Principal -->
-  <main class="dashmain" style="margin-left: 240px; padding: 28px 40px; min-height: 100vh;">
-    <header class="dashhead" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <div>
-        <h1 style="font-size: 26px; margin: 0;">Tablero Dinámico de Usuario</h1>
-        <p class="sub" style="font-size: 11px; color: #7c8a82; margin: 6px 0 0;">Telemetría de consultas y tiempos de respuesta en tiempo real</p>
+  <main>
+    <header class="topbar">
+      <button id="menu" class="menu" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">☰</button>
+      <div class="mini">N</div>
+      <div class="topbar-title">
+        <b>Tablero de Usuario</b>
+        <small>Nexus FI · UAEMéx</small>
       </div>
-      <button id="btn-refresh" class="primary" style="padding: 8px 16px; font-size: 12px; cursor: pointer; background: #006747; color: white; border: none; border-radius: 8px; font-weight: bold;">
-        🔄 Actualizar Métricas
-      </button>
+      <div class="topbar-actions">
+        <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Activar modo oscuro">Modo oscuro</button>
+      </div>
     </header>
 
-    <!-- KPIs -->
-    <section class="kpis" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px;">
-      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <span style="font-size: 10px; color: #78867d; display: block;">Consultas Totales</span>
-        <strong id="kpi-queries" style="font-size: 26px; display: block; margin: 10px 0 5px;">--</strong>
-        <small style="color: #20976b; font-size: 10px;">↑ En tiempo real</small>
-      </article>
-
-      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <span style="font-size: 10px; color: #78867d; display: block;">Latencia Promedio</span>
-        <strong id="kpi-latency" style="font-size: 26px; display: block; margin: 10px 0 5px;">-- <small style="font-size: 13px;">ms</small></strong>
-        <small style="color: #78867d; font-size: 10px;">Pipeline RAG</small>
-      </article>
-
-      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <span style="font-size: 10px; color: #78867d; display: block;">Tasa de Éxito RAG</span>
-        <strong id="kpi-accuracy" style="font-size: 26px; display: block; margin: 10px 0 5px;">-- <small style="font-size: 13px;">%</small></strong>
-        <small style="color: #20976b; font-size: 10px;">Citas verificadas (RF09)</small>
-      </article>
-
-      <article style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <span style="font-size: 10px; color: #78867d; display: block;">Documentos Vectorizados</span>
-        <strong style="font-size: 26px; display: block; margin: 10px 0 5px;">3,977</strong>
-        <small style="color: #78867d; font-size: 10px;">Acervo FI UAEMéx</small>
-      </article>
-    </section>
-
-    <!-- Gráficas Dinámicas -->
-    <section class="charts" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px;">
-      <div class="panel" style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <div class="panelhead" style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h2 style="font-size: 14px; margin: 0;">Latencia Real y Consultas Procesadas</h2>
-            <p style="font-size: 10px; color: #96a19b; margin: 4px 0 0;">Monitoreo dinámico del servidor</p>
-          </div>
-          <span style="font-size: 9px; color: #718077; background: #f3f7f4; padding: 4px 8px; border-radius: 6px;">API Telemetry</span>
+    <div class="page">
+      <div class="page-head">
+        <div>
+          <h1>Tablero Dinámico de Usuario</h1>
+          <p class="sub">Telemetría de consultas y tiempos de respuesta en tiempo real</p>
         </div>
-        <div style="position: relative; height: 220px; margin-top: 15px;">
-          <canvas id="chartLatency"></canvas>
-        </div>
+        <button id="btn-refresh" class="primary" type="button">🔄 Actualizar Métricas</button>
       </div>
 
-      <div class="panel" style="background: var(--theme-surface, #fff); border: 1px solid var(--theme-border, #e2eae5); border-radius: 13px; padding: 17px;">
-        <div class="panelhead">
-          <div>
-            <h2 style="font-size: 14px; margin: 0;">Distribución Temática</h2>
-            <p style="font-size: 10px; color: #96a19b; margin: 4px 0 0;">Categorías más consultadas por alumnos</p>
+      <!-- KPIs -->
+      <section class="kpis">
+        <article class="card kpi">
+          <span>Consultas Totales</span>
+          <strong id="kpi-queries">--</strong>
+          <small class="up">↑ En tiempo real</small>
+        </article>
+        <article class="card kpi">
+          <span>Latencia Promedio</span>
+          <strong><span id="kpi-latency">--</span> <small>ms</small></strong>
+          <small>Pipeline RAG</small>
+        </article>
+        <article class="card kpi">
+          <span>Tasa de Éxito RAG</span>
+          <strong><span id="kpi-accuracy">--</span> <small>%</small></strong>
+          <small class="up">Citas verificadas (RF09)</small>
+        </article>
+        <article class="card kpi">
+          <span>Documentos Vectorizados</span>
+          <strong>3,977</strong>
+          <small>Acervo FI UAEMéx</small>
+        </article>
+      </section>
+
+      <!-- Gráficas -->
+      <section class="charts">
+        <div class="panel">
+          <div class="panelhead">
+            <div>
+              <h2>Latencia Real y Consultas Procesadas</h2>
+              <p>Monitoreo dinámico del servidor</p>
+            </div>
+            <span class="tag">API Telemetry</span>
+          </div>
+          <div class="chart-box">
+            <canvas id="chartLatency"></canvas>
           </div>
         </div>
-        <div style="position: relative; height: 220px; margin-top: 15px; display: flex; justify-content: center;">
-          <canvas id="chartTopics"></canvas>
+
+        <div class="panel">
+          <div class="panelhead">
+            <div>
+              <h2>Distribución Temática</h2>
+              <p>Categorías más consultadas por alumnos</p>
+            </div>
+          </div>
+          <div class="chart-box donut">
+            <canvas id="chartTopics"></canvas>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
-  <!-- Script Principal y Conexión Dinámica -->
+  <div id="shade"></div>
+
   <script src="app.js"></script>
   <script>
     let latencyChartInstance = null;
     let topicsChartInstance = null;
+    let lastData = null;
+
+    const FALLBACK = {
+      totalQueries: 1248,
+      avgLatencyMs: 285,
+      successRate: 98.5,
+      timeSeriesLabels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
+      latencyData: [310, 280, 240, 350, 290, 285],
+      queriesData: [45, 120, 230, 180, 160, 95],
+      topicLabels: ['Evaluación Escolar', 'Servicio Social', 'Titulación', 'Becas', 'Otros'],
+      topicValues: [35, 25, 20, 12, 8]
+    };
+
+    function chartColors() {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      return {
+        text: isDark ? '#a5b6ab' : '#7c8a82',
+        grid: isDark ? '#33483c' : '#e2eae5',
+        small: window.matchMedia('(max-width: 600px)').matches
+      };
+    }
 
     async function fetchUserMetrics() {
+      let data;
       try {
         const response = await fetch('/api/v1/metrics/user-dashboard');
-        const data = await response.json();
-
-        document.getElementById('kpi-queries').textContent = data.totalQueries.toLocaleString();
-        document.getElementById('kpi-latency').textContent = data.avgLatencyMs;
-        document.getElementById('kpi-accuracy').textContent = data.successRate;
-
-        renderLatencyChart(data.timeSeriesLabels, data.latencyData, data.queriesData);
-        renderTopicsChart(data.topicLabels, data.topicValues);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        data = await response.json();
       } catch (err) {
-        console.warn('Backend de métricas no disponible, renderizando datos dinámicos de prueba:', err);
-        
-        document.getElementById('kpi-queries').textContent = '1,248';
-        document.getElementById('kpi-latency').textContent = '285';
-        document.getElementById('kpi-accuracy').textContent = '98.5';
-        
-        renderLatencyChart(
-          ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-          [310, 280, 240, 350, 290, 285],
-          [45, 120, 230, 180, 160, 95]
-        );
-        renderTopicsChart(
-          ['Evaluación Escolar', 'Servicio Social', 'Titulación', 'Becas', 'Otros'],
-          [35, 25, 20, 12, 8]
-        );
+        console.warn('Backend de métricas no disponible, se muestran datos de prueba:', err);
+        data = FALLBACK;
       }
+      lastData = data;
+      document.getElementById('kpi-queries').textContent = Number(data.totalQueries).toLocaleString('es-MX');
+      document.getElementById('kpi-latency').textContent = data.avgLatencyMs;
+      document.getElementById('kpi-accuracy').textContent = data.successRate;
+      renderCharts();
+    }
+
+    function renderCharts() {
+      if (!lastData || typeof Chart === 'undefined') return;
+      renderLatencyChart(lastData.timeSeriesLabels, lastData.latencyData, lastData.queriesData);
+      renderTopicsChart(lastData.topicLabels, lastData.topicValues);
     }
 
     function renderLatencyChart(labels, latencyData, queriesData) {
       const ctx = document.getElementById('chartLatency').getContext('2d');
       if (latencyChartInstance) latencyChartInstance.destroy();
-
-      const isDark = document.documentElement.dataset.theme === 'dark';
-      const textColor = isDark ? '#a5b6ab' : '#7c8a82';
-      const gridColor = isDark ? '#33483c' : '#e2eae5';
+      const c = chartColors();
+      const font = { size: c.small ? 10 : 12 };
 
       latencyChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: labels,
+          labels,
           datasets: [
-            {
-              label: 'Latencia (ms)',
-              data: latencyData,
-              borderColor: '#006747',
-              backgroundColor: 'rgba(0, 103, 71, 0.1)',
-              yAxisID: 'yLatency',
-              tension: 0.3,
-              fill: true
-            },
-            {
-              label: 'Consultas',
-              data: queriesData,
-              borderColor: '#d5a62e',
-              backgroundColor: 'rgba(213, 166, 46, 0.1)',
-              yAxisID: 'yQueries',
-              tension: 0.3,
-              fill: true
-            }
+            { label: 'Latencia (ms)', data: latencyData, borderColor: '#006747', backgroundColor: 'rgba(0, 103, 71, 0.1)', yAxisID: 'yLatency', tension: 0.3, fill: true },
+            { label: 'Consultas', data: queriesData, borderColor: '#d5a62e', backgroundColor: 'rgba(213, 166, 46, 0.1)', yAxisID: 'yQueries', tension: 0.3, fill: true }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
           scales: {
-            yLatency: { type: 'linear', position: 'left', ticks: { color: textColor }, grid: { color: gridColor } },
-            yQueries: { type: 'linear', position: 'right', ticks: { color: textColor }, grid: { drawOnChartArea: false } },
-            x: { ticks: { color: textColor }, grid: { color: gridColor } }
+            yLatency: { type: 'linear', position: 'left', ticks: { color: c.text, font, maxTicksLimit: 6 }, grid: { color: c.grid } },
+            yQueries: { type: 'linear', position: 'right', ticks: { color: c.text, font, maxTicksLimit: 6 }, grid: { drawOnChartArea: false } },
+            x: { ticks: { color: c.text, font, maxRotation: 0, autoSkip: true }, grid: { color: c.grid } }
           },
-          plugins: {
-            legend: { labels: { color: textColor } }
-          }
+          plugins: { legend: { labels: { color: c.text, font, boxWidth: 12 } } }
         }
       });
     }
@@ -186,28 +192,26 @@
     function renderTopicsChart(labels, values) {
       const ctx = document.getElementById('chartTopics').getContext('2d');
       if (topicsChartInstance) topicsChartInstance.destroy();
-
-      const isDark = document.documentElement.dataset.theme === 'dark';
-      const textColor = isDark ? '#a5b6ab' : '#7c8a82';
+      const c = chartColors();
 
       topicsChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: labels,
-          datasets: [{
-            data: values,
-            backgroundColor: ['#006747', '#d5a62e', '#78b99a', '#2bab78', '#a5b6ab']
-          }]
+          labels,
+          datasets: [{ data: values, borderWidth: 0, backgroundColor: ['#006747', '#d5a62e', '#78b99a', '#2bab78', '#a5b6ab'] }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { color: textColor } }
-          }
+          cutout: '58%',
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { size: c.small ? 11 : 12 }, boxWidth: 12, padding: 12 } } }
         }
       });
     }
+
+    // Vuelve a dibujar con los colores correctos al cambiar de tema o de tamaño de pantalla
+    document.addEventListener('nexus-theme', renderCharts);
+    window.matchMedia('(max-width: 600px)').addEventListener('change', renderCharts);
 
     document.getElementById('btn-refresh')?.addEventListener('click', fetchUserMetrics);
     document.addEventListener('DOMContentLoaded', fetchUserMetrics);
