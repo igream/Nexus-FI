@@ -24,7 +24,7 @@
     <nav class="side-nav">
       <a href="index.html" class="nav active" aria-current="page">💬 Asistente RAG</a>
       <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
-      <a href="admin-metrics.html" class="nav">⚡ Panel Admin</a>
+      <a href="admin-metrics.html" data-admin-only class="nav">⚡ Panel Admin</a>
     </nav>
 
     <button class="primary" id="new">＋ Nueva consulta</button>
@@ -34,6 +34,11 @@
     <button class="history">⌕ Actividades culturales</button>
     
     <div class="sidebottom">
+      <div class="user-box">
+        <div class="avatar" data-user-initials>··</div>
+        <div><b data-user-name>Cargando…</b><small data-user-career></small></div>
+      </div>
+      <button type="button" class="logout" data-logout>↩ Cerrar sesión</button>
       <small>Orientación institucional oficial; no realiza trámites automáticos.</small>
     </div>
   </aside>
@@ -51,7 +56,7 @@
         <!-- Insignia de cuota por usuario registrado (WBS 1.4.2, SC-001) -->
         <span id="rate-limit-badge" class="demo">⏱️ Consultando cuota...</span>
 
-        <div class="avatar">ICO</div>
+        <div class="avatar" data-user-initials>··</div>
 
         <!-- Botón de Modo Oscuro de Daniel -->
         <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Activar modo oscuro">Modo oscuro</button>

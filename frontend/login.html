@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#006747">
+  <title>Nexus FI | Iniciar sesión</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/nexus-icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="auth-page">
+  <main class="auth-main">
+    <section class="auth-card" aria-labelledby="auth-title">
+      <div class="auth-brand">
+        <div class="logo">N<span>FI</span></div>
+        <div>
+          <b>Nexus FI</b>
+          <small>Facultad de Ingeniería · UAEMéx</small>
+        </div>
+        <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Activar modo oscuro">Modo oscuro</button>
+      </div>
+
+      <h1 id="auth-title">Bienvenido a Nexus FI</h1>
+      <p class="sub">Prueba piloto para la Licenciatura en Ingeniería en Computación.</p>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" role="tab" id="tab-login" aria-selected="true" aria-controls="form-login">Iniciar sesión</button>
+        <button type="button" role="tab" id="tab-registro" aria-selected="false" aria-controls="form-registro">Registrarme</button>
+      </div>
+
+      <div id="auth-msg" class="auth-msg" role="alert" hidden></div>
+
+      <!-- Iniciar sesión -->
+      <form id="form-login" class="auth-form" role="tabpanel" aria-labelledby="tab-login" novalidate>
+        <label for="login-cuenta">Número de cuenta</label>
+        <input id="login-cuenta" name="numero_cuenta" inputmode="numeric" autocomplete="username"
+               maxlength="7" pattern="\d{7}" placeholder="7 dígitos" required>
+
+        <label for="login-pass">Contraseña</label>
+        <div class="pass-field">
+          <input id="login-pass" name="password" type="password" autocomplete="current-password" maxlength="72" required>
+          <button type="button" class="pass-toggle" aria-label="Mostrar contraseña">👁</button>
+        </div>
+
+        <button class="primary" type="submit">Iniciar sesión</button>
+      </form>
+
+      <!-- Registro -->
+      <form id="form-registro" class="auth-form" role="tabpanel" aria-labelledby="tab-registro" hidden novalidate>
+        <label for="reg-carrera">Carrera</label>
+        <select id="reg-carrera" name="carrera" required>
+          <option value="ICO">Licenciatura en Ingeniería en Computación (ICO)</option>
+        </select>
+
+        <label for="reg-cuenta">Número de cuenta</label>
+        <input id="reg-cuenta" name="numero_cuenta" inputmode="numeric" autocomplete="username"
+               maxlength="7" pattern="\d{7}" placeholder="7 dígitos" required>
+
+        <label for="reg-pass">Contraseña</label>
+        <div class="pass-field">
+          <input id="reg-pass" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+          <button type="button" class="pass-toggle" aria-label="Mostrar contraseña">👁</button>
+        </div>
+        <small class="hint">Mínimo 8 caracteres.</small>
+
+        <label for="reg-pass2">Confirmar contraseña</label>
+        <input id="reg-pass2" type="password" autocomplete="new-password" maxlength="72" required>
+
+        <button class="primary" type="submit">Crear mi contraseña</button>
+        <small class="hint">Solo pueden registrarse las cuentas autorizadas para la prueba piloto.</small>
+      </form>
+    </section>
+
+    <p class="auth-foot">Orientación institucional oficial · Equipo 404 (UAEMéx)</p>
+  </main>
+
+  <script src="login.js"></script>
+</body>
+</html>

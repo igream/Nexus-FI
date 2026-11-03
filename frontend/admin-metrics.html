@@ -24,10 +24,15 @@
     <nav class="side-nav">
       <a href="index.html" class="nav">💬 Asistente RAG</a>
       <a href="dashboard.html" class="nav">📊 Tablero Usuario</a>
-      <a href="admin-metrics.html" class="nav active" aria-current="page">⚡ Panel Admin</a>
+      <a href="admin-metrics.html" data-admin-only class="nav active" aria-current="page">⚡ Panel Admin</a>
     </nav>
 
     <div class="sidebottom">
+      <div class="user-box">
+        <div class="avatar" data-user-initials>··</div>
+        <div><b data-user-name>Cargando…</b><small data-user-career></small></div>
+      </div>
+      <button type="button" class="logout" data-logout>↩ Cerrar sesión</button>
       <small>UAEMéx · Equipo 404</small>
     </div>
   </aside>
@@ -115,7 +120,9 @@
   <script>
     async function fetchAdminMetrics() {
       try {
-        const response = await fetch('/api/v1/admin/metrics');
+        const response = await fetch('/api/v1/admin/metrics', { headers: getSecurityHeaders() });
+        if (response.status === 401) { irALogin(); return; }
+        if (response.status === 403) { location.replace('/'); return; }
         const data = await response.json();
 
         document.getElementById('tokens-emb').textContent = data.openai.embeddings.tokens.toLocaleString();
