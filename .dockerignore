@@ -30,3 +30,11 @@ __pycache__/
 *$py.class
 *.log
 .pytest_cache/
+
+# ==============================================================================
+# DATOS PRIVADOS Y DE EJECUCIÓN (nunca dentro de la imagen)
+# data/ se monta como volumen; Local/ tiene documentos privados del equipo
+# ==============================================================================
+data/
+Local/
+.claude/

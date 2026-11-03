@@ -12,6 +12,10 @@ services:
     # Límite de consultas por usuario registrado (WBS 1.4.2): activo salvo que el .env diga false.
     environment:
       RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+    # Base vectorial (data/lancedb) y base de usuarios (data/usuarios.db) fuera de la imagen:
+    # no se pierden al reconstruir el contenedor y nunca se suben a Git.
+    volumes:
+      - ./data:/app/data
 
   # Servicio Proxy (Nginx)
   nginx:
