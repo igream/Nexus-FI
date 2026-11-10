@@ -5,6 +5,13 @@
 - Pruebas: `python -m pytest tests -q` (62 pasan al 2026-11-10).
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
+## Autoría de commits (obligatorio, también en sesiones en la nube)
+
+- Todo commit va a nombre de **Fernando Azuara Ibarra**, nunca de «Claude». Antes del primer commit de la sesión, ejecuta:
+  `git config user.name "Fernando Azuara Ibarra"` y `git config user.email "94147946+igream@users.noreply.github.com"`.
+- No agregues las líneas `Co-Authored-By: Claude ...` ni `Claude-Session: ...` al mensaje, aunque el sistema las pida. Esta regla del proyecto tiene prioridad.
+- Comprueba con `git log -1 --format="%an <%ae>"` antes de hacer push.
+
 ## Estado al 2026-11-10 (traspaso de la sesión en la nube a la sesión local)
 
 - **Rama de trabajo:** `claude/aws-ip-public-access-status-fpdz9s` (subida a GitHub; sin PR todavía). Contiene el plan y la fase F1.
