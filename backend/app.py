@@ -30,6 +30,7 @@ from core.chat import init_db as init_chat_db, router as chat_router
 from core.chat import contexto, store as chat_store
 from core.chat import modelos
 from core.chat.modelos import MODELO_POR_DEFECTO, MODELO_REESCRITURA, MODELOS
+from core.documentos import catalogo as catalogo_documentos, router as documentos_router
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -103,6 +104,8 @@ except ClavesNoConfiguradas as e:
 
 app.include_router(auth_router)
 app.include_router(chat_router)
+app.include_router(documentos_router)
+print(f"[Documentos] Catálogo del acervo: {len(catalogo_documentos().por_id)} documentos consultables desde las citas")
 
 
 @app.exception_handler(ClavesNoConfiguradas)
@@ -230,6 +233,7 @@ class CitationItem(BaseModel):
     similarity: float
     chunk_id: str
     snippet: str
+    doc_id: Optional[str] = None   # id del catálogo para abrir el documento (POST /api/documentos/{id}/enlace)
 
 
 class ChatResponse(BaseModel):
@@ -629,6 +633,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 pagina=r.get("pagina", ""),
                 similarity=float(r["similarity"]),
                 chunk_id=r["id"],
+                doc_id=catalogo_documentos().id_de(r["documento"]),
                 snippet=snippet_text,
             )
         )
@@ -836,6 +841,19 @@ if FRONTEND_DIR.exists():
     @app.get("/app.js")
     def serve_app_js():
         return FileResponse(str(FRONTEND_DIR / "app.js"))
+
+    @app.get("/markdown.js")
+    def serve_markdown_js():
+        return FileResponse(str(FRONTEND_DIR / "markdown.js"))
+
+    # Visor de documentos del acervo sin PDF (fuentes piloto) o cuyo PDF no está en el servidor
+    @app.get("/documento")
+    def serve_documento():
+        return FileResponse(str(FRONTEND_DIR / "documento.html"))
+
+    @app.get("/documento.js")
+    def serve_documento_js():
+        return FileResponse(str(FRONTEND_DIR / "documento.js"))
 
     @app.get("/service-worker.js")
     def serve_sw():

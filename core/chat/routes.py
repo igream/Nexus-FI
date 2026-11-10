@@ -39,6 +39,12 @@ def obtener(conv_id: str, request: Request):
     conv = store.obtener_conversacion(_usuario(request), conv_id)
     if conv is None:
         raise HTTPException(status_code=404, detail=NO_ENCONTRADA)
+    # Las citas guardadas antes de que existiera el catálogo no traen doc_id: se resuelve aquí
+    from core.documentos import catalogo
+    for m in conv["mensajes"]:
+        for c in m["citas"]:
+            if not c.get("doc_id"):
+                c["doc_id"] = catalogo().id_de(c.get("documento"))
     return conv
 
 

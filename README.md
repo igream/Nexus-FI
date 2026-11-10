@@ -206,7 +206,7 @@ Otras herramientas:
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"   # búsqueda por terminal
 python main.py --telemetry                                                             # diagnóstico (DT-10)
 python main.py --audit                                                                 # auditoría de secretos
-python -m pytest tests -q                                                              # 100 pruebas automáticas
+python -m pytest tests -q                                                              # 113 pruebas automáticas
 ```
 
 Páginas: chat en `/`, tablero en `/dashboard`, panel admin en `/admin-metrics` y documentación Swagger en `/docs`.
@@ -221,6 +221,12 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 - **CloudFront** da HTTPS con su certificado y entrega el sitio sin caché.
 - **Presupuesto** de 10 USD al mes con alertas y bloqueo automático; la instancia se detiene cuando no se usa (operar 24/7 costaría unos 21 USD al mes). Detalle en el reporte GP-09 (`docs/02_Ejecucion/Avance_3_100/Entregas/`).
 - **Actualizar:** en la instancia, `cd ~/Nexus-FI && git pull && docker compose up -d --build`. Si cambia la base, copiar `data/lancedb` con `scp` y reiniciar el backend.
+- **Documentos citados:** las citas del chat abren el PDF original en la página citada. Los 184 PDF (~236 MB) no van en Git ni en la imagen; se preparan en local y se suben al volumen `data/`:
+  ```bash
+  python scripts/preparar_acervo_original.py
+  scp -r data/acervo_original <usuario>@<servidor>:~/Nexus-FI/data/
+  ```
+  Si falta un PDF en el servidor, la cita abre el texto procesado del documento en lugar de fallar. Las fuentes piloto (horarios, IEEE, avisos) siempre se muestran como texto.
 
 ---
 
@@ -240,6 +246,9 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 | `GET /api/conversaciones/{id}` | Mensajes de una conversación propia (404 si es ajena o se borró) | Con sesión |
 | `PATCH /api/conversaciones/{id}` | Cambiar el título de una conversación propia | Con sesión |
 | `DELETE /api/conversaciones/{id}` | Borrar una conversación propia | Con sesión |
+| `POST /api/documentos/{id}/enlace` | Enlace para abrir una fuente citada: PDF firmado (vence en 10 min) o visor de texto | Con sesión |
+| `GET /api/documentos/{id}/archivo` | PDF original de una fuente citada (403 si la firma venció o no es válida) | Enlace firmado |
+| `GET /api/documentos/{id}/texto` | Texto de una fuente citada para el visor `/documento` | Con sesión |
 | `GET /api/auth/admin/usuarios` | Cuentas registradas | Administrador |
 | `POST /api/auth/admin/reiniciar-registro` | Borrar la contraseña de una cuenta para que se registre de nuevo | Administrador |
 | `GET /api/v1/admin/metrics` | Consumo de tokens por clave e infraestructura | Administrador |

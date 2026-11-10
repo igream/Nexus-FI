@@ -1,8 +1,9 @@
 # Nexus FI — notas para Claude Code
 
 - Plan de trabajo vigente: `docs/PLAN_IMPLEMENTACION.md`. Léelo antes de implementar algo; al terminar una tarea, actualiza sus casillas, la bitácora y la "Siguiente tarea".
-- Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial en `core/chat`; frontend estático en `frontend/`.
-- Pruebas: `python -m pytest tests -q` (100 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
+- Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial y modelos en `core/chat`; documentos citados en `core/documentos`; frontend estático en `frontend/` (Markdown compartido en `frontend/markdown.js`).
+- Citas consultables: cada cita abre el PDF original (enlace firmado de 10 min, `data/acervo_original/` en el servidor o `Pre Procesados/` en local) o el visor `/documento` para las fuentes piloto. **Pendiente: subir `data/acervo_original` a la EC2** (README, §Despliegue).
+- Pruebas: `python -m pytest tests -q` (113 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
 ## Autoría de commits (obligatorio, también en sesiones en la nube)

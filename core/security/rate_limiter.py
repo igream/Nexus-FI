@@ -34,6 +34,7 @@ QUOTA_EXEMPT_PREFIXES: tuple[str, ...] = (
     "/api/auth/",
     "/api/conversaciones",
     "/api/chat",          # F3: cuota por modelo, contada en el endpoint desde la base
+    "/api/documentos",    # abrir la fuente citada no es una consulta nueva
 
     "/api/status",
     "/api/health",
