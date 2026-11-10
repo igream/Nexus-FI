@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10.
+Última actualización: 2026-11-10 (F1 terminada; estado de traspaso en `CLAUDE.md`).
 
 ---
 
