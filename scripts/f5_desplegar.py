@@ -5,7 +5,7 @@ F5 - apagado automático de la EC2 de Nexus FI (plan de implementación, §F5).
       Estadísticas de NetworkIn (suma por 5 min) y CPU (promedio) de la instancia para elegir
       el umbral de la alarma: compara las horas sin uso con las horas de clase.
 
-  python scripts/f5_desplegar.py desplegar [--metrica NetworkIn] [--umbral 500000]
+  python scripts/f5_desplegar.py desplegar [--metrica NetworkIn] [--umbral 8000]
       1. Crea o actualiza la pila infra/f5/apagado.yaml (alarma, Lambda, Function URL, bucket, OAC).
       2. Sube la página infra/f5/dormido/index.html al bucket con la URL y el token.
       3. Ajusta la distribución de CloudFront: origen S3 con OAC, ruta /dormido/*, errores
@@ -167,7 +167,7 @@ def main() -> None:
     c.add_argument("--horas", type=int, default=24)
     d = sub.add_parser("desplegar")
     d.add_argument("--metrica", choices=["NetworkIn", "CPUUtilization"], default="NetworkIn")
-    d.add_argument("--umbral", type=float, default=500000)
+    d.add_argument("--umbral", type=float, default=8000)
     a = ap.parse_args()
     calibrar(a.horas) if a.accion == "calibrar" else desplegar(a.metrica, a.umbral)
 

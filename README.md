@@ -227,10 +227,10 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
   scp -r data/acervo_original <usuario>@<servidor>:~/Nexus-FI/data/
   ```
   Si falta un PDF en el servidor, la cita abre el texto procesado del documento en lugar de fallar. Las fuentes piloto (horarios, IEEE, avisos) siempre se muestran como texto.
-- **Apagado automático (F5, preparado; pendiente de desplegar):** una alarma de CloudWatch detiene la EC2 tras 15 minutos con poco tráfico de entrada (NetworkIn), y CloudFront muestra una página «servidor en reposo» (desde S3) con un botón que llama a la Lambda `nexus-despertar` para encenderla y actualizar el origen. Archivos en `infra/f5/`. Con credenciales de AWS:
+- **Apagado automático (F5, activo desde el 2026-11-10):** una alarma de CloudWatch detiene la EC2 tras 15 minutos con poco tráfico de entrada (NetworkIn menor a 8,000 bytes por 5 minutos; una consulta mete unos 11 KB), y CloudFront muestra una página «servidor en reposo» (desde S3) con un botón que llama a la Lambda `nexus-despertar` para encenderla y actualizar el origen. Archivos en `infra/f5/`. Con credenciales de AWS:
   ```bash
   python scripts/f5_desplegar.py calibrar --horas 48
-  python scripts/f5_desplegar.py desplegar --metrica NetworkIn --umbral <bytes_por_5_min>
+  python scripts/f5_desplegar.py desplegar --metrica NetworkIn --umbral 8000
   ```
   Para quitarlo: borrar la pila `nexus-fi-f5` y, en la distribución, el origen `nexus-dormido-s3`, la ruta `/dormido/*` y las páginas de error 502/504 (el bucket se conserva por su `DeletionPolicy`).
 
