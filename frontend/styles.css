@@ -268,6 +268,10 @@ html[data-theme="dark"] .theme-toggle { background: #24372c; color: #f1d780; bor
 }
 .attach, .send { width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 10px; }
 .attach { background: var(--theme-surface-2); color: var(--theme-muted); font-size: 20px; }
+.model-select {
+  height: 40px; flex-shrink: 0; max-width: 112px; border: 1px solid var(--theme-border); border-radius: 10px;
+  padding: 0 8px; background: var(--theme-surface-2); color: var(--theme-text); font-size: 13px; cursor: pointer;
+}
 .send { background: var(--green); color: #fff; font-weight: bold; font-size: 17px; }
 .caption { display: flex; justify-content: space-between; gap: 10px; color: var(--theme-faint); font-size: 11px; padding: 10px 4px 0; }
 .caption #count { white-space: nowrap; }
@@ -456,6 +460,8 @@ html[data-theme="dark"] .auth-msg.ok { border-color: #3b5e4b; }
   .msglogo { width: 26px; height: 26px; font-size: 9px; }
   .composer { bottom: env(safe-area-inset-bottom); }
   .composer textarea { font-size: 16px; } /* evita el zoom automático de iOS */
+  .composer { gap: 6px; }
+  .model-select { max-width: 86px; padding: 0 4px; font-size: 12px; }
   .caption { font-size: 10px; }
   .caption span:first-child { flex: 1; }
   .app-footer { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); font-size: 10px; flex-direction: column; }

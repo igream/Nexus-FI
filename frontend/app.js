@@ -287,21 +287,74 @@ function pintarUsuario(usuario) {
 
 document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', cerrarSesion));
 
+// ---------------------------------------------------------------------------
+// Selector de modelo (F3): recuerda la última elección y desactiva un modelo sin cuota
+// ---------------------------------------------------------------------------
+const MODELO_KEY = 'nexus_modelo';
+const modeloSelect = document.getElementById('modelo');
+let sesionInfo = null;
+
+function modeloElegido() {
+    return modeloSelect?.value || 'gpt-4o-mini';
+}
+
+function pintarSelectorModelos(s) {
+    if (!modeloSelect || !s.quotas) return;
+    let guardado = null;
+    try { guardado = localStorage.getItem(MODELO_KEY); } catch { }
+    const previo = modeloSelect.value || guardado;
+    modeloSelect.innerHTML = '';
+    for (const [id, q] of Object.entries(s.quotas)) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        const corto = (q.label || id).split(' (')[0];
+        const agotado = s.rate_limit_enabled && !q.allowed;
+        opt.textContent = agotado ? `${corto} (agotado)` : (q.available ? corto : `${corto} (no disponible)`);
+        opt.title = q.label || id;
+        opt.disabled = !q.available || agotado;
+        modeloSelect.appendChild(opt);
+    }
+    // Conserva la elección si sigue disponible; si no, el modelo por defecto
+    const preferido = [previo, guardado, s.default_model].find(
+        id => id && s.quotas[id] && !modeloSelect.querySelector(`option[value="${CSS.escape(id)}"]`).disabled
+    );
+    if (preferido) modeloSelect.value = preferido;
+}
+
+function pintarCuota() {
+    const quota = document.getElementById('rate-limit-badge');
+    const s = sesionInfo;
+    if (!quota || !s) return;
+    if (!s.rate_limit_enabled) {
+        quota.textContent = '⏱️ Sin límite';
+        return;
+    }
+    const q = (s.quotas && s.quotas[modeloElegido()]) || s.quota;
+    if (!q) {
+        quota.textContent = '⏱️ Sin sesión';
+        return;
+    }
+    const corto = (q.label || '').split(' (')[0];
+    quota.textContent = `⏱️ ${corto ? corto + ' ' : ''}${q.hourly_remaining}/${q.hourly_limit}/h`;
+    quota.title = `${q.label || 'Modelo'}: te quedan ${q.hourly_remaining} de ${q.hourly_limit} consultas en la última hora`
+        + (q.daily_limit ? ` y ${q.daily_remaining} de ${q.daily_limit} en el día` : '');
+}
+
+modeloSelect?.addEventListener('change', () => {
+    try { localStorage.setItem(MODELO_KEY, modeloSelect.value); } catch { }
+    pintarCuota();
+});
+
 async function refreshSecurityBadges() {
     const quota = document.getElementById('rate-limit-badge');
     try {
         const r = await fetch('/api/session/info', { headers: getSecurityHeaders() });
         const s = await r.json();
         if (!s.authenticated) { irALogin(); return; }
+        sesionInfo = s;
         pintarUsuario(s.usuario);
-        if (!quota) return;
-        if (!s.rate_limit_enabled) {
-            quota.textContent = '⏱️ Sin límite';
-        } else if (!s.quota) {
-            quota.textContent = '⏱️ Sin sesión';
-        } else {
-            quota.textContent = `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
-        }
+        pintarSelectorModelos(s);
+        pintarCuota();
     } catch (error) {
         if (quota) quota.textContent = '⚠️ Servidor sin conexión';
     }
@@ -648,7 +701,9 @@ form?.addEventListener('submit', async e => {
         const consultar = () => fetch('/api/chat', {
             method: 'POST',
             headers: getSecurityHeaders(),
-            body: JSON.stringify({ query: q, top_k: 4, use_llm: true, conversation_id: conversacionActual })
+            body: JSON.stringify({
+                query: q, top_k: 4, use_llm: true, conversation_id: conversacionActual, model: modeloElegido()
+            })
         });
         let response = await consultar();
 
@@ -663,9 +718,13 @@ form?.addEventListener('submit', async e => {
             return;
         }
 
-        if (response.status === 429) {
+        // F3: la cuota es por modelo; el servidor dice cuál se agotó y cuándo se libera
+        if (response.status === 429 || response.status === 503) {
             loadingRow.remove();
-            add(`⚠️ Límite de consultas excedido (HTTP 429): Alcanzaste la cuota de tu cuenta (20 consultas por hora o 60 por día). Por favor espera unos momentos antes de realizar otra pregunta.`, 'assistant');
+            let detalle = '';
+            try { detalle = (await response.json()).detail || ''; } catch { }
+            add(`⚠️ ${detalle || 'Alcanzaste la cuota de consultas. Espera unos minutos antes de preguntar de nuevo.'}`, 'assistant');
+            refreshSecurityBadges();
             return;
         }
 

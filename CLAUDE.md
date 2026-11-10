@@ -2,7 +2,7 @@
 
 - Plan de trabajo vigente: `docs/PLAN_IMPLEMENTACION.md`. Léelo antes de implementar algo; al terminar una tarea, actualiza sus casillas, la bitácora y la "Siguiente tarea".
 - Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial en `core/chat`; frontend estático en `frontend/`.
-- Pruebas: `python -m pytest tests -q` (81 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
+- Pruebas: `python -m pytest tests -q` (97 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
 ## Autoría de commits (obligatorio, también en sesiones en la nube)
@@ -29,11 +29,15 @@
   - Pruebas en `tests/test_contexto.py` (doble `_LLM` que separa la llamada de reescritura de la respuesta final). Verificado con OpenAI real y en navegador.
   - Ajuste: `LanceDBVectorStore.search()` descarta fragmentos casi duplicados (los temarios repiten un mapa curricular revuelto que causaba listas de materias inventadas) y el prompt de sistema tiene la regla 5 (semestres solo con fuente explícita). Retirar esos fragmentos del acervo (opción C) lo decide el equipo.
   - Falta probarlo en la EC2.
-- **Siguiente tarea: F3, selector de modelo y cuotas por modelo** (plan, §F3). Empezar por verificar los modelos en developers.openai.com.
+- **F3, selector de modelo y cuotas por modelo: implementada** (pendiente del veredicto del usuario).
+  - `core/chat/modelos.py`: tabla `MODELOS` (fuente única de tarifas, cuotas, topes y parámetros), `parametros_llamada()` (los luna son de razonamiento: `max_completion_tokens`, sin `temperature`, `reasoning_effort="low"`), `costo()` y `estado_cuota()`.
+  - Cuotas por modelo en `/api/chat` contadas desde `mensajes.modelo_cuota`; `/api/chat` está exento del limitador en memoria. `/api/session/info` devuelve `quotas`.
+  - Frontend: selector `#modelo` junto al cuadro de texto e insignia con la cuota del modelo elegido.
+  - `scripts/comparar_modelos.py` + `scripts/preguntas_comparacion.json`; reporte en `docs/02_Ejecucion/COMPARACION_MODELOS_2026-11-10_0150.md`. Ganó gpt-6-luna.
+- **Siguiente tarea:** con la confirmación del usuario, retirar gpt-5.6-luna; después F4 (plan, §F4 y «Siguiente tarea»).
 - **Pendientes que no dependen del código:**
   - Retención del historial y texto del aviso de privacidad: los decide el equipo. Hoy no se purga nada.
-  - IDs, precios y parámetros de `gpt-6-luna` y `gpt-5.6-luna`: verificarlos en developers.openai.com antes de la F3. Desde la nube estaba bloqueado; en local, consultarlos.
-  - Tope diario de consultas del modelo avanzado (el horario ya está decidido: 5 por hora).
+  - Tope diario de consultas del modelo avanzado (el horario ya está decidido: 5 por hora). Hoy `cuota_dia: None` en `MODELOS`.
   - F5 (apagado automático de la EC2): requiere acceso a AWS. El usuario tenía problemas para iniciar sesión con IAM desde el celular; ver el plan, §F5.
 - **Decisiones del usuario que no hay que volver a discutir:**
   - El usuario elige el modelo; no habrá ruteo automático.
@@ -42,4 +46,4 @@
   - El apagado automático se hace solo con servicios nativos de AWS.
 - **Notas:**
   - En el chat, Enter no envía el mensaje; hay que usar el botón (ya pasaba antes de la F1).
-  - `backend/app.py` (`model_name = "gpt-4o-mini"` en `chat_endpoint`) sigue fijando el modelo. Se corrige en la F3.
+  - Ojo al verificar respuestas a mano: en F2 se dio por buena una respuesta («seiscientas horas» de servicio social) que contradecía la fuente (480). Contrastar siempre con el documento.

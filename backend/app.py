@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 import openai
@@ -19,7 +19,7 @@ from nexus_ingestion.embedder import TextEmbedder
 from nexus_ingestion.vector_store import LanceDBVectorStore
 
 # Límite de consultas por usuario registrado (WBS 1.4.2, SC-001)
-from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit, get_user_id
+from core.security.rate_limiter import RateLimiterMiddleware, get_user_id
 
 # Inicio de sesión con número de cuenta (WBS 1.3.4, SC-001)
 from core.auth import AuthMiddleware, init_db, obtener_usuario, requiere_admin, router as auth_router
@@ -28,6 +28,8 @@ from core.auth.store import ClavesNoConfiguradas
 # Historial de conversaciones por usuario (plan de implementación, fase F1)
 from core.chat import init_db as init_chat_db, router as chat_router
 from core.chat import contexto, store as chat_store
+from core.chat import modelos
+from core.chat.modelos import MODELO_POR_DEFECTO, MODELO_REESCRITURA, MODELOS
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -147,15 +149,7 @@ admin_tokens_store = {
 
 # Tarifas OpenAI (USD por token) para estimar el costo devengado de cada consulta
 PRICE_EMBEDDING_PER_TOKEN = 0.02 / 1_000_000          # text-embedding-3-small
-PRICE_4O_MINI_INPUT_PER_TOKEN = 0.15 / 1_000_000      # gpt-4o-mini (entrada)
-PRICE_4O_MINI_OUTPUT_PER_TOKEN = 0.60 / 1_000_000     # gpt-4o-mini (salida)
-
-# Relación entre la clave de chat usada y su bolsa de facturación en el panel admin (DT-10)
-CHAT_KEY_TO_BUCKET = {
-    "OPENAI_API_KEY_CHAT_4O_MINI": "gpt4oMini",
-    "OPENAI_API_KEY_GPT6_LUNA": "luna6",
-    "OPENAI_API_KEY_GPT5_6_LUNA": "luna56",
-}
+# Las tarifas, bolsas y cuotas de los modelos de chat viven en core/chat/modelos.py (F3)
 
 
 def record_query_metrics(latency_ms: float, success: bool) -> None:
@@ -203,25 +197,19 @@ if KEY_EMBEDDINGS:
     except Exception as e:
         print(f"[Aviso] Error al inicializar embedder exclusivo: {e}")
 
-# Inicializar clientes de chat independientes por modelo
+# Inicializar un cliente de chat por modelo de la tabla MODELOS, cada uno con su clave
+# segregada (DT-10). Un modelo sin clave queda fuera y la API responde 503 si se elige.
 chat_clients: Dict[str, openai.OpenAI] = {}
-if KEY_CHAT_4O_MINI:
+chat_key_names: Dict[str, str] = {}   # modelo -> variable de entorno de su clave
+for _modelo, _cfg in MODELOS.items():
+    _env = next((v for v in _cfg["env_clave"] if os.getenv(v)), None)
+    if not _env:
+        continue
     try:
-        chat_clients["gpt-4o-mini"] = openai.OpenAI(api_key=KEY_CHAT_4O_MINI)
+        chat_clients[_modelo] = openai.OpenAI(api_key=os.getenv(_env))
+        chat_key_names[_modelo] = _env
     except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-4o-mini: {e}")
-
-if KEY_GPT6_LUNA:
-    try:
-        chat_clients["gpt-6-luna"] = openai.OpenAI(api_key=KEY_GPT6_LUNA)
-    except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-6 Luna: {e}")
-
-if KEY_GPT5_6_LUNA:
-    try:
-        chat_clients["gpt-5.6-luna"] = openai.OpenAI(api_key=KEY_GPT5_6_LUNA)
-    except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-5.6 Luna: {e}")
+        print(f"[Aviso] Error al inicializar el cliente de {_modelo}: {e}")
 
 
 # Esquemas Pydantic
@@ -230,7 +218,7 @@ class ChatRequest(BaseModel):
     top_k: int = Field(default=4, ge=1, le=10, description="Número de fragmentos vectoriales a recuperar")
     category_filter: Optional[str] = Field(default=None, description="Filtrar por categoría documental")
     use_llm: bool = Field(default=True, description="Si es True, sintetiza la respuesta con LLM; si es False, devuelve fragmentos directos")
-    model: Optional[str] = Field(default="gpt-4o-mini", description="Modelo generativo: 'gpt-4o-mini', 'gpt-6-luna', 'gpt-5.6-luna'")
+    model: Optional[str] = Field(default=MODELO_POR_DEFECTO, description=f"Modelo generativo: {', '.join(MODELOS)}")
     conversation_id: Optional[str] = Field(default=None, max_length=64, description="Conversación a continuar; si no se envía se crea una nueva")
 
 
@@ -273,14 +261,22 @@ async def session_info(request: Request):
     """
     user_id = get_user_id(request)
     quota = None
+    quotas = None
     if user_id:
-        q = check_rate_limit(user_id)
-        quota = {
-            "hourly_limit": q["hourly_limit"],
-            "hourly_remaining": q["hourly_remaining"],
-            "daily_limit": q["daily_limit"],
-            "daily_remaining": q["daily_remaining"],
-        }
+        quotas = {}
+        for m, cfg in MODELOS.items():
+            if not cfg["en_selector"]:
+                continue
+            try:
+                q = cuota_modelo(user_id, m)
+            except Exception as e:   # base sin configurar o sin historial: la info sigue saliendo
+                print(f"[Cuota] No se pudo leer la cuota de {m}: {e}")
+                quotas = None
+                break
+            q["available"] = m in chat_clients
+            quotas[m] = q
+        # Compatibilidad con el frontend anterior: `quota` es la del modelo por defecto
+        quota = quotas.get(MODELO_POR_DEFECTO) if quotas else None
 
     usuario = None
     if user_id:
@@ -296,7 +292,16 @@ async def session_info(request: Request):
         "user_id": user_id,
         "usuario": usuario,
         "quota": quota,
+        "quotas": quotas,
+        "default_model": MODELO_POR_DEFECTO,
     }
+
+
+def cuota_modelo(user_id, modelo: str) -> Dict[str, Any]:
+    """Cuota restante del usuario para un modelo, contada desde la tabla `mensajes` (F3)."""
+    return modelos.estado_cuota(
+        modelo, lambda desde: chat_store.contar_consultas(user_id, modelo, desde)
+    )
 
 
 @app.get("/api/status", summary="Estado del sistema (alias de session/info)")
@@ -464,25 +469,23 @@ def _reescribir_consulta(historial: List[Dict[str, str]], pregunta: str) -> Dict
     """
     info: Dict[str, Any] = {"consulta": pregunta, "reescrita": None,
                             "tokens_in": None, "tokens_out": None, "latencia_ms": 0.0}
-    cliente = chat_clients.get("gpt-4o-mini")
+    cliente = chat_clients.get(MODELO_REESCRITURA)
     if not historial or not cliente:
         return info
     t0 = time.time()
     try:
         r = cliente.chat.completions.create(
-            model="gpt-4o-mini",
             messages=contexto.mensajes_reescritura(historial, pregunta),
-            temperature=0,
-            max_tokens=contexto.MAX_TOKENS_REESCRITURA,
+            **modelos.parametros_llamada(MODELO_REESCRITURA, max_salida=contexto.MAX_TOKENS_REESCRITURA,
+                                         temperature=0),
         )
         usage = getattr(r, "usage", None)
         if usage:
             info["tokens_in"], info["tokens_out"] = usage.prompt_tokens, usage.completion_tokens
             record_token_usage(
-                "gpt4oMini",
+                MODELOS[MODELO_REESCRITURA]["bolsa"],
                 usage.prompt_tokens + usage.completion_tokens,
-                usage.prompt_tokens * PRICE_4O_MINI_INPUT_PER_TOKEN
-                + usage.completion_tokens * PRICE_4O_MINI_OUTPUT_PER_TOKEN,
+                modelos.costo(MODELO_REESCRITURA, usage.prompt_tokens, usage.completion_tokens),
             )
         reescrita = contexto.limpiar_reescritura(r.choices[0].message.content)
         if reescrita:
@@ -519,8 +522,46 @@ def chat_endpoint(req: ChatRequest, request: Request):
     if not user_query:
         raise HTTPException(status_code=400, detail="La consulta no puede estar vacía.")
 
+    # F3: el modelo lo elige el usuario y debe existir en la tabla MODELOS
+    target_model = req.model or MODELO_POR_DEFECTO
+    if target_model not in MODELOS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Modelo no válido: '{target_model}'. Opciones: {', '.join(MODELOS)}.",
+        )
+    if req.use_llm and target_model not in chat_clients:
+        raise HTTPException(
+            status_code=503,
+            detail=f"El modelo {MODELOS[target_model]['etiqueta']} no está disponible en este servidor.",
+        )
+
     if req.conversation_id and not chat_store.es_de_usuario(user_id, req.conversation_id):
         raise HTTPException(status_code=404, detail="Conversación no encontrada.")
+
+    # F3: cuota independiente por modelo, contada desde la tabla `mensajes` (sobrevive a reinicios)
+    if RATE_LIMIT_ENABLED:
+        cuota = cuota_modelo(user_id, target_model)
+        if not cuota["allowed"]:
+            etiqueta = MODELOS[target_model]["etiqueta"]
+            limites = f"{cuota['hourly_limit']} por hora"
+            if cuota["daily_limit"]:
+                limites += f" y {cuota['daily_limit']} por día"
+            minutos = max(1, round(cuota["retry_after"] / 60))
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": str(cuota["retry_after"])},
+                content={
+                    "ok": False,
+                    "error": "HTTP_429_TOO_MANY_REQUESTS",
+                    "detail": (
+                        f"Agotaste la cuota del modelo {etiqueta} ({limites}). "
+                        f"Se libera una consulta en unos {minutos} min."
+                    ),
+                    "model": target_model,
+                    "quota": cuota,
+                    "wbs": "1.4.2",
+                },
+            )
 
     if not vector_store:
         raise HTTPException(status_code=503, detail="Base de datos vectorial no inicializada.")
@@ -548,6 +589,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
     rw = _reescribir_consulta(historial, user_query)
     search_query = rw["consulta"]
     meta_reescritura = {
+        "modelo_cuota": target_model,
         "consulta_reescrita": rw["reescrita"],
         "reescritura_tokens_entrada": rw["tokens_in"],
         "reescritura_tokens_salida": rw["tokens_out"],
@@ -632,20 +674,10 @@ def chat_endpoint(req: ChatRequest, request: Request):
             },
         )
 
-    # 3. Selección de cliente y modelo LLM para inferencia (Facturado a la clave de Chat elegida)
-    target_model = req.model or "gpt-4o-mini"
-    chosen_client = chat_clients.get(target_model) or chat_clients.get("gpt-4o-mini")
-    key_used_name = "OPENAI_API_KEY_CHAT_4O_MINI"
-    key_used_masked = mask_key(KEY_CHAT_4O_MINI)
-
-    if target_model in ("gpt-6-luna", "luna-6") and "gpt-6-luna" in chat_clients:
-        chosen_client = chat_clients["gpt-6-luna"]
-        key_used_name = "OPENAI_API_KEY_GPT6_LUNA"
-        key_used_masked = mask_key(KEY_GPT6_LUNA)
-    elif target_model in ("gpt-5.6-luna", "luna-5.6") and "gpt-5.6-luna" in chat_clients:
-        chosen_client = chat_clients["gpt-5.6-luna"]
-        key_used_name = "OPENAI_API_KEY_GPT5_6_LUNA"
-        key_used_masked = mask_key(KEY_GPT5_6_LUNA)
+    # 3. Cliente del modelo elegido (facturado a su clave segregada, DT-10)
+    chosen_client = chat_clients.get(target_model)
+    key_used_name = chat_key_names.get(target_model, "none")
+    key_used_masked = mask_key(os.getenv(key_used_name, "")) if chosen_client else "none"
 
     t0_llm = time.time()
     generated_answer = ""
@@ -654,7 +686,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
     model_name = "direct_synthesis"
 
     if req.use_llm and chosen_client:
-        model_name = "gpt-4o-mini"  # Modelo real OpenAI para ejecución
+        model_name = target_model
         context_blocks = []
         for idx, res in enumerate(results, start=1):
             doc_info = f"Documento: {res['documento']} | Categoría: {res['categoria']}"
@@ -686,16 +718,14 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
         try:
             chat_completion = chosen_client.chat.completions.create(
-                model=model_name,
                 # Turnos previos (F2) entre el prompt de sistema y la pregunta actual
                 messages=[
                     {"role": "system", "content": system_prompt},
                     *historial,
                     {"role": "user", "content": user_content},
                 ],
-                temperature=0.2,
-                # 1,200 alcanza para listas largas (p. ej. todas las clases de un día); ~0.0007 USD como máximo
-                max_tokens=1200,
+                # Tope de salida, temperatura o esfuerzo de razonamiento según el modelo (F3)
+                **modelos.parametros_llamada(target_model),
             )
             generated_answer = chat_completion.choices[0].message.content or ""
             if getattr(chat_completion.choices[0], "finish_reason", "") == "length":
@@ -706,13 +736,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
             usage = getattr(chat_completion, "usage", None)
             if usage:
                 tokens_in, tokens_out = usage.prompt_tokens, usage.completion_tokens
-                llm_cost = (tokens_in * PRICE_4O_MINI_INPUT_PER_TOKEN
-                            + tokens_out * PRICE_4O_MINI_OUTPUT_PER_TOKEN)
-                record_token_usage(
-                    CHAT_KEY_TO_BUCKET.get(key_used_name, "gpt4oMini"),
-                    tokens_in + tokens_out,
-                    llm_cost,
-                )
+                llm_cost = modelos.costo(target_model, tokens_in, tokens_out)
+                record_token_usage(MODELOS[target_model]["bolsa"], tokens_in + tokens_out, llm_cost)
         except Exception as e:
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
             model_name = "direct_synthesis_fallback"

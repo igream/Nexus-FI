@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10 (F1 y F2 terminadas; estado de traspaso en `CLAUDE.md`).
+Última actualización: 2026-11-10 (F1 y F2 terminadas, F3 implementada; estado de traspaso en `CLAUDE.md`).
 
 ---
 
@@ -115,7 +115,7 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 **Pruebas** (`tests/test_contexto.py`):
 - [x] Sin historial no hay llamada de reescritura.
 - [x] Con historial, los `messages` enviados al LLM incluyen los turnos previos en orden y respetan el límite N.
-- [x] Prueba manual (OpenAI real, base temporal y cuenta ficticia): "¿Qué requisitos tiene el servicio social?" y luego "¿y cuál es el plazo?" se reescribió como "¿Cuál es el plazo para realizar el servicio social?" y recuperó el Reglamento del Servicio Social (Art. 44). En el navegador, "¿y cuántas horas son?" respondió con el Art. 16.
+- [x] Prueba manual (OpenAI real, base temporal y cuenta ficticia): "¿Qué requisitos tiene el servicio social?" y luego "¿y cuál es el plazo?" se reescribió como "¿Cuál es el plazo para realizar el servicio social?" y recuperó el Reglamento del Servicio Social (Art. 44). En el navegador, "¿y cuántas horas son?" recuperó el Art. 16, **pero la respuesta decía «seiscientas horas» y el reglamento dice 480**: la reescritura y las fuentes eran correctas y el error fue del modelo al redactar. Se detectó en F3 con la comparación, donde los tres modelos responden 480.
 - [x] Una falla en la reescritura no rompe la respuesta.
 - [x] Extra: reescritura inservible, guardado cifrado con tokens, consulta sin resultados con contexto, recorte por tokens y limpieza de la salida.
 
@@ -126,41 +126,49 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 - [x] Pruebas en `tests/test_busqueda_terminos.py` (copias del mapa, sin filtro, fragmentos cortos). Verificado con OpenAI real: la misma pregunta ahora responde con las 6 materias de `horarios_ico_semestre_6.md`.
 - [ ] **C (pendiente de decisión del equipo):** retirar del acervo los 115 fragmentos del mapa revuelto, como cambio técnico (al estilo de CT-01), y, si existe una versión limpia del mapa curricular, agregarla como documento estructurado.
 
-### F3. Selector de modelo y cuotas por modelo
+### F3. Selector de modelo y cuotas por modelo — ✅ implementada el 2026-11-10 (falta retirar al perdedor)
 
-**Antes de programar**, verificar en la documentación de OpenAI (desde esta sesión `developers.openai.com` estaba bloqueado por la red):
-- [ ] Identificadores exactos, precio de entrada, entrada en caché y salida, y endpoint soportado (Chat Completions o Responses).
-- [ ] Parámetros que no se admiten. Los modelos de razonamiento suelen exigir `max_completion_tokens` en vez de `max_tokens`, no aceptan `temperature` y usan `reasoning_effort`.
+Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `costo`, `estado_cuota`), `core/chat/store.py` (`contar_consultas` y columna `modelo_cuota`), `backend/app.py` (validación, cuota y llamada en `/api/chat`; `cuota_modelo` y `quotas` en `/api/session/info`) y `frontend/` (selector y cuota). Service worker en `nexus-fi-v8`.
 
-**Comparación gpt-6-luna vs gpt-5.6-luna:**
-- [ ] Script `scripts/comparar_modelos.py`:
-  - Unas 20 preguntas reales del acervo, con respuesta esperada y fuente.
-  - Medir aciertos, citas correctas, latencia, tokens y costo por consulta.
-  - Guardar el resultado en `docs/02_Ejecucion/`.
-- [ ] Elegir el ganador y retirar el otro de la configuración (variable de entorno, cliente y bolsa del panel).
+**Antes de programar** (verificado el 2026-11-10 en developers.openai.com y con llamadas reales):
+- [x] Identificadores: `gpt-6-luna` y `gpt-5.6-luna` (un solo snapshot cada uno). Precio por millón de tokens: gpt-6-luna 0.10 entrada / 0.01 en caché / 0.50 salida; gpt-5.6-luna 0.20 / 0.02 / 1.20 (gpt-4o-mini: 0.15 / 0.60). Los dos admiten Chat Completions y Responses; se sigue con Chat Completions.
+- [x] Parámetros: son modelos de razonamiento. Rechazan `max_tokens` (hay que usar `max_completion_tokens`, que incluye el razonamiento) y solo aceptan `temperature` con `reasoning_effort="none"`. Se usa `reasoning_effort="low"`.
+
+**Comparación gpt-6-luna vs gpt-5.6-luna** (con gpt-4o-mini como referencia):
+- [x] Script `scripts/comparar_modelos.py` con 20 preguntas de `scripts/preguntas_comparacion.json` (hechos verificados en el acervo; 2 fuera de tema). Pasa por el mismo flujo de `/api/chat`, con base temporal y cuenta ficticia.
+- [x] Resultado en `docs/02_Ejecucion/COMPARACION_MODELOS_2026-11-10_0150.md`:
+
+  | Modelo | Aciertos | Latencia LLM mediana | Costo por consulta |
+  | :--- | :---: | :---: | :---: |
+  | gpt-4o-mini | 17/20 | 2,452 ms | 0.00039 USD |
+  | **gpt-6-luna** (low) | 17/20 | 2,127 ms | **0.00026 USD** |
+  | gpt-5.6-luna (low) | 17/20 | 2,062 ms | 0.00060 USD |
+
+  Las tres fallas (titulación, décimo semestre, coordinadora) son iguales en los tres modelos y vienen de la búsqueda, no del modelo. **gpt-6-luna gana:** mismos aciertos, latencia similar y menos de la mitad del costo de gpt-5.6-luna (y más barato que 4o-mini).
+- [ ] Retirar gpt-5.6-luna de la configuración (tabla `MODELOS`, variable de entorno, bolsa `luna56` del panel), **pendiente de confirmación del usuario**. Mientras tanto ya no aparece en el selector (`en_selector: False`).
 
 **Tareas:**
-- [ ] Corregir `backend/app.py:554`: llamar al modelo elegido, no al fijo.
-- [ ] Tabla única de modelos (`MODELOS = {...}`) con: id de API, clave, tarifas, tope de salida, cuota por hora y por día, y parámetros admitidos.
-- [ ] Validar `model` contra esa tabla y responder 422 si no existe.
-- [ ] **Cuotas por modelo:**
-  - Mover la verificación al endpoint, o leer `model` del cuerpo en el middleware.
-  - Contar desde la tabla `mensajes` (`usuario_id`, `modelo`, `creado_en`) para que las cuotas sobrevivan a los reinicios.
-  - El 429 debe indicar qué modelo se agotó y cuándo se libera.
-- [ ] Tope de salida por modelo (propuesta: 4o-mini 1,200 tokens; avanzado entre 1,500 y 2,000, definir con la comparación).
-- [ ] `/api/session/info` devuelve la cuota restante de cada modelo.
-- [ ] Frontend:
-  - Selector "Rápido (4o-mini)" o "Avanzado (gpt-6)" junto al cuadro de texto, que recuerda la última elección.
-  - Mostrar la cuota restante del modelo elegido.
-  - Desactivar "Avanzado" si su cuota se agotó.
+- [x] Llamar al modelo elegido, no al fijo.
+- [x] Tabla única `MODELOS` con id de API, claves, bolsa, tarifas, tope de salida, cuota por hora y por día, y parámetros admitidos.
+- [x] Validar `model` contra esa tabla: 422 si no existe; 503 si existe pero no tiene clave en el servidor.
+- [x] **Cuotas por modelo:**
+  - `/api/chat` sale del limitador en memoria (`QUOTA_EXEMPT_PREFIXES`) y se verifica en el endpoint, antes del embedding.
+  - Se cuentan las respuestas de `mensajes` por `usuario_id`, `modelo_cuota` (el modelo que pidió el usuario; la migración marca los mensajes viejos como 4o-mini) y `creado_en`. Sobreviven a reinicios y borrar una conversación no devuelve cuota.
+  - El 429 dice qué modelo se agotó, sus límites, `retry_after` y `reset_at`.
+  - Limitación aceptada para el piloto: la consulta se cuenta al guardarse, así que dos consultas simultáneas justo en el límite podrían pasar ambas. Las consultas sin resultados (respaldo sin LLM) también cuentan.
+- [x] Tope de salida: 4o-mini 1,200 (`max_tokens`); avanzado 2,000 (`max_completion_tokens`, incluye razonamiento; en la comparación el promedio de salida fue de 87 tokens).
+- [x] `/api/session/info` devuelve `quotas` (por modelo del selector, con `available`), `default_model` y `quota` (la de 4o-mini, por compatibilidad).
+- [x] Frontend: selector junto al cuadro de texto (opciones desde `quotas`, recuerda la elección en `localStorage`), insignia con la cuota del modelo elegido, «Avanzado (agotado)» desactivado y el mensaje del 429 tal como lo manda el servidor. Ajustado para celular.
 
-**Pruebas:**
-- [ ] El modelo enviado a la API es el elegido (cliente simulado).
-- [ ] Un modelo inválido da 422.
-- [ ] Al agotar el avanzado (5 por hora) llega un 429 para él mientras 4o-mini sigue disponible, y viceversa.
-- [ ] Las cuotas se conservan tras reabrir la base.
-- [ ] El costo registrado usa la tarifa del modelo correcto.
-- [ ] Actualizar `tests/test_rate_limiter.py` si cambia la interfaz.
+**Pruebas** (`tests/test_modelos.py`, 16 nuevas):
+- [x] El modelo enviado a la API es el elegido, con sus parámetros (cliente simulado).
+- [x] Un modelo inválido da 422; uno sin clave, 503.
+- [x] Al agotar el avanzado (5 por hora) llega un 429 para él mientras 4o-mini sigue disponible, y viceversa; la cuota es por usuario.
+- [x] Las cuotas se conservan tras reabrir la base, y borrar conversaciones no las devuelve.
+- [x] El costo registrado usa la tarifa del modelo correcto.
+- [x] La reescritura de F2 sigue usando 4o-mini aunque se elija el avanzado.
+- [x] `tests/test_rate_limiter.py` no necesitó cambios (su interfaz no cambió).
+- [x] Verificado en navegador (instancia con base temporal y cuenta ficticia, OpenAI real): respuesta con gpt-6-luna, insignia «Avanzado 4/5», 429 al agotar el avanzado mientras 4o-mini responde y opción «Avanzado (agotado)» desactivada.
 
 ### F4. Tablero de usuario y panel admin reales
 
@@ -215,7 +223,9 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 
 ## 4. Pendientes por verificar
 
-- [ ] Identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna. Hay que permitir `developers.openai.com` en la red de la sesión, o pegar los datos aquí.
+- [x] Identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna (§F3).
+- [ ] Confirmar el retiro de gpt-5.6-luna (§F3).
+- [ ] Huecos de recuperación detectados por la comparación: opciones de titulación (sale la Guía de Trámites en vez del Reglamento de Evaluación Profesional), «décimo semestre» (no recupera `horarios_ico_semestre_10`) y nombre de la coordinadora (solo está en el encabezado de los horarios).
 - [ ] Acceso a AWS desde la sesión: el conector de AWS necesita volver a autenticarse en la configuración de conectores de claude.ai, o hay que darle a la sesión una clave IAM.
 - [ ] Tope diario del modelo avanzado.
 - [ ] Retención del historial y texto del aviso de privacidad.
@@ -223,7 +233,7 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 
 ## 5. Siguiente tarea
 
-**F3: selector de modelo y cuotas por modelo.** Primero verificar en developers.openai.com los identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna (§F3 «Antes de programar»), y después el script de comparación. La reescritura de F2 debe seguir usando siempre 4o-mini, aunque el usuario elija el modelo avanzado; sus tokens ya están en columnas propias.
+**Cerrar F3 y pasar a F4.** Con la confirmación del usuario, retirar gpt-5.6-luna (entrada de `MODELOS`, `OPENAI_API_KEY_GPT5_6_LUNA` de `.env.example` y del `/api/health`, bolsa `luna56` del panel). Después, **F4: tablero de usuario y panel admin reales**, calculados desde `mensajes` (ya tiene `modelo_cuota`, tokens, costo, latencia, `categoria_principal`, `encontrado` y los tokens de reescritura aparte).
 
 ## 6. Bitácora
 
@@ -233,3 +243,4 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 | 2026-11-10 | F1 terminada: tablas `conversaciones` y `mensajes` (cifradas), endpoints `/api/conversaciones`, `/api/chat` con `conversation_id`, barra lateral desde la API (abrir, borrar, conversación activa). El historial no consume cuota. 12 pruebas nuevas (62 en total). Verificado en navegador con dobles del LLM. |
 | 2026-11-10 | F1 revisada y aprobada por el usuario en local. F2 terminada: últimos 3 pares (~1,500 tokens) en los `messages`, reescritura con 4o-mini solo con historial (búsqueda con la reescrita, LLM con la original), tokens de reescritura en columnas propias, telemetría en el chat. `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true` para que las pruebas no dependan del `.env` local. 16 pruebas nuevas (78 en total). Verificado con OpenAI real y en navegador. |
 | 2026-11-10 | Ajuste de F2 por una alucinación en una primera consulta: filtro de fragmentos casi duplicados en la búsqueda (A) y regla de semestres explícitos en el prompt (B). La opción C (retirar el mapa curricular revuelto del acervo) queda para el equipo. 3 pruebas nuevas (81 en total). |
+| 2026-11-10 | F3 implementada: modelos verificados en la documentación y con llamadas reales; tabla `MODELOS`; selector en el chat; cuotas por modelo desde `mensajes` (429 con modelo y hora de liberación); costos con la tarifa de cada modelo. Comparación de 20 preguntas: gpt-6-luna gana (17/20 como los demás, 0.00026 USD por consulta). Se detectó que una respuesta validada en F2 («seiscientas horas» de servicio social) era una alucinación: el reglamento dice 480; las tres corridas actuales responden 480. 16 pruebas nuevas (97 en total). Falta confirmar el retiro de gpt-5.6-luna. |

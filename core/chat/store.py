@@ -76,6 +76,14 @@ def init_db() -> None:
         for col in ("reescritura_tokens_entrada", "reescritura_tokens_salida"):
             if col not in columnas:
                 conn.execute(f"ALTER TABLE mensajes ADD COLUMN {col} INTEGER")
+        # F3: modelo al que se carga la consulta para la cuota (el que pidió el usuario; `modelo`
+        # guarda el que respondió, que puede ser un respaldo). Antes de F3 todo era 4o-mini.
+        if "modelo_cuota" not in columnas:
+            conn.execute("ALTER TABLE mensajes ADD COLUMN modelo_cuota TEXT")
+            conn.execute("UPDATE mensajes SET modelo_cuota = 'gpt-4o-mini' WHERE rol = 'assistant'")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS ix_msg_cuota ON mensajes(usuario_id, modelo_cuota, creado_en)"
+        )
 
 
 def crear_conversacion(usuario_id, primera_pregunta: str) -> str:
@@ -116,6 +124,7 @@ def agregar_mensaje(
     latencia_ms: Optional[float] = None,
     reescritura_tokens_entrada: Optional[int] = None,
     reescritura_tokens_salida: Optional[int] = None,
+    modelo_cuota: Optional[str] = None,
 ) -> int:
     if rol not in ROLES_MENSAJE:
         raise ValueError("Rol de mensaje no válido")
@@ -124,8 +133,9 @@ def agregar_mensaje(
         cur = conn.execute(
             """INSERT INTO mensajes(conversacion_id, usuario_id, rol, contenido_cifrado, consulta_reescrita_cifrada,
                    modelo, categoria_principal, encontrado, citas_json, tokens_entrada, tokens_salida,
-                   costo_usd, latencia_ms, reescritura_tokens_entrada, reescritura_tokens_salida, creado_en)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   costo_usd, latencia_ms, reescritura_tokens_entrada, reescritura_tokens_salida,
+                   modelo_cuota, creado_en)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 conv_id, str(usuario_id), rol, cifrar(contenido),
                 cifrar(consulta_reescrita) if consulta_reescrita else None,
@@ -133,7 +143,8 @@ def agregar_mensaje(
                 None if encontrado is None else int(bool(encontrado)),
                 json.dumps(citas, ensure_ascii=False) if citas else None,
                 tokens_entrada, tokens_salida, costo_usd, latencia_ms,
-                reescritura_tokens_entrada, reescritura_tokens_salida, ahora,
+                reescritura_tokens_entrada, reescritura_tokens_salida,
+                modelo_cuota if rol == "assistant" else None, ahora,
             ),
         )
         conn.execute("UPDATE conversaciones SET actualizada_en = ? WHERE id = ?", (ahora, conv_id))
@@ -205,6 +216,21 @@ def ultimos_mensajes(usuario_id, conv_id: str, limite: int) -> list[dict]:
             (conv_id, str(usuario_id), limite),
         ).fetchall()
     return [{"rol": f["rol"], "contenido": descifrar(f["contenido_cifrado"])} for f in reversed(filas)]
+
+
+def contar_consultas(usuario_id, modelo: str, desde_iso: str) -> tuple[int, Optional[str]]:
+    """Consultas del usuario cargadas a `modelo` desde la fecha dada, y la fecha de la más antigua (F3).
+
+    Cuenta las respuestas guardadas, incluidas las de conversaciones borradas: borrar el
+    historial no devuelve cuota.
+    """
+    with closing(_conectar()) as conn:
+        fila = conn.execute(
+            """SELECT COUNT(*) AS n, MIN(creado_en) AS primera FROM mensajes
+               WHERE usuario_id = ? AND rol = 'assistant' AND modelo_cuota = ? AND creado_en >= ?""",
+            (str(usuario_id), modelo, desde_iso),
+        ).fetchone()
+    return int(fila["n"]), fila["primera"]
 
 
 def renombrar_conversacion(usuario_id, conv_id: str, titulo: str) -> bool:
