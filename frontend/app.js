@@ -580,7 +580,17 @@ function add(t, who, citations = [], telemetry = null) {
             let telDiv = document.createElement('div');
             telDiv.className = 'cite-tel';
             telDiv.textContent = ` Latencia RAG: ${telemetry.total_latency_ms} ms · Modelo: ${telemetry.model || 'LanceDB + GPT'}`;
+            if (telemetry.history_turns) {
+                telDiv.textContent += ` · Contexto: ${telemetry.history_turns} turno(s) previo(s)`;
+            }
             citeBox.appendChild(telDiv);
+            // F2: la búsqueda se hizo con la pregunta reescrita a partir del historial
+            if (telemetry.rewritten_query) {
+                let rwDiv = document.createElement('div');
+                rwDiv.className = 'cite-tel';
+                rwDiv.textContent = ` Búsqueda interpretada como: «${telemetry.rewritten_query}»`;
+                citeBox.appendChild(rwDiv);
+            }
         }
 
         b.appendChild(citeBox);

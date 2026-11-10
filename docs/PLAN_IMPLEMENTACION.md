@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10 (F1 terminada; estado de traspaso en `CLAUDE.md`).
+Última actualización: 2026-11-10 (F1 y F2 terminadas; estado de traspaso en `CLAUDE.md`).
 
 ---
 
@@ -99,22 +99,25 @@ CREATE INDEX IF NOT EXISTS ix_msg_usuario_fecha ON mensajes(usuario_id, creado_e
 - [x] Los datos persisten al reabrir la conexión (simula un reinicio).
 - [x] El contenido queda cifrado en la tabla.
 
-### F2. Contexto conversacional
+### F2. Contexto conversacional — ✅ terminada el 2026-11-10
+
+Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, `mensajes_reescritura`, `limpiar_reescritura`), `core/chat/store.py` (`ultimos_mensajes` y dos columnas nuevas) y `backend/app.py` (`_reescribir_consulta` y el paso 0 de `/api/chat`). Los tokens se **estiman** (3.5 caracteres por token) en lugar de usar `tiktoken`, que descarga su codificación la primera vez y podría fallar en plena consulta.
 
 **Tareas:**
-- [ ] Al responder, incluir los últimos N turnos de la conversación (propuesta: 3 pares de pregunta y respuesta, recortados a unos 1,500 tokens) entre el prompt de sistema y la pregunta actual.
-- [ ] **Reescritura de la pregunta:** solo si hay historial, hacer una llamada a `gpt-4o-mini` (temperature 0, máximo unos 100 tokens) que convierta la pregunta de seguimiento en una pregunta autónoma.
-  - El embedding y la búsqueda en LanceDB usan la versión reescrita; al LLM final se le pasan el historial y la pregunta original.
-  - Guardar la reescritura en `mensajes.consulta_reescrita`.
-  - Si la reescritura falla, usar la pregunta original.
-- [ ] Contar los tokens de la reescritura en la bolsa de 4o-mini.
-- [ ] Mostrar la reescritura en la telemetría.
+- [x] Al responder, incluir los últimos N turnos de la conversación (3 pares de pregunta y respuesta, recortados a unos 1,500 tokens; se descartan primero los más viejos y, si ni el último cabe, se recorta su respuesta) entre el prompt de sistema y la pregunta actual.
+- [x] **Reescritura de la pregunta:** solo si hay historial, hacer una llamada a `gpt-4o-mini` (temperature 0, máximo 100 tokens) que convierta la pregunta de seguimiento en una pregunta autónoma.
+  - El embedding y la búsqueda en LanceDB (incluido el filtro de nombres propios) usan la versión reescrita; al LLM final se le pasan el historial y la pregunta original.
+  - Guardar la reescritura en `mensajes.consulta_reescrita_cifrada` (cifrada, como el resto del texto).
+  - Si la reescritura falla, sale vacía o mide más de 400 caracteres, usar la pregunta original.
+- [x] Contar los tokens de la reescritura en la bolsa de 4o-mini. Además se guardan aparte en `mensajes.reescritura_tokens_entrada` y `reescritura_tokens_salida` (migración automática en `init_db`), para que en F3/F4 no se mezclen con los del modelo avanzado.
+- [x] Mostrar la reescritura en la telemetría: `rewritten_query`, `history_turns`, `rewrite_tokens` y `rewrite_latency_ms`; en el chat, «Búsqueda interpretada como: …» y el número de turnos previos. Service worker en `nexus-fi-v7`.
 
-**Pruebas:**
-- [ ] Sin historial no hay llamada de reescritura.
-- [ ] Con historial, los `messages` enviados al LLM incluyen los turnos previos en orden y respetan el límite N.
-- [ ] Prueba manual: preguntar "¿Qué requisitos tiene el servicio social?" y luego "¿y cuál es el plazo?". La segunda debe recuperar fuentes de servicio social.
-- [ ] Una falla en la reescritura no rompe la respuesta.
+**Pruebas** (`tests/test_contexto.py`):
+- [x] Sin historial no hay llamada de reescritura.
+- [x] Con historial, los `messages` enviados al LLM incluyen los turnos previos en orden y respetan el límite N.
+- [x] Prueba manual (OpenAI real, base temporal y cuenta ficticia): "¿Qué requisitos tiene el servicio social?" y luego "¿y cuál es el plazo?" se reescribió como "¿Cuál es el plazo para realizar el servicio social?" y recuperó el Reglamento del Servicio Social (Art. 44). En el navegador, "¿y cuántas horas son?" respondió con el Art. 16.
+- [x] Una falla en la reescritura no rompe la respuesta.
+- [x] Extra: reescritura inservible, guardado cifrado con tokens, consulta sin resultados con contexto, recorte por tokens y limpieza de la salida.
 
 ### F3. Selector de modelo y cuotas por modelo
 
@@ -212,7 +215,7 @@ CREATE INDEX IF NOT EXISTS ix_msg_usuario_fecha ON mensajes(usuario_id, creado_e
 
 ## 5. Siguiente tarea
 
-**F2: contexto conversacional.** Usar `chat_store.obtener_conversacion` (o una consulta nueva que traiga solo los últimos N mensajes) para armar los turnos previos en `/api/chat`. Después, la reescritura de la pregunta con 4o-mini, guardada en `consulta_reescrita` (el parámetro ya existe en `agregar_mensaje`). Las pruebas de `tests/test_conversaciones.py` ya tienen dobles del LLM y del buscador que registran las llamadas (`client.llm.llamadas`).
+**F3: selector de modelo y cuotas por modelo.** Primero verificar en developers.openai.com los identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna (§F3 «Antes de programar»), y después el script de comparación. La reescritura de F2 debe seguir usando siempre 4o-mini, aunque el usuario elija el modelo avanzado; sus tokens ya están en columnas propias.
 
 ## 6. Bitácora
 
@@ -220,3 +223,4 @@ CREATE INDEX IF NOT EXISTS ix_msg_usuario_fecha ON mensajes(usuario_id, creado_e
 | :--- | :--- |
 | 2026-11-10 | Diagnóstico inicial y plan redactado. Decisiones D1-D7 tomadas con el equipo. |
 | 2026-11-10 | F1 terminada: tablas `conversaciones` y `mensajes` (cifradas), endpoints `/api/conversaciones`, `/api/chat` con `conversation_id`, barra lateral desde la API (abrir, borrar, conversación activa). El historial no consume cuota. 12 pruebas nuevas (62 en total). Verificado en navegador con dobles del LLM. |
+| 2026-11-10 | F1 revisada y aprobada por el usuario en local. F2 terminada: últimos 3 pares (~1,500 tokens) en los `messages`, reescritura con 4o-mini solo con historial (búsqueda con la reescrita, LLM con la original), tokens de reescritura en columnas propias, telemetría en el chat. `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true` para que las pruebas no dependan del `.env` local. 16 pruebas nuevas (78 en total). Verificado con OpenAI real y en navegador. |

@@ -206,7 +206,7 @@ Otras herramientas:
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"   # búsqueda por terminal
 python main.py --telemetry                                                             # diagnóstico (DT-10)
 python main.py --audit                                                                 # auditoría de secretos
-python -m pytest tests -q                                                              # 62 pruebas automáticas
+python -m pytest tests -q                                                              # 78 pruebas automáticas
 ```
 
 Páginas: chat en `/`, tablero en `/dashboard`, panel admin en `/admin-metrics` y documentación Swagger en `/docs`.

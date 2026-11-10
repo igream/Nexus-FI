@@ -27,7 +27,7 @@ from core.auth.store import ClavesNoConfiguradas
 
 # Historial de conversaciones por usuario (plan de implementación, fase F1)
 from core.chat import init_db as init_chat_db, router as chat_router
-from core.chat import store as chat_store
+from core.chat import contexto, store as chat_store
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -455,6 +455,53 @@ def _guardar_turno(user_id, conv_id: Optional[str], pregunta: str, respuesta: st
         return None
 
 
+def _reescribir_consulta(historial: List[Dict[str, str]], pregunta: str) -> Dict[str, Any]:
+    """Convierte una pregunta de seguimiento en una autónoma con gpt-4o-mini (F2).
+
+    Solo se usa cuando hay historial. Si no hay cliente, la llamada falla o la salida no sirve,
+    regresa la pregunta original con `reescrita=None`: la consulta nunca se cae por esto.
+    Los tokens se cargan a la bolsa de 4o-mini aunque responda otro modelo.
+    """
+    info: Dict[str, Any] = {"consulta": pregunta, "reescrita": None,
+                            "tokens_in": None, "tokens_out": None, "latencia_ms": 0.0}
+    cliente = chat_clients.get("gpt-4o-mini")
+    if not historial or not cliente:
+        return info
+    t0 = time.time()
+    try:
+        r = cliente.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=contexto.mensajes_reescritura(historial, pregunta),
+            temperature=0,
+            max_tokens=contexto.MAX_TOKENS_REESCRITURA,
+        )
+        usage = getattr(r, "usage", None)
+        if usage:
+            info["tokens_in"], info["tokens_out"] = usage.prompt_tokens, usage.completion_tokens
+            record_token_usage(
+                "gpt4oMini",
+                usage.prompt_tokens + usage.completion_tokens,
+                usage.prompt_tokens * PRICE_4O_MINI_INPUT_PER_TOKEN
+                + usage.completion_tokens * PRICE_4O_MINI_OUTPUT_PER_TOKEN,
+            )
+        reescrita = contexto.limpiar_reescritura(r.choices[0].message.content)
+        if reescrita:
+            info["consulta"], info["reescrita"] = reescrita, reescrita
+    except Exception as e:
+        print(f"[Contexto] No se pudo reescribir la consulta; se usa la original: {e}")
+    info["latencia_ms"] = round((time.time() - t0) * 1000, 2)
+    return info
+
+
+def _telemetria_contexto(historial: List[Dict[str, str]], rw: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "history_turns": len(historial) // 2,
+        "rewritten_query": rw["reescrita"],
+        "rewrite_latency_ms": rw["latencia_ms"],
+        "rewrite_tokens": (rw["tokens_in"] or 0) + (rw["tokens_out"] or 0),
+    }
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_endpoint(req: ChatRequest, request: Request):
     """
@@ -488,13 +535,31 @@ def chat_endpoint(req: ChatRequest, request: Request):
             detail="No se encuentra configurada OPENAI_API_KEY_EMBEDDINGS para calcular el vector de búsqueda.",
         )
 
+    # 0. Contexto conversacional (F2): turnos previos y, si los hay, la pregunta reescrita
+    #    como autónoma. La búsqueda usa la reescrita; el LLM final recibe la original.
+    historial: List[Dict[str, str]] = []
+    if req.conversation_id:
+        try:
+            historial = contexto.recortar_historial(
+                chat_store.ultimos_mensajes(user_id, req.conversation_id, contexto.PARES_HISTORIAL * 2 + 1)
+            )
+        except Exception as e:
+            print(f"[Contexto] No se pudo leer el historial; se responde sin él: {e}")
+    rw = _reescribir_consulta(historial, user_query)
+    search_query = rw["consulta"]
+    meta_reescritura = {
+        "consulta_reescrita": rw["reescrita"],
+        "reescritura_tokens_entrada": rw["tokens_in"],
+        "reescritura_tokens_salida": rw["tokens_out"],
+    }
+
     # 1. Generar vector de consulta (Facturado a OPENAI_API_KEY_EMBEDDINGS)
     try:
         t0_emb = time.time()
-        query_vector = current_embedder.embed_query(user_query)
+        query_vector = current_embedder.embed_query(search_query)
         emb_latency_ms = round((time.time() - t0_emb) * 1000, 2)
         # Estimación de tokens de embedding (~4 caracteres por token)
-        emb_tokens = max(len(user_query) // 4, 1)
+        emb_tokens = max(len(search_query) // 4, 1)
         record_token_usage("embeddings", emb_tokens, emb_tokens * PRICE_EMBEDDING_PER_TOKEN)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al vectorizar la consulta: {e}")
@@ -510,7 +575,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         top_k=req.top_k,
         similarity_threshold=0.52,
         filter_dict=filter_dict if filter_dict else None,
-        query_text=user_query,   # acepta nombres propios poco comunes que aparecen tal cual
+        query_text=search_query,   # acepta nombres propios poco comunes que aparecen tal cual
     )
     search_latency_ms = round((time.time() - t0_search) * 1000, 2)
 
@@ -547,6 +612,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         conv_id = _guardar_turno(
             user_id, req.conversation_id, user_query, fallback_msg,
             modelo="rule-based fallback", encontrado=False, latencia_ms=total_latency_ms,
+            **meta_reescritura,
         )
         return ChatResponse(
             query=user_query,
@@ -562,6 +628,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 "model": "rule-based fallback",
                 "key_used_embeddings": mask_key(KEY_EMBEDDINGS),
                 "key_used_chat": "none",
+                **_telemetria_contexto(historial, rw),
             },
         )
 
@@ -615,8 +682,10 @@ def chat_endpoint(req: ChatRequest, request: Request):
         try:
             chat_completion = chosen_client.chat.completions.create(
                 model=model_name,
+                # Turnos previos (F2) entre el prompt de sistema y la pregunta actual
                 messages=[
                     {"role": "system", "content": system_prompt},
+                    *historial,
                     {"role": "user", "content": user_content},
                 ],
                 temperature=0.2,
@@ -668,6 +737,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         tokens_salida=tokens_out,
         costo_usd=llm_cost,
         latencia_ms=total_latency_ms,
+        **meta_reescritura,
     )
 
     return ChatResponse(
@@ -684,6 +754,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
             "chunks_retrieved": len(results),
             "top_similarity": results[0]["similarity"],
             "model": model_name,
+            **_telemetria_contexto(historial, rw),
             "billing_segregation": {
                 "embeddings_account": f"OPENAI_API_KEY_EMBEDDINGS ({mask_key(KEY_EMBEDDINGS)})",
                 "chat_account": f"{key_used_name} ({key_used_masked})",
