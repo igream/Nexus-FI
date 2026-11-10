@@ -175,11 +175,27 @@ Resources:
 
   PermisoUrlPublica:
     Type: AWS::Lambda::Permission
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Una Function URL publica necesita lambda:InvokeFunctionUrl y, ademas, lambda:InvokeFunction.
+        must:
+          - Mantener PermisoInvocacionViaUrl; sin el, la URL responde 403 aunque el token sea correcto.
     Properties:
       FunctionName: !Ref FuncionDespertar
       Action: lambda:InvokeFunctionUrl
       Principal: "*"
       FunctionUrlAuthType: NONE
+
+  PermisoInvocacionViaUrl:
+    Type: AWS::Lambda::Permission
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Segundo permiso exigido por Lambda para URLs publicas, limitado a llamadas que llegan por la URL.
+    Properties:
+      FunctionName: !Ref FuncionDespertar
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
 
   BucketDormido:
     Type: AWS::S3::Bucket

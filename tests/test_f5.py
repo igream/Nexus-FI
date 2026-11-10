@@ -144,6 +144,9 @@ def test_seguridad_de_la_plantilla(plantilla):
     r = t["Resources"]
     assert all(r["BucketDormido"]["Properties"]["PublicAccessBlockConfiguration"].values())
     assert r["PermisoUrlPublica"]["Properties"]["FunctionUrlAuthType"] == "NONE"
+    # Lambda exige los dos permisos para una URL pública; el segundo, solo por la URL
+    via_url = r["PermisoInvocacionViaUrl"]["Properties"]
+    assert via_url["Action"] == "lambda:InvokeFunction" and via_url["InvokedViaFunctionUrl"] is True
     assert r["FuncionDespertar"]["Properties"]["Environment"]["Variables"]["TOKEN"] == ("!Ref", "TokenDespertar")
     assert t["Parameters"]["TokenDespertar"]["NoEcho"] is True
     acciones = [s["Action"] for p in r["RolDespertar"]["Properties"]["Policies"] for s in p["PolicyDocument"]["Statement"]]
