@@ -32,6 +32,7 @@ DAILY_LIMIT: int = 60
 QUOTA_EXEMPT_PREFIXES: tuple[str, ...] = (
     "/api/session/info",
     "/api/auth/",
+    "/api/conversaciones",
     "/api/status",
     "/api/health",
     "/api/v1/metrics/",

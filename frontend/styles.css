@@ -105,6 +105,21 @@ body.no-scroll { overflow: hidden; }
   color: var(--theme-muted);
 }
 .nav:hover, .nav.active, .history:hover { background: var(--green-soft); color: var(--theme-accent-text); }
+/* Historial de conversaciones (fase F1) */
+.history-list { display: flex; flex-direction: column; gap: 2px; }
+.history-item { display: flex; align-items: center; border-radius: 9px; }
+.history-item .history { flex: 1; min-width: 0; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-item.active .history { background: var(--green-soft); color: var(--theme-accent-text); font-weight: bold; }
+.history-del {
+  flex: none; width: 32px; min-height: 32px;
+  border: 0; border-radius: 8px; background: transparent;
+  color: var(--theme-faint); font-size: 13px;
+  opacity: 0; transition: opacity .15s;
+}
+.history-item:hover .history-del, .history-item.active .history-del, .history-del:focus-visible { opacity: 1; }
+.history-del:hover { background: var(--green-soft); color: var(--theme-accent-text); }
+@media (hover: none) { .history-del { opacity: 1; } }
+.history-empty { font-size: 12px; color: var(--theme-faint); padding: 6px 12px; margin: 0; }
 .nav.active { font-weight: bold; }
 
 .primary {

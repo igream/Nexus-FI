@@ -71,6 +71,7 @@ Nexus-FI/
 │   └── config_api/              # Diagnóstico de claves, auditor de secretos y catálogo de modelos
 ├── core/
 │   ├── auth/                    # Inicio de sesión: almacén cifrado, tokens JWT, roles y rutas /api/auth
+│   ├── chat/                    # Historial de conversaciones cifrado y rutas /api/conversaciones
 │   └── security/                # Límite de consultas por usuario y utilidades de seguridad
 ├── frontend/                    # Chat, tablero de usuario y panel admin (responsivos, modo oscuro)
 ├── nexus_ingestion/             # Extracción, limpieza, segmentación, embeddings y LanceDB
@@ -84,7 +85,7 @@ Nexus-FI/
 │   ├── process_to_procesados.py # Pre Procesados → Procesados
 │   ├── vectorize_corpus.py      # Procesados → LanceDB (overwrite o upsert por categoría)
 │   └── precargar_cuentas.py     # Padrón de cuentas autorizadas y cuentas ficticias de prueba
-├── tests/                       # Pruebas automáticas (pytest): login, límite, búsqueda y caché
+├── tests/                       # Pruebas automáticas (pytest): login, límite, historial, búsqueda y caché
 ├── docs/                        # Documentación del proyecto (índice en docs/README.md)
 │   ├── 00_Formatos/             # Plantillas oficiales y matrices de cumplimiento
 │   ├── 01_Planeacion/           # Documento maestro e investigaciones previas
@@ -205,7 +206,7 @@ Otras herramientas:
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"   # búsqueda por terminal
 python main.py --telemetry                                                             # diagnóstico (DT-10)
 python main.py --audit                                                                 # auditoría de secretos
-python -m pytest tests -q                                                              # 50 pruebas automáticas
+python -m pytest tests -q                                                              # 62 pruebas automáticas
 ```
 
 Páginas: chat en `/`, tablero en `/dashboard`, panel admin en `/admin-metrics` y documentación Swagger en `/docs`.
@@ -234,7 +235,11 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 | `POST /api/auth/login` | Iniciar sesión; regresa un token de 8 horas (429 tras 5 intentos fallidos) | Público |
 | `POST /api/auth/logout` | Cerrar sesión e invalidar el token | Con sesión |
 | `GET /api/session/info` | Usuario y cuota de consultas | Con sesión |
-| `POST /api/chat` | Pregunta al asistente; regresa respuesta, citas y telemetría (429 al exceder el límite) | Con sesión |
+| `POST /api/chat` | Pregunta al asistente; regresa respuesta, citas, telemetría y `conversation_id` (429 al exceder el límite) | Con sesión |
+| `GET /api/conversaciones` | Historial del usuario, de la conversación más reciente a la más antigua | Con sesión |
+| `GET /api/conversaciones/{id}` | Mensajes de una conversación propia (404 si es ajena o se borró) | Con sesión |
+| `PATCH /api/conversaciones/{id}` | Cambiar el título de una conversación propia | Con sesión |
+| `DELETE /api/conversaciones/{id}` | Borrar una conversación propia | Con sesión |
 | `GET /api/auth/admin/usuarios` | Cuentas registradas | Administrador |
 | `POST /api/auth/admin/reiniciar-registro` | Borrar la contraseña de una cuenta para que se registre de nuevo | Administrador |
 | `GET /api/v1/admin/metrics` | Consumo de tokens por clave e infraestructura | Administrador |

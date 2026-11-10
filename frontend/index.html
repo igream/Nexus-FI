@@ -29,9 +29,10 @@
 
     <button class="primary" id="new">＋ Nueva consulta</button>
     <p class="label">CONSULTAS RECIENTES</p>
-    <button class="history">⌕ Servicio social</button>
-    <button class="history">⌕ Opciones de titulación</button>
-    <button class="history">⌕ Actividades culturales</button>
+    <!-- Historial del usuario: lo llena app.js desde /api/conversaciones -->
+    <div id="history-list" class="history-list">
+      <p class="history-empty">Cargando historial…</p>
+    </div>
     
     <div class="sidebottom">
       <div class="user-box">

@@ -44,7 +44,9 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 
 Orden: F1 → F2 → F3 → F4. F5 es infraestructura y puede avanzar en paralelo cuando haya acceso a AWS.
 
-### F1. Historial persistente (base de F2, F3 y F4)
+### F1. Historial persistente (base de F2, F3 y F4) — ✅ terminada el 2026-11-10
+
+Implementada en `core/chat/` (`store.py` y `routes.py`), `backend/app.py` (`_guardar_turno` y `conversation_id` en `/api/chat`) y `frontend/app.js`. Respecto al esquema propuesto abajo, en la versión final el título también va cifrado (`titulo_cifrado`), igual que el contenido y la consulta reescrita; las citas se guardan en `citas_json`.
 
 **Esquema** (en `core/` o un módulo nuevo `core/chat/store.py`, sobre la misma `data/usuarios.db`, creado en `init_db`):
 
@@ -72,30 +74,30 @@ CREATE INDEX IF NOT EXISTS ix_msg_usuario_fecha ON mensajes(usuario_id, creado_e
 ```
 
 **Tareas:**
-- [ ] Crear el módulo de almacenamiento con estas funciones: crear conversación, agregar mensaje, listar conversaciones, obtener conversación y borrar (borrado lógico).
-- [ ] `/api/chat`:
+- [x] Crear el módulo de almacenamiento con estas funciones: crear conversación, agregar mensaje, listar conversaciones, obtener conversación y borrar (borrado lógico).
+- [x] `/api/chat`:
   - Aceptar `conversation_id` opcional. Si no viene, crear una conversación nueva.
   - Guardar el mensaje del usuario y el del asistente con su telemetría.
   - Devolver `conversation_id`.
-- [ ] Endpoints, todos con sesión y solo sobre conversaciones del propio usuario:
+- [x] Endpoints, todos con sesión y solo sobre conversaciones del propio usuario:
   - `GET /api/conversaciones`
   - `GET /api/conversaciones/{id}`
   - `DELETE /api/conversaciones/{id}`
   - `PATCH /api/conversaciones/{id}` (título)
-- [ ] Frontend:
+- [x] Frontend:
   - Barra lateral cargada desde la API.
   - Abrir una conversación pinta sus mensajes.
   - "Nueva consulta" reinicia `conversation_id`.
   - Botón para borrar.
-- [ ] Quitar los elementos fijos de `index.html:32-34`.
-- [ ] Decidir y documentar la retención (propuesta: 90 días) y una línea en el aviso de privacidad.
+- [x] Quitar los elementos fijos de `index.html:32-34`.
+- [ ] Decidir y documentar la retención (propuesta: 90 días) y una línea en el aviso de privacidad. **Pendiente de decisión del equipo; hoy no se purga nada.**
 
 **Pruebas** (`tests/test_conversaciones.py`, con el LLM y el embedder simulados):
-- [ ] Una consulta sin `conversation_id` crea una conversación, y una segunda con el id la reutiliza.
-- [ ] El usuario B recibe 404 al pedir o borrar una conversación del usuario A.
-- [ ] Una conversación borrada no aparece en el listado.
-- [ ] Los datos persisten al reabrir la conexión (simula un reinicio).
-- [ ] El contenido queda cifrado en la tabla.
+- [x] Una consulta sin `conversation_id` crea una conversación, y una segunda con el id la reutiliza.
+- [x] El usuario B recibe 404 al pedir o borrar una conversación del usuario A.
+- [x] Una conversación borrada no aparece en el listado.
+- [x] Los datos persisten al reabrir la conexión (simula un reinicio).
+- [x] El contenido queda cifrado en la tabla.
 
 ### F2. Contexto conversacional
 
@@ -210,10 +212,11 @@ CREATE INDEX IF NOT EXISTS ix_msg_usuario_fecha ON mensajes(usuario_id, creado_e
 
 ## 5. Siguiente tarea
 
-**F1: historial persistente.** Empezar por el esquema y el módulo de almacenamiento con sus pruebas. Después, los endpoints y el cambio en `/api/chat`; al final, el frontend.
+**F2: contexto conversacional.** Usar `chat_store.obtener_conversacion` (o una consulta nueva que traiga solo los últimos N mensajes) para armar los turnos previos en `/api/chat`. Después, la reescritura de la pregunta con 4o-mini, guardada en `consulta_reescrita` (el parámetro ya existe en `agregar_mensaje`). Las pruebas de `tests/test_conversaciones.py` ya tienen dobles del LLM y del buscador que registran las llamadas (`client.llm.llamadas`).
 
 ## 6. Bitácora
 
 | Fecha | Cambio |
 | :--- | :--- |
 | 2026-11-10 | Diagnóstico inicial y plan redactado. Decisiones D1-D7 tomadas con el equipo. |
+| 2026-11-10 | F1 terminada: tablas `conversaciones` y `mensajes` (cifradas), endpoints `/api/conversaciones`, `/api/chat` con `conversation_id`, barra lateral desde la API (abrir, borrar, conversación activa). El historial no consume cuota. 12 pruebas nuevas (62 en total). Verificado en navegador con dobles del LLM. |

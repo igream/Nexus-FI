@@ -25,6 +25,10 @@ from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit, 
 from core.auth import AuthMiddleware, init_db, obtener_usuario, requiere_admin, router as auth_router
 from core.auth.store import ClavesNoConfiguradas
 
+# Historial de conversaciones por usuario (plan de implementación, fase F1)
+from core.chat import init_db as init_chat_db, router as chat_router
+from core.chat import store as chat_store
+
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
     title="Nexus FI - API Asistente Inteligente RAG",
@@ -90,11 +94,13 @@ print(f"[Seguridad] Límite por usuario (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENA
 # Base de usuarios (data/usuarios.db). Si faltan las claves en .env, el login responde 503.
 try:
     init_db()
-    print("[Seguridad] Inicio de sesión: base de usuarios lista")
+    init_chat_db()
+    print("[Seguridad] Inicio de sesión: base de usuarios e historial listos")
 except ClavesNoConfiguradas as e:
     print(f"[Seguridad] Inicio de sesión sin configurar: {e}")
 
 app.include_router(auth_router)
+app.include_router(chat_router)
 
 
 @app.exception_handler(ClavesNoConfiguradas)
@@ -225,6 +231,7 @@ class ChatRequest(BaseModel):
     category_filter: Optional[str] = Field(default=None, description="Filtrar por categoría documental")
     use_llm: bool = Field(default=True, description="Si es True, sintetiza la respuesta con LLM; si es False, devuelve fragmentos directos")
     model: Optional[str] = Field(default="gpt-4o-mini", description="Modelo generativo: 'gpt-4o-mini', 'gpt-6-luna', 'gpt-5.6-luna'")
+    conversation_id: Optional[str] = Field(default=None, max_length=64, description="Conversación a continuar; si no se envía se crea una nueva")
 
 
 class CitationItem(BaseModel):
@@ -245,6 +252,7 @@ class ChatResponse(BaseModel):
     found: bool
     citations: List[CitationItem]
     telemetry: Dict[str, Any]
+    conversation_id: Optional[str] = None
 
 
 # -----------------------------------------------------------------------------
@@ -430,6 +438,23 @@ def get_admin_metrics(request: Request):
     }
 
 
+def _guardar_turno(user_id, conv_id: Optional[str], pregunta: str, respuesta: str, **meta) -> Optional[str]:
+    """Guarda la pregunta y la respuesta en el historial y regresa el id de la conversación.
+
+    Si la conversación no existe todavía, la crea con la pregunta como título. Un fallo al
+    guardar no debe dejar al usuario sin respuesta: se registra y se regresa None.
+    """
+    try:
+        if not conv_id:
+            conv_id = chat_store.crear_conversacion(user_id, pregunta)
+        chat_store.agregar_mensaje(conv_id, user_id, "user", pregunta)
+        chat_store.agregar_mensaje(conv_id, user_id, "assistant", respuesta, **meta)
+        return conv_id
+    except Exception as e:
+        print(f"[Historial] No se pudo guardar la consulta: {e}")
+        return None
+
+
 @app.post("/api/chat", response_model=ChatResponse)
 def chat_endpoint(req: ChatRequest, request: Request):
     """
@@ -437,7 +462,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
     y generación aumentada por recuperación (RAG), garantizando segregación estricta de consumo.
     Requiere sesión iniciada (Authorization: Bearer <token>).
     """
-    if not get_user_id(request):
+    user_id = get_user_id(request)
+    if not user_id:
         raise HTTPException(status_code=401, detail="Inicia sesión para consultar.")
 
     start_time = time.time()
@@ -445,6 +471,9 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     if not user_query:
         raise HTTPException(status_code=400, detail="La consulta no puede estar vacía.")
+
+    if req.conversation_id and not chat_store.es_de_usuario(user_id, req.conversation_id):
+        raise HTTPException(status_code=404, detail="Conversación no encontrada.")
 
     if not vector_store:
         raise HTTPException(status_code=503, detail="Base de datos vectorial no inicializada.")
@@ -515,11 +544,16 @@ def chat_endpoint(req: ChatRequest, request: Request):
             "Te sugerimos acudir directamente a la Coordinación de ICO (Edificio C) o consultar "
             "el portal institucional oficial de la UAEMéx."
         )
+        conv_id = _guardar_turno(
+            user_id, req.conversation_id, user_query, fallback_msg,
+            modelo="rule-based fallback", encontrado=False, latencia_ms=total_latency_ms,
+        )
         return ChatResponse(
             query=user_query,
             answer=fallback_msg,
             found=False,
             citations=[],
+            conversation_id=conv_id,
             telemetry={
                 "total_latency_ms": total_latency_ms,
                 "embed_latency_ms": emb_latency_ms,
@@ -548,6 +582,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     t0_llm = time.time()
     generated_answer = ""
+    tokens_in = tokens_out = None
+    llm_cost = None
     model_name = "direct_synthesis"
 
     if req.use_llm and chosen_client:
@@ -595,11 +631,13 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 )
             usage = getattr(chat_completion, "usage", None)
             if usage:
+                tokens_in, tokens_out = usage.prompt_tokens, usage.completion_tokens
+                llm_cost = (tokens_in * PRICE_4O_MINI_INPUT_PER_TOKEN
+                            + tokens_out * PRICE_4O_MINI_OUTPUT_PER_TOKEN)
                 record_token_usage(
                     CHAT_KEY_TO_BUCKET.get(key_used_name, "gpt4oMini"),
-                    usage.prompt_tokens + usage.completion_tokens,
-                    usage.prompt_tokens * PRICE_4O_MINI_INPUT_PER_TOKEN
-                    + usage.completion_tokens * PRICE_4O_MINI_OUTPUT_PER_TOKEN,
+                    tokens_in + tokens_out,
+                    llm_cost,
                 )
         except Exception as e:
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
@@ -620,11 +658,24 @@ def chat_endpoint(req: ChatRequest, request: Request):
     total_latency_ms = round((time.time() - start_time) * 1000, 2)
     record_query_metrics(total_latency_ms, success=True)
 
+    conv_id = _guardar_turno(
+        user_id, req.conversation_id, user_query, generated_answer,
+        modelo=model_name,
+        categoria_principal=results[0]["categoria"],
+        encontrado=True,
+        citas=[c.model_dump() for c in citations],
+        tokens_entrada=tokens_in,
+        tokens_salida=tokens_out,
+        costo_usd=llm_cost,
+        latencia_ms=total_latency_ms,
+    )
+
     return ChatResponse(
         query=user_query,
         answer=generated_answer,
         found=True,
         citations=citations,
+        conversation_id=conv_id,
         telemetry={
             "total_latency_ms": total_latency_ms,
             "embed_latency_ms": emb_latency_ms,

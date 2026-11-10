@@ -330,7 +330,7 @@ shade?.addEventListener('click', () => setMenu(false));
 $('.side-close')?.addEventListener('click', () => setMenu(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 // Al elegir una opción del menú en celular, se cierra
-side?.querySelectorAll('.nav, .history, #new').forEach(el => el.addEventListener('click', () => setMenu(false)));
+side?.querySelectorAll('.nav, #new').forEach(el => el.addEventListener('click', () => setMenu(false)));
 // Si la pantalla crece a escritorio con el menú abierto, se limpia el estado
 window.matchMedia('(min-width: 961px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
 
@@ -340,6 +340,115 @@ const input = $('#input'),
       messages = $('#messages'),
       welcome = $('#welcome'),
       count = $('#count');
+
+// =============================================================================
+// HISTORIAL DE CONVERSACIONES (fase F1 del plan de implementación)
+// La barra lateral se llena desde /api/conversaciones. La conversación abierta
+// se identifica con conversacionActual; "Nueva consulta" la reinicia.
+// =============================================================================
+const historyList = $('#history-list');
+let conversacionActual = null;
+
+function mensajeHistorial(texto) {
+    if (!historyList) return;
+    historyList.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'history-empty';
+    p.textContent = texto;
+    historyList.append(p);
+}
+
+function marcarConversacionActiva() {
+    historyList?.querySelectorAll('.history-item').forEach(el => {
+        const activa = el.dataset.id === conversacionActual;
+        el.classList.toggle('active', activa);
+        el.querySelector('.history')?.toggleAttribute('aria-current', activa);
+    });
+}
+
+async function cargarHistorial() {
+    if (!historyList) return;
+    try {
+        const r = await fetch('/api/conversaciones', { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const { conversaciones } = await r.json();
+        if (!conversaciones.length) { mensajeHistorial('Aún no tienes consultas guardadas.'); return; }
+
+        historyList.innerHTML = '';
+        conversaciones.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.dataset.id = c.id;
+
+            const abrir = document.createElement('button');
+            abrir.type = 'button';
+            abrir.className = 'history';
+            abrir.textContent = `⌕ ${c.titulo}`;
+            abrir.title = c.titulo;
+            abrir.addEventListener('click', () => { setMenu(false); abrirConversacion(c.id); });
+
+            const borrar = document.createElement('button');
+            borrar.type = 'button';
+            borrar.className = 'history-del';
+            borrar.textContent = '✕';
+            borrar.setAttribute('aria-label', `Borrar la conversación "${c.titulo}"`);
+            borrar.addEventListener('click', () => borrarConversacion(c.id, c.titulo));
+
+            item.append(abrir, borrar);
+            historyList.append(item);
+        });
+        marcarConversacionActiva();
+    } catch (err) {
+        console.warn('No se pudo cargar el historial:', err);
+        mensajeHistorial('No se pudo cargar el historial.');
+    }
+}
+
+function limpiarChat() {
+    conversacionActual = null;
+    if (messages) messages.innerHTML = '';
+    if (welcome) welcome.style.display = '';
+    if (input) input.value = '';
+    if (count) count.textContent = '0 / 500';
+    marcarConversacionActiva();
+}
+
+async function abrirConversacion(id) {
+    try {
+        const r = await fetch(`/api/conversaciones/${encodeURIComponent(id)}`, { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (r.status === 404) { limpiarChat(); cargarHistorial(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const conv = await r.json();
+        limpiarChat();
+        conversacionActual = conv.id;
+        if (welcome) welcome.style.display = 'none';
+        conv.mensajes.forEach(m => {
+            const tel = m.rol === 'assistant' ? { total_latency_ms: m.latencia_ms, model: m.modelo } : null;
+            add(m.contenido, m.rol, m.citas || [], tel);
+        });
+        marcarConversacionActiva();
+    } catch (err) {
+        console.warn('No se pudo abrir la conversación:', err);
+    }
+}
+
+async function borrarConversacion(id, titulo) {
+    if (!confirm(`¿Borrar la conversación "${titulo}"?`)) return;
+    try {
+        const r = await fetch(`/api/conversaciones/${encodeURIComponent(id)}`, {
+            method: 'DELETE', headers: getSecurityHeaders(),
+        });
+        if (r.status === 401) { irALogin(); return; }
+    } catch (err) {
+        console.warn('No se pudo borrar la conversación:', err);
+    }
+    if (id === conversacionActual) limpiarChat();
+    cargarHistorial();
+}
+
+cargarHistorial();
 
 // =============================================================================
 // MARKDOWN SEGURO PARA LAS RESPUESTAS DEL ASISTENTE
@@ -526,11 +635,18 @@ form?.addEventListener('submit', async e => {
     let loadingRow = add('Consultando acervo institucional oficial de la FI UAEMéx...', 'assistant');
 
     try {
-        const response = await fetch('/api/chat', {
+        const consultar = () => fetch('/api/chat', {
             method: 'POST',
             headers: getSecurityHeaders(),
-            body: JSON.stringify({ query: q, top_k: 4, use_llm: true })
+            body: JSON.stringify({ query: q, top_k: 4, use_llm: true, conversation_id: conversacionActual })
         });
+        let response = await consultar();
+
+        // La conversación se borró en otra pestaña o equipo: la pregunta inicia una nueva
+        if (response.status === 404 && conversacionActual) {
+            conversacionActual = null;
+            response = await consultar();
+        }
 
         if (response.status === 401) {
             irALogin();
@@ -550,6 +666,13 @@ form?.addEventListener('submit', async e => {
         const data = await response.json();
         loadingRow.remove();
         add(data.answer, 'assistant', data.citations, data.telemetry);
+        if (data.conversation_id) {
+            const nueva = data.conversation_id !== conversacionActual;
+            conversacionActual = data.conversation_id;
+            // El orden de la lista cambia con cada consulta (la más reciente arriba)
+            cargarHistorial();
+            if (nueva) marcarConversacionActiva();
+        }
         refreshSecurityBadges();
     } catch (err) {
         console.warn('Backend RAG no disponible o error en petición, activando fallback local:', err);
@@ -566,19 +689,5 @@ document.querySelectorAll('[data-q]').forEach(b => {
     });
 });
 
-// Clics en historial
-document.querySelectorAll('.history').forEach(h => {
-    h.addEventListener('click', () => {
-        let text = h.textContent.replace('⌕', '').trim();
-        input.value = `Información sobre: ${text}`;
-        form.requestSubmit();
-    });
-});
-
-// Botón Nueva consulta
-$('#new')?.addEventListener('click', () => {
-    if (messages) messages.innerHTML = '';
-    if (welcome) welcome.style.display = '';
-    if (input) input.value = '';
-    if (count) count.textContent = '0 / 500';
-});
+// Botón Nueva consulta: limpia el chat y la próxima pregunta abre otra conversación
+$('#new')?.addEventListener('click', limpiarChat);
