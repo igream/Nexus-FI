@@ -204,7 +204,22 @@ def test_parametros_por_tipo_de_modelo():
     assert modelos.parametros_llamada(RAPIDO, max_salida=100, temperature=0) == {
         "model": "gpt-4o-mini", "max_tokens": 100, "temperature": 0}
     kw = modelos.parametros_llamada(AVANZADO, temperature=0.2)
-    assert "temperature" not in kw and kw["max_completion_tokens"] == 2000
+    assert "temperature" not in kw and kw["max_completion_tokens"] == 6000
+
+
+def test_avanzado_tiene_al_menos_cinco_veces_la_salida_del_rapido():
+    assert modelos.MODELOS[AVANZADO]["max_salida"] >= 5 * modelos.MODELOS[RAPIDO]["max_salida"]
+
+
+def test_prompt_lleva_el_estilo_del_modelo_y_la_regla_de_tablas(client, llms):
+    h = sesion(client, CUENTA_A)
+    chat(client, h, model=AVANZADO)
+    chat(client, h, model=RAPIDO)
+    sistema_avanzado = llms[AVANZADO].llamadas[-1]["messages"][0]["content"]
+    sistema_rapido = llms[RAPIDO].llamadas[-1]["messages"][0]["content"]
+    assert "completa y detallada" in sistema_avanzado and "concisa" not in sistema_avanzado
+    assert "concisa" in sistema_rapido
+    assert "tabla Markdown" in sistema_avanzado and "tabla Markdown" in sistema_rapido
 
 
 def test_migracion_marca_mensajes_viejos_como_4o_mini(client):

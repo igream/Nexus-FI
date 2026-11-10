@@ -238,6 +238,12 @@ html[data-theme="dark"] .theme-toggle { background: #24372c; color: #f1d780; bor
 .bubble.md h5, .bubble.md h6 { font-size: 14px; }
 .bubble.md ul, .bubble.md ol { margin: 4px 0 10px; padding-left: 22px; }
 .bubble.md li { margin: 3px 0; }
+/* Tablas en las respuestas: se desplazan solas en pantallas angostas */
+.bubble.md .tabla-md { overflow-x: auto; margin: 6px 0 12px; -webkit-overflow-scrolling: touch; }
+.bubble.md table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.bubble.md th, .bubble.md td { border: 1px solid var(--theme-border); padding: 6px 8px; text-align: left; vertical-align: top; }
+.bubble.md th { background: var(--theme-surface-2); color: var(--theme-accent-text); font-weight: 600; white-space: nowrap; }
+.bubble.md tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--theme-surface-2) 45%, transparent); }
 .bubble.md li::marker { color: var(--theme-accent-text); }
 .bubble.md strong { font-weight: bold; }
 .bubble.md a { color: var(--theme-accent-text); text-decoration: underline; }

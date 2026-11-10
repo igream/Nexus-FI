@@ -170,6 +170,12 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 - [x] `tests/test_rate_limiter.py` no necesitó cambios (su interfaz no cambió).
 - [x] Verificado en navegador (instancia con base temporal y cuenta ficticia, OpenAI real): respuesta con gpt-6-luna, insignia «Avanzado 4/5», 429 al agotar el avanzado mientras 4o-mini responde y opción «Avanzado (agotado)» desactivada.
 
+**Ajustes tras la revisión del usuario:**
+- [x] **Tablas en el chat:** `renderMarkdown()` (frontend) convierte tablas Markdown (encabezado, fila `|---|` con alineación y filas) en `<table>` con desplazamiento horizontal en celular; regla 6 del prompt para usarlas con datos de varias columnas.
+- [x] **Salida del avanzado:** `max_salida` de gpt-6-luna pasa a 6,000 (5 veces los 1,200 de 4o-mini) y cada modelo lleva su `estilo` en `MODELOS`, que entra en la regla 1 del prompt: el rápido responde conciso y el avanzado completo y detallado. Verificado con OpenAI real: la pregunta de Compiladores sale con dos tablas y el horario coincide con `horarios_ico_semestre_6.md`.
+- [ ] **Citas consultables (decisión pendiente del usuario):** las fuentes se muestran como nombres de archivo que el estudiante no puede abrir. Se revisaron las referencias [1]-[29] del Documento Maestro de Ejecución: solo 3 de 29 enlaces responden (las dos de SIBecas y la portada de cj.uaemex.mx); los PDF de reglamentos de `cj.uaemex.mx/images/...` dan 404 y las fuentes piloto no tienen enlace público.
+- [ ] Hueco del acervo: en `6to_PE_ICO_COMPILADORES` (y probablemente en otros temarios) la extracción perdió los números de horas y créditos de la tabla de carga académica.
+
 ### F4. Tablero de usuario y panel admin reales
 
 **Tablero de usuario** (`/api/v1/metrics/user-dashboard`, con sesión y solo datos propios):
@@ -244,3 +250,4 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 | 2026-11-10 | Ajuste de F2 por una alucinación en una primera consulta: filtro de fragmentos casi duplicados en la búsqueda (A) y regla de semestres explícitos en el prompt (B). La opción C (retirar el mapa curricular revuelto del acervo) queda para el equipo. 3 pruebas nuevas (81 en total). |
 | 2026-11-10 | F3 implementada: modelos verificados en la documentación y con llamadas reales; tabla `MODELOS`; selector en el chat; cuotas por modelo desde `mensajes` (429 con modelo y hora de liberación); costos con la tarifa de cada modelo. Comparación de 20 preguntas: gpt-6-luna gana (17/20 como los demás, 0.00026 USD por consulta). Se detectó que una respuesta validada en F2 («seiscientas horas» de servicio social) era una alucinación: el reglamento dice 480; las tres corridas actuales responden 480. 16 pruebas nuevas (97 en total). |
 | 2026-11-10 | gpt-5.6-luna retirado con la confirmación del usuario (tabla, `.env.example`, `/api/health`, telemetría y panel admin). F3 terminada. 98 pruebas. |
+| 2026-11-10 | Revisión del usuario: tablas Markdown en el chat, salida del avanzado a 6,000 tokens (5 veces el rápido) con estilo completo. Se detectó que 26 de 29 enlaces del acervo en el Documento Maestro no abren; la forma de hacer consultables las citas queda pendiente de decisión. 100 pruebas. |

@@ -42,6 +42,7 @@ MODELOS: dict[str, dict[str, Any]] = {
         "cuota_dia": 60,
         "razonamiento": False,
         "temperature": 0.2,
+        "estilo": "Responde de forma directa y concisa.",
         "en_selector": True,
     },
     "gpt-6-luna": {
@@ -51,11 +52,19 @@ MODELOS: dict[str, dict[str, Any]] = {
         "bolsa": "luna6",
         "precio_entrada": 0.10 / 1_000_000,
         "precio_salida": 0.50 / 1_000_000,
-        "max_salida": 2000,          # incluye razonamiento; afinar con scripts/comparar_modelos.py
+        # Cinco veces la salida del modelo rápido (decisión del usuario, 2026-11-10) para respuestas
+        # más completas. Incluye los tokens de razonamiento; ~0.003 USD como máximo por respuesta.
+        "max_salida": 6000,
         "cuota_hora": 5,
         "cuota_dia": None,           # por definir con el equipo
         "razonamiento": True,
         "reasoning_effort": "low",
+        "estilo": (
+            "Consulta avanzada: responde de forma completa y detallada. Desarrolla cada punto relevante "
+            "del contexto (requisitos, pasos, plazos, excepciones, horarios, contenidos), organiza la "
+            "respuesta con encabezados, listas o tablas, y señala explícitamente qué datos pedidos no "
+            "aparecen en las fuentes."
+        ),
         "en_selector": True,
     },
 }

@@ -2,7 +2,7 @@
 
 - Plan de trabajo vigente: `docs/PLAN_IMPLEMENTACION.md`. Léelo antes de implementar algo; al terminar una tarea, actualiza sus casillas, la bitácora y la "Siguiente tarea".
 - Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial en `core/chat`; frontend estático en `frontend/`.
-- Pruebas: `python -m pytest tests -q` (98 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
+- Pruebas: `python -m pytest tests -q` (100 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
 ## Autoría de commits (obligatorio, también en sesiones en la nube)

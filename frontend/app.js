@@ -545,7 +545,28 @@ function renderMarkdown(texto) {
         if (cita.length) html.push(`<blockquote>${cita.map(markdownEnLinea).join('<br>')}</blockquote>`);
         cita = [];
     };
-    const cerrarTodo = () => { cerrarParrafo(); cerrarLista(); cerrarCita(); };
+    // Tablas Markdown (| a | b |): encabezado, fila separadora |---|:---:| y filas de datos
+    let tabla = [];
+    const celdas = fila => fila.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    const esSeparador = fila => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(fila);
+    const cerrarTabla = () => {
+        if (!tabla.length) return;
+        if (tabla.length >= 2 && esSeparador(tabla[1])) {
+            const alineacion = celdas(tabla[1]).map(c =>
+                c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : '');
+            const fila = (linea, etiqueta) => '<tr>' + celdas(linea).map((c, i) => {
+                const a = alineacion[i] ? ` style="text-align:${alineacion[i]}"` : '';
+                return `<${etiqueta}${a}>${markdownEnLinea(c)}</${etiqueta}>`;
+            }).join('') + '</tr>';
+            const cuerpo = tabla.slice(2).map(l => fila(l, 'td')).join('');
+            html.push(`<div class="tabla-md"><table><thead>${fila(tabla[0], 'th')}</thead><tbody>${cuerpo}</tbody></table></div>`);
+        } else {
+            // Sin fila separadora no es una tabla: se muestra como texto
+            html.push(`<p>${tabla.map(markdownEnLinea).join('<br>')}</p>`);
+        }
+        tabla = [];
+    };
+    const cerrarTodo = () => { cerrarParrafo(); cerrarLista(); cerrarCita(); cerrarTabla(); };
 
     for (const linea of lineas) {
         if (bloque) {
@@ -555,6 +576,8 @@ function renderMarkdown(texto) {
         }
         if (/^\s*```/.test(linea)) { cerrarTodo(); bloque = []; continue; }
         if (!linea.trim()) { cerrarTodo(); continue; }
+        if (/^\s*\|.*\|\s*$/.test(linea)) { cerrarParrafo(); cerrarLista(); cerrarCita(); tabla.push(linea); continue; }
+        cerrarTabla();
 
         let m;
         if ((m = linea.match(/^\s*(#{1,6})\s+(.*)$/))) {
