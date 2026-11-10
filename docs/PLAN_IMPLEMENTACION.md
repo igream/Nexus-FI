@@ -218,24 +218,33 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 - En la app de AWS: Agregar identidad → usuario IAM (ID de cuenta, usuario y contraseña).
 - Que el usuario raíz entre por us-east-1 no indica que sea otra cuenta. Es la misma; solo hay que cambiar la región a us-east-2.
 
-**Tareas:**
-- [ ] Revisar la instancia: ID, si tiene IP elástica, DNS público y el origen de CloudFront.
-- [ ] **Apagado:** alarma de CloudWatch `CPUUtilization < ~3 %` (promedio de 5 minutos) durante 3 periodos (15 minutos), con la acción nativa `arn:aws:automate:us-east-2:ec2:stop`. Calibrar el umbral midiendo la CPU en reposo.
-- [ ] **Encendido:** Lambda `nexus-despertar` con Function URL. Hace dos cosas:
-  - Ejecuta `StartInstances`.
-  - Si el DNS público cambió, actualiza el origen de CloudFront.
+**Estado al 2026-11-10: preparada en el repositorio, sin desplegar.** El conector de AWS de la sesión pide autenticación, así que no se ha tocado la cuenta. Archivos:
+- `infra/f5/apagado.yaml` (CloudFormation): alarma, rol IAM mínimo, Lambda, Function URL con CORS solo para el dominio de CloudFront, permiso público de la URL, registros con 14 días de retención, bucket S3 privado (bloqueo de acceso público, cifrado, versionado, solo HTTPS, lectura solo desde la distribución) y Origin Access Control.
+- `infra/f5/despertar.py`: Lambda sin estado e idempotente (detenida → `StartInstances`; en transición → esperar; encendida → origen de CloudFront = DNS actual).
+- `infra/f5/dormido/index.html`: página «servidor dormido» autónoma; el botón llama a la Lambda cada 8 s y abre la app cuando `/health` responde por CloudFront (límite de 8 minutos).
+- `scripts/f5_desplegar.py`: `calibrar` (estadísticas de NetworkIn y CPU) y `desplegar` (pila, página y ajustes de la distribución).
 
-  Protegerla con un token simple y el permiso mínimo: `ec2:StartInstances` y `ec2:DescribeInstances` sobre esa instancia, y `cloudfront:GetDistributionConfig` y `UpdateDistribution` sobre esa distribución.
-- [ ] **Página "servidor dormido":** HTML estático en S3 como origen secundario de CloudFront, servido como página de error personalizada para 502, 503 y 504. Lleva un botón que llama a la Lambda y recarga cuando `/health` responde.
+**Decisiones de diseño (con respecto a la propuesta original):**
+- **Métrica de inactividad: NetworkIn en lugar de CPU** (parámetro `MetricaInactividad`). El trabajo pesado del chat ocurre en OpenAI, así que la CPU casi no sube con gente usando la app y la alarma podría apagarla en pleno uso. Una alarma con metric math no puede ejecutar acciones de EC2 (documentación de CloudWatch), así que debe ser una sola métrica. El umbral (por defecto 500,000 bytes en 5 minutos) **debe calibrarse** con `calibrar` antes de activarla.
+- **Página dormido solo para 502 y 504**, no para 503: la app responde 503 a propósito (modelo sin clave, inicio de sesión sin configurar) y CloudFront convertiría esas respuestas JSON en la página.
+- Conexión al origen EC2 de 4 s con un intento, para que la página aparezca rápido.
+- El token de la Lambda no es un secreto (viaja en la página pública): solo frena escáneres; lo peor que permite es encender la instancia.
+
+**Tareas:**
+- [ ] Revisar la instancia: ID, si tiene IP elástica, DNS público y el origen de CloudFront (al conectar AWS).
+- [x] **Apagado:** alarma con la acción nativa `arn:aws:automate:us-east-2:ec2:stop`, 3 periodos de 5 minutos, `TreatMissingData: notBreaching`. Falta calibrar el umbral.
+- [x] **Encendido:** Lambda `nexus-despertar` con Function URL, token y permiso mínimo (`ec2:StartInstances` sobre la instancia, `ec2:DescribeInstances` —que no admite permisos por recurso—, y `GetDistributionConfig`/`UpdateDistribution` sobre la distribución).
+- [x] **Página "servidor dormido"** en S3 con OAC, como página de error de CloudFront para 502 y 504.
+- [ ] Desplegar (`python scripts/f5_desplegar.py desplegar`) y validar la plantilla en la cuenta.
 - [ ] Alternativa, si actualizar el origen da problemas: IP elástica (unos 3.6 USD al mes) y dejar el origen fijo.
 - [ ] Opcional: regla de EventBridge Scheduler para detenerla todas las noches.
-- [ ] Documentar el procedimiento en el README.
+- [x] Documentar el procedimiento en el README.
 
 **Pruebas:**
+- [x] La Lambda rechaza llamadas sin token (`tests/test_f5.py`, 14 pruebas sin red: Lambda con clientes simulados, plantilla y ajustes de la distribución).
 - [ ] Sin tráfico, la instancia queda `stopped` en unos 15-20 minutos.
 - [ ] Con la instancia detenida, la URL de CloudFront muestra la página "dormido".
-- [ ] El botón la arranca y en unos 2 minutos `/health` responde 200 por CloudFront.
-- [ ] La Lambda rechaza llamadas sin token.
+- [ ] El botón la arranca y en unos minutos `/health` responde 200 por CloudFront.
 
 ---
 
@@ -250,7 +259,7 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 
 ## 5. Siguiente tarea
 
-**F5: apagado automático de la EC2** (más la etapa 2 de AWS del panel admin, que necesita el mismo rol IAM). Requiere acceso a la cuenta de AWS: el conector de AWS de esta sesión no se pudo conectar. En el mismo viaje a la instancia hay que subir `data/acervo_original` (README, §Despliegue) y desplegar F1-F4. Mientras no haya acceso: atender los huecos de recuperación (§4) o la opción C del mapa curricular (§F2), si el equipo la aprueba.
+**Desplegar F5 y F1-F4 en AWS** cuando el conector de AWS esté autenticado: 1) revisar la instancia y calibrar (`f5_desplegar.py calibrar`); 2) desplegar F1-F4 en la EC2 (`git pull`, `docker compose up -d --build`) y subir `data/acervo_original`; 3) `f5_desplegar.py desplegar` con el umbral calibrado; 4) correr las pruebas manuales de F5. Después, la etapa 2 de AWS del panel admin (rol IAM de la instancia). Mientras no haya acceso: huecos de recuperación (§4) u opción C del mapa curricular (§F2), si el equipo la aprueba.
 
 ## 6. Bitácora
 
@@ -265,3 +274,4 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 | 2026-11-10 | Revisión del usuario: tablas Markdown en el chat, salida del avanzado a 6,000 tokens (5 veces el rápido) con estilo completo. Se detectó que 26 de 29 enlaces del acervo en el Documento Maestro no abren; la forma de hacer consultables las citas queda pendiente de decisión. 100 pruebas. |
 | 2026-11-10 | Citas consultables: catálogo del acervo, enlaces firmados al PDF original en la página citada y visor de texto para las fuentes piloto. Falta subir `data/acervo_original` a la EC2. 113 pruebas. |
 | 2026-11-10 | F4 terminada: tablero de usuario y panel admin calculados desde `mensajes` (sin datos de demostración), tokens de embedding persistidos, preguntas sin resultado agrupadas y anónimas, enlace del tablero a la conversación. La etapa 2 de AWS queda con F5. 127 pruebas. |
+| 2026-11-10 | F5 preparada sin desplegar (el conector de AWS pide autenticación): plantilla CloudFormation, Lambda, página dormido y script de despliegue y calibración. Apagado por NetworkIn en lugar de CPU y página dormido solo para 502/504. 141 pruebas. |

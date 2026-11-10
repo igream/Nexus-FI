@@ -1,0 +1,252 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Nexus FI F5 - apagado automatico de la EC2 por inactividad (alarma de CloudWatch con accion
+  nativa ec2:stop), Lambda nexus-despertar con Function URL para encenderla y actualizar el
+  origen de CloudFront, y bucket S3 privado con la pagina "servidor dormido" que CloudFront
+  sirve ante errores 502/504. Solo servicios nativos de AWS (decision D7). La distribucion de
+  CloudFront existe fuera de esta pila; scripts/f5_desplegar.py la ajusta.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    why: >-
+      La EC2 t3.small corre 24/7 sin uso fuera de clase. Apagarla sola y encenderla bajo demanda
+      mantiene el piloto dentro del presupuesto de 10 USD al mes.
+    must:
+      - Desplegar con scripts/f5_desplegar.py, que inserta el codigo de infra/f5/despertar.py en la funcion.
+      - Crear la pila en la region de la instancia (us-east-2); los recursos de CloudFront son globales.
+
+Parameters:
+  InstanciaId:
+    Type: AWS::EC2::Instance::Id
+    Description: EC2 de Nexus FI.
+  DistribucionId:
+    Type: String
+    AllowedPattern: "^[A-Z0-9]{10,16}$"
+    Description: Id de la distribucion de CloudFront que sirve Nexus FI.
+  DominioCloudFront:
+    Type: String
+    AllowedPattern: "^[a-z0-9]+\\.cloudfront\\.net$"
+    Description: Dominio de la distribucion (origen permitido por CORS en la Function URL).
+  OrigenEc2Id:
+    Type: String
+    MinLength: 1
+    Description: Id del origen de la distribucion que apunta al DNS publico de la EC2.
+  TokenDespertar:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: >-
+      Token de la pagina dormido. No es un secreto (viaja en una pagina publica); solo frena escaneres.
+  MetricaInactividad:
+    Type: String
+    Default: NetworkIn
+    AllowedValues: [NetworkIn, CPUUtilization]
+    Description: >-
+      NetworkIn (bytes que entran en 5 min, suma) refleja visitas y respuestas de OpenAI;
+      CPUUtilization (promedio %) casi no sube con el chat porque el trabajo pesado ocurre en OpenAI.
+  UmbralInactividad:
+    Type: Number
+    Default: 500000
+    MinValue: 0
+    Description: Bytes por 5 min (NetworkIn) o porcentaje (CPUUtilization). Calibrar con f5_desplegar.py --calibrar.
+  PeriodosInactividad:
+    Type: Number
+    Default: 3
+    MinValue: 1
+    MaxValue: 24
+    Description: Periodos seguidos de 5 minutos bajo el umbral antes de apagar (3 = 15 minutos).
+
+Conditions:
+  EsRed: !Equals [!Ref MetricaInactividad, NetworkIn]
+
+Resources:
+  AlarmaInactividad:
+    Type: AWS::CloudWatch::Alarm
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Detiene la instancia con la accion nativa arn:aws:automate:<region>:ec2:stop.
+        must:
+          - Una sola metrica de la instancia; las alarmas con metric math no pueden ejecutar acciones de EC2.
+          - TreatMissingData notBreaching para no reaccionar a los huecos mientras la instancia esta detenida.
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-inactividad"
+      AlarmDescription: Detiene la EC2 de Nexus FI tras varios periodos seguidos sin uso.
+      Namespace: AWS/EC2
+      MetricName: !Ref MetricaInactividad
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref InstanciaId
+      Statistic: !If [EsRed, Sum, Average]
+      Period: 300
+      EvaluationPeriods: !Ref PeriodosInactividad
+      DatapointsToAlarm: !Ref PeriodosInactividad
+      Threshold: !Ref UmbralInactividad
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Sub "arn:aws:automate:${AWS::Region}:ec2:stop"
+
+  RolDespertar:
+    Type: AWS::IAM::Role
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Permiso minimo para encender una sola instancia y editar una sola distribucion.
+        must:
+          - ec2:DescribeInstances no admite permisos por recurso; todo lo demas va acotado por ARN.
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals: { "aws:SourceAccount": !Ref AWS::AccountId }
+      Policies:
+        - PolicyName: despertar-nexus
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ec2:StartInstances
+                Resource: !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${InstanciaId}"
+              - Effect: Allow
+                Action: ec2:DescribeInstances
+                Resource: "*"
+              - Effect: Allow
+                Action: [cloudfront:GetDistributionConfig, cloudfront:UpdateDistribution]
+                Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistribucionId}"
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !GetAtt RegistroDespertar.Arn
+
+  RegistroDespertar:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Registros de la Lambda con retencion corta; no contienen datos personales.
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-despertar"
+      RetentionInDays: 14
+
+  FuncionDespertar:
+    Type: AWS::Lambda::Function
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Enciende la EC2 y actualiza el origen de CloudFront si el DNS publico cambio.
+        must:
+          - El codigo lo inserta scripts/f5_desplegar.py desde infra/f5/despertar.py (limite inline de 4 KB).
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-despertar"
+      Runtime: python3.12
+      Handler: index.handler
+      Timeout: 20
+      MemorySize: 128
+      Role: !GetAtt RolDespertar.Arn
+      LoggingConfig:
+        LogGroup: !Ref RegistroDespertar
+      Environment:
+        Variables:
+          INSTANCE_ID: !Ref InstanciaId
+          DISTRIBUTION_ID: !Ref DistribucionId
+          ORIGIN_ID: !Ref OrigenEc2Id
+          TOKEN: !Ref TokenDespertar
+      Code:
+        ZipFile: |
+          __CODIGO_DESPERTAR__
+
+  UrlDespertar:
+    Type: AWS::Lambda::Url
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: La pagina dormido la llama desde el navegador; CORS solo permite el dominio de CloudFront.
+    Properties:
+      TargetFunctionArn: !GetAtt FuncionDespertar.Arn
+      AuthType: NONE
+      Cors:
+        AllowOrigins: [!Sub "https://${DominioCloudFront}"]
+        AllowMethods: [POST]
+        AllowHeaders: [x-nexus-token, content-type]
+        MaxAge: 300
+
+  PermisoUrlPublica:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref FuncionDespertar
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
+
+  BucketDormido:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Pagina estatica servida solo a traves de CloudFront con Origin Access Control.
+        must:
+          - Sin acceso publico; solo CloudFront (OAC) lee dormido/*.
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  PoliticaBucketDormido:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketDormido
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: SoloHttps
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: [!GetAtt BucketDormido.Arn, !Sub "${BucketDormido.Arn}/*"]
+            Condition:
+              Bool: { "aws:SecureTransport": "false" }
+          - Sid: LecturaDesdeCloudFront
+            Effect: Allow
+            Principal: { Service: cloudfront.amazonaws.com }
+            Action: s3:GetObject
+            Resource: !Sub "${BucketDormido.Arn}/dormido/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${DistribucionId}"
+
+  OacDormido:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-dormido"
+        Description: Acceso de CloudFront al bucket de la pagina dormido.
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+Outputs:
+  UrlDespertar:
+    Description: Function URL que llama la pagina dormido.
+    Value: !GetAtt UrlDespertar.FunctionUrl
+  BucketDormido:
+    Value: !Ref BucketDormido
+  DominioBucketDormido:
+    Value: !GetAtt BucketDormido.RegionalDomainName
+  OacDormidoId:
+    Value: !GetAtt OacDormido.Id
+  AlarmaInactividad:
+    Value: !Ref AlarmaInactividad

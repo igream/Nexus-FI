@@ -4,7 +4,7 @@
 - Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial y modelos en `core/chat`; documentos citados en `core/documentos`; frontend estático en `frontend/` (Markdown compartido en `frontend/markdown.js`).
 - Citas consultables: cada cita abre el PDF original (enlace firmado de 10 min, `data/acervo_original/` en el servidor o `Pre Procesados/` en local) o el visor `/documento` para las fuentes piloto. **Pendiente: subir `data/acervo_original` a la EC2** (README, §Despliegue).
 - Métricas (F4) en `core/metricas.py`: el tablero y el panel admin se calculan desde `mensajes`; no hay almacenes en memoria ni datos de demostración.
-- Pruebas: `python -m pytest tests -q` (127 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
+- Pruebas: `python -m pytest tests -q` (141 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
 ## Autoría de commits (obligatorio, también en sesiones en la nube)
@@ -36,15 +36,16 @@
   - Cuotas por modelo en `/api/chat` contadas desde `mensajes.modelo_cuota`; `/api/chat` está exento del limitador en memoria. `/api/session/info` devuelve `quotas`.
   - Frontend: selector `#modelo` junto al cuadro de texto e insignia con la cuota del modelo elegido.
   - `scripts/comparar_modelos.py` + `scripts/preguntas_comparacion.json`; reporte en `docs/02_Ejecucion/COMPARACION_MODELOS_2026-11-10_0150.md`. Ganó gpt-6-luna y **gpt-5.6-luna se retiró** (tabla, `.env.example`, `/api/health`, `main.py --telemetry` y panel admin). Su variable solo sigue en `scripts/security_vault.py` para vigilar que no se filtre.
-- **F4, tablero de usuario y panel admin reales: terminada** (pendiente del veredicto del usuario).
+- **F4, tablero de usuario y panel admin reales: terminada y aprobada por el usuario.**
   - `core/metricas.py`: `tablero_usuario()` (7 o 30 días: consultas por modelo y día, con fuentes, temas, latencia) y `panel_admin()` (costo por bolsa hoy/7/30 días incluida reescritura y embeddings, usuarios activos, carreras, p50/p95, preguntas sin resultado agrupadas y anónimas).
   - `mensajes.embedding_tokens` (migración automática). El panel AWS queda en `null` hasta la etapa 2 (rol IAM + CloudWatch/Cost Explorer, junto con F5).
   - `index.html?c=<id>` abre una conversación (enlaces del tablero).
-- **Siguiente tarea: F5** (requiere acceso a AWS) y, en el mismo viaje, desplegar F1-F4 y subir `data/acervo_original`.
+- **F5, apagado automático: preparada en el repo, sin desplegar.** `infra/f5/` (plantilla `apagado.yaml`, Lambda `despertar.py`, página `dormido/index.html`) y `scripts/f5_desplegar.py` (`calibrar`, `desplegar`). Apaga por **NetworkIn** (la CPU casi no sube con el chat porque el trabajo pesado es de OpenAI; una alarma con metric math no puede apagar EC2). La página dormido cubre solo 502/504, porque la app usa 503 a propósito.
+- **Siguiente tarea:** con el conector de AWS autenticado (hoy pide autenticación; no usar la CLI de AWS por fuera): revisar la instancia, calibrar, desplegar F1-F4 y `data/acervo_original` en la EC2, y desplegar F5 (plan, §5).
 - **Pendientes que no dependen del código:**
   - Retención del historial y texto del aviso de privacidad: los decide el equipo. Hoy no se purga nada.
   - Tope diario de consultas del modelo avanzado (el horario ya está decidido: 5 por hora). Hoy `cuota_dia: None` en `MODELOS`.
-  - F5 (apagado automático de la EC2): requiere acceso a AWS. El usuario tenía problemas para iniciar sesión con IAM desde el celular; ver el plan, §F5.
+  - Acceso a AWS para desplegar: autenticar el conector de AWS en la configuración de conectores de claude.ai.
 - **Decisiones del usuario que no hay que volver a discutir:**
   - El usuario elige el modelo; no habrá ruteo automático.
   - Un solo modelo avanzado: gpt-6-luna (ganó la comparación contra gpt-5.6-luna el 2026-11-10).
