@@ -48,9 +48,9 @@ Parameters:
       CPUUtilization (promedio %) casi no sube con el chat porque el trabajo pesado ocurre en OpenAI.
   UmbralInactividad:
     Type: Number
-    Default: 500000
+    Default: 8000
     MinValue: 0
-    Description: Bytes por 5 min (NetworkIn) o porcentaje (CPUUtilization). Calibrar con f5_desplegar.py --calibrar.
+    Description: Bytes por 5 min (NetworkIn) o porcentaje (CPUUtilization). 8000 queda bajo una consulta (unos 11 KB) y sobre el 87 % del reposo (calibrado el 2026-11-10).
   PeriodosInactividad:
     Type: Number
     Default: 3

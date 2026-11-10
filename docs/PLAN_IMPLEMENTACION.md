@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10 (F1 a F4 terminadas; estado de traspaso en `CLAUDE.md`).
+Última actualización: 2026-11-10 (F1 a F5 terminadas y desplegadas; estado de traspaso en `CLAUDE.md`).
 
 ---
 
@@ -211,40 +211,41 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 - [x] La consulta guarda los tokens del embedding; percentiles.
 - [x] Verificado en navegador con la cuenta ficticia: tablero (consultas por modelo, cuotas, temas, enlaces que abren la conversación) y panel admin (costo por bolsa, p50/p95, preguntas sin resultado agrupadas), también a 375 px de ancho.
 
-### F5. Apagado automático (infraestructura, solo servicios nativos de AWS)
+### F5. Apagado automático (infraestructura, solo servicios nativos de AWS) — ✅ desplegada y probada el 2026-11-10
 
 **Requisito previo:** acceso a la cuenta. Desde el celular:
 - Iniciar sesión con usuario IAM, en el navegador en modo escritorio, con la URL `https://<ID-de-cuenta>.signin.aws.amazon.com/console`.
 - En la app de AWS: Agregar identidad → usuario IAM (ID de cuenta, usuario y contraseña).
 - Que el usuario raíz entre por us-east-1 no indica que sea otra cuenta. Es la misma; solo hay que cambiar la región a us-east-2.
 
-**Estado al 2026-11-10: preparada en el repositorio, sin desplegar.** El conector de AWS de la sesión pide autenticación, así que no se ha tocado la cuenta. Archivos:
+**Estado al 2026-11-10: desplegada en la cuenta y probada de punta a punta.** Pila `nexus-fi-f5` en us-east-2 (alarma `nexus-fi-f5-inactividad`, Lambda `nexus-fi-f5-despertar` con Function URL, bucket de la página y OAC) y distribución `E3U5THQC3BR2TX` ajustada (origen `nexus-dormido-s3`, ruta `/dormido/*`, errores 502/504, conexión al origen EC2 de 4 s y 1 intento). Archivos:
 - `infra/f5/apagado.yaml` (CloudFormation): alarma, rol IAM mínimo, Lambda, Function URL con CORS solo para el dominio de CloudFront, permiso público de la URL, registros con 14 días de retención, bucket S3 privado (bloqueo de acceso público, cifrado, versionado, solo HTTPS, lectura solo desde la distribución) y Origin Access Control.
 - `infra/f5/despertar.py`: Lambda sin estado e idempotente (detenida → `StartInstances`; en transición → esperar; encendida → origen de CloudFront = DNS actual).
 - `infra/f5/dormido/index.html`: página «servidor dormido» autónoma; el botón llama a la Lambda cada 8 s y abre la app cuando `/health` responde por CloudFront (límite de 8 minutos).
 - `scripts/f5_desplegar.py`: `calibrar` (estadísticas de NetworkIn y CPU) y `desplegar` (pila, página y ajustes de la distribución).
 
 **Decisiones de diseño (con respecto a la propuesta original):**
-- **Métrica de inactividad: NetworkIn en lugar de CPU** (parámetro `MetricaInactividad`). El trabajo pesado del chat ocurre en OpenAI, así que la CPU casi no sube con gente usando la app y la alarma podría apagarla en pleno uso. Una alarma con metric math no puede ejecutar acciones de EC2 (documentación de CloudWatch), así que debe ser una sola métrica. El umbral (por defecto 500,000 bytes en 5 minutos) **debe calibrarse** con `calibrar` antes de activarla.
+- **Métrica de inactividad: NetworkIn en lugar de CPU** (parámetro `MetricaInactividad`). El trabajo pesado del chat ocurre en OpenAI, así que la CPU casi no sube con gente usando la app y la alarma podría apagarla en pleno uso. Una alarma con metric math no puede ejecutar acciones de EC2 (documentación de CloudWatch), así que debe ser una sola métrica. **Umbral calibrado: 8,000 bytes por 5 minutos.** En 7 días de reposo la mediana fue de 600 bytes (p95, 15 KB) y la CPU estuvo entre 0.3 % y 0.4 %. Una consulta mete unos 11 KB (embedding de OpenAI comprimido con gzip 8.2 KB, respuesta del chat ~1 KB y petición de CloudFront), así que el primer umbral de 20 KB la habría apagado con alguien preguntando cada 5 minutos. Con 8 KB, en reposo se apaga en una mediana de 15 minutos (p90, 30).
 - **Página dormido solo para 502 y 504**, no para 503: la app responde 503 a propósito (modelo sin clave, inicio de sesión sin configurar) y CloudFront convertiría esas respuestas JSON en la página.
 - Conexión al origen EC2 de 4 s con un intento, para que la página aparezca rápido.
 - El token de la Lambda no es un secreto (viaja en la página pública): solo frena escáneres; lo peor que permite es encender la instancia.
 
 **Tareas:**
-- [ ] Revisar la instancia: ID, si tiene IP elástica, DNS público y el origen de CloudFront (al conectar AWS).
-- [x] **Apagado:** alarma con la acción nativa `arn:aws:automate:us-east-2:ec2:stop`, 3 periodos de 5 minutos, `TreatMissingData: notBreaching`. Falta calibrar el umbral.
+- [x] Revisar la instancia: `i-07364db044d16fef1` (t3.small), sin IP elástica; llevaba 7 días encendida sin parar. El origen de CloudFront era su DNS público.
+- [x] **Apagado:** alarma con la acción nativa `arn:aws:automate:us-east-2:ec2:stop`, 3 periodos de 5 minutos, `TreatMissingData: notBreaching`, NetworkIn < 8,000 bytes.
 - [x] **Encendido:** Lambda `nexus-despertar` con Function URL, token y permiso mínimo (`ec2:StartInstances` sobre la instancia, `ec2:DescribeInstances` —que no admite permisos por recurso—, y `GetDistributionConfig`/`UpdateDistribution` sobre la distribución).
 - [x] **Página "servidor dormido"** en S3 con OAC, como página de error de CloudFront para 502 y 504.
-- [ ] Desplegar (`python scripts/f5_desplegar.py desplegar`) y validar la plantilla en la cuenta.
+- [x] Desplegar y validar la plantilla en la cuenta (con el conector de AWS). Corrección en el despliegue: Lambda exige además `lambda:InvokeFunction` para una Function URL pública; se agregó `PermisoInvocacionViaUrl` con `InvokedViaFunctionUrl: true` (sin él, la URL daba 403 aun con el token correcto).
 - [ ] Alternativa, si actualizar el origen da problemas: IP elástica (unos 3.6 USD al mes) y dejar el origen fijo.
 - [ ] Opcional: regla de EventBridge Scheduler para detenerla todas las noches.
 - [x] Documentar el procedimiento en el README.
 
 **Pruebas:**
 - [x] La Lambda rechaza llamadas sin token (`tests/test_f5.py`, 14 pruebas sin red: Lambda con clientes simulados, plantilla y ajustes de la distribución).
-- [ ] Sin tráfico, la instancia queda `stopped` en unos 15-20 minutos.
-- [ ] Con la instancia detenida, la URL de CloudFront muestra la página "dormido".
-- [ ] El botón la arranca y en unos minutos `/health` responde 200 por CloudFront.
+- [x] Sin tráfico, la instancia queda `stopped`: la alarma la detuvo a las 09:31 UTC del 2026-11-10 («Stop EC2 Instance … action completed successfully»).
+- [x] Con la instancia detenida, todas las rutas de CloudFront (`/`, `/health`, `/api/chat`, `/dashboard`) responden 503 con la página de reposo en unos 4.4 s.
+- [x] El botón la arranca: a los ~24 s la instancia corre con DNS nuevo y la Lambda ya actualizó el origen; CloudFront propagó en ~1 min 42 s y la página abrió sola el inicio de sesión en menos de 2 minutos desde el clic.
+- [x] La Lambda responde 403 sin token o con token falso y «listo» con el correcto; CORS solo permite el dominio de CloudFront.
 
 ---
 
@@ -252,14 +253,14 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 
 - [x] Identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna (§F3).
 - [ ] Huecos de recuperación detectados por la comparación: opciones de titulación (sale la Guía de Trámites en vez del Reglamento de Evaluación Profesional), «décimo semestre» (no recupera `horarios_ico_semestre_10`) y nombre de la coordinadora (solo está en el encabezado de los horarios).
-- [ ] Acceso a AWS desde la sesión: el conector de AWS necesita volver a autenticarse en la configuración de conectores de claude.ai, o hay que darle a la sesión una clave IAM.
+- [x] Acceso a AWS desde la sesión: servidor `aws-mcp` local con el perfil `nexus-fi` (`aws login --profile nexus-fi`; la sesión dura unas horas).
 - [ ] Tope diario del modelo avanzado.
 - [ ] Retención del historial y texto del aviso de privacidad.
 - [ ] Retirar del acervo los fragmentos del mapa curricular revuelto (§F2, opción C).
 
 ## 5. Siguiente tarea
 
-**Desplegar F5 y F1-F4 en AWS** cuando el conector de AWS esté autenticado: 1) revisar la instancia y calibrar (`f5_desplegar.py calibrar`); 2) desplegar F1-F4 en la EC2 (`git pull`, `docker compose up -d --build`) y subir `data/acervo_original`; 3) `f5_desplegar.py desplegar` con el umbral calibrado; 4) correr las pruebas manuales de F5. Después, la etapa 2 de AWS del panel admin (rol IAM de la instancia). Mientras no haya acceso: huecos de recuperación (§4) u opción C del mapa curricular (§F2), si el equipo la aprueba.
+**F4, etapa 2 de AWS:** darle a la EC2 un rol IAM de solo lectura (CloudWatch `GetMetricData` y Cost Explorer `GetCostAndUsage`, este último con caché de unas 6 horas porque cobra 0.01 USD por llamada) y mostrar en el panel admin el estado de la instancia, su CPU/NetworkIn y el costo del mes. Pendientes que decide el equipo: retención del historial y aviso de privacidad, tope diario del modelo avanzado, opción C del mapa curricular, huecos de recuperación (§4) y referencias del Documento Maestro v2.0.
 
 ## 6. Bitácora
 
@@ -275,3 +276,4 @@ Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil
 | 2026-11-10 | Citas consultables: catálogo del acervo, enlaces firmados al PDF original en la página citada y visor de texto para las fuentes piloto. Falta subir `data/acervo_original` a la EC2. 113 pruebas. |
 | 2026-11-10 | F4 terminada: tablero de usuario y panel admin calculados desde `mensajes` (sin datos de demostración), tokens de embedding persistidos, preguntas sin resultado agrupadas y anónimas, enlace del tablero a la conversación. La etapa 2 de AWS queda con F5. 127 pruebas. |
 | 2026-11-10 | F5 preparada sin desplegar (el conector de AWS pide autenticación): plantilla CloudFormation, Lambda, página dormido y script de despliegue y calibración. Apagado por NetworkIn en lugar de CPU y página dormido solo para 502/504. 141 pruebas. |
+| 2026-11-10 | Despliegue en AWS: PR igream/Nexus-FI#5 fusionado en `main` y desplegado en la EC2 (respaldo de `usuarios.db` y `.env` en `~/respaldos/`), 184 PDF en `data/acervo_original`, pila `nexus-fi-f5` creada y distribución ajustada. Corrección del permiso `lambda:InvokeFunction` de la Function URL. Pruebas de F5 completas: apagado automático (09:31 UTC), página de reposo en todas las rutas y encendido desde el botón en menos de 2 minutos. Umbral recalibrado de 20 KB a 8 KB al medir una consulta real (~11 KB). |
