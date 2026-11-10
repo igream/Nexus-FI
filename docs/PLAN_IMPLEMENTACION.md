@@ -119,6 +119,13 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 - [x] Una falla en la reescritura no rompe la respuesta.
 - [x] Extra: reescritura inservible, guardado cifrado con tokens, consulta sin resultados con contexto, recorte por tokens y limpieza de la salida.
 
+**Ajuste tras la revisión del usuario (alucinación en una primera consulta, sin historial):**
+«Que materias se dan en el sexto semestre de ingenieria en computación?» (sin acentos) recuperó cuatro copias del **mapa curricular** que traen incrustado los temarios, extraído como una lista de materias revuelta. El horario del 6.º quedó en sexto lugar (0.614 contra 0.628) y el LLM armó una lista inventada. Hay 115 fragmentos así en 41 temarios.
+- [x] **A.** `LanceDBVectorStore.search()` descarta candidatos casi duplicados (Jaccard ≥ 0.80 sobre las palabras sin el encabezado; solo fragmentos de 30 palabras distintas o más). Pide 3 veces más candidatos (mínimo 12) para reponerlos. Se desactiva con `quitar_duplicados=False`.
+- [x] **B.** Regla 5 del prompt de sistema: solo asignar materias a un semestre si la fuente lo dice de forma explícita; las tablas revueltas no cuentan.
+- [x] Pruebas en `tests/test_busqueda_terminos.py` (copias del mapa, sin filtro, fragmentos cortos). Verificado con OpenAI real: la misma pregunta ahora responde con las 6 materias de `horarios_ico_semestre_6.md`.
+- [ ] **C (pendiente de decisión del equipo):** retirar del acervo los 115 fragmentos del mapa revuelto, como cambio técnico (al estilo de CT-01), y, si existe una versión limpia del mapa curricular, agregarla como documento estructurado.
+
 ### F3. Selector de modelo y cuotas por modelo
 
 **Antes de programar**, verificar en la documentación de OpenAI (desde esta sesión `developers.openai.com` estaba bloqueado por la red):
@@ -212,6 +219,7 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 - [ ] Acceso a AWS desde la sesión: el conector de AWS necesita volver a autenticarse en la configuración de conectores de claude.ai, o hay que darle a la sesión una clave IAM.
 - [ ] Tope diario del modelo avanzado.
 - [ ] Retención del historial y texto del aviso de privacidad.
+- [ ] Retirar del acervo los fragmentos del mapa curricular revuelto (§F2, opción C).
 
 ## 5. Siguiente tarea
 
@@ -224,3 +232,4 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 | 2026-11-10 | Diagnóstico inicial y plan redactado. Decisiones D1-D7 tomadas con el equipo. |
 | 2026-11-10 | F1 terminada: tablas `conversaciones` y `mensajes` (cifradas), endpoints `/api/conversaciones`, `/api/chat` con `conversation_id`, barra lateral desde la API (abrir, borrar, conversación activa). El historial no consume cuota. 12 pruebas nuevas (62 en total). Verificado en navegador con dobles del LLM. |
 | 2026-11-10 | F1 revisada y aprobada por el usuario en local. F2 terminada: últimos 3 pares (~1,500 tokens) en los `messages`, reescritura con 4o-mini solo con historial (búsqueda con la reescrita, LLM con la original), tokens de reescritura en columnas propias, telemetría en el chat. `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true` para que las pruebas no dependan del `.env` local. 16 pruebas nuevas (78 en total). Verificado con OpenAI real y en navegador. |
+| 2026-11-10 | Ajuste de F2 por una alucinación en una primera consulta: filtro de fragmentos casi duplicados en la búsqueda (A) y regla de semestres explícitos en el prompt (B). La opción C (retirar el mapa curricular revuelto del acervo) queda para el equipo. 3 pruebas nuevas (81 en total). |

@@ -2,7 +2,7 @@
 
 - Plan de trabajo vigente: `docs/PLAN_IMPLEMENTACION.md`. Léelo antes de implementar algo; al terminar una tarea, actualiza sus casillas, la bitácora y la "Siguiente tarea".
 - Backend FastAPI en `backend/app.py`; login, usuarios y cuota en `core/auth` y `core/security`; historial en `core/chat`; frontend estático en `frontend/`.
-- Pruebas: `python -m pytest tests -q` (78 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
+- Pruebas: `python -m pytest tests -q` (81 pasan al 2026-11-10). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`, así que no dependen del `.env` local.
 - Idioma del proyecto (código, comentarios, commits y documentos): español.
 
 ## Autoría de commits (obligatorio, también en sesiones en la nube)
@@ -27,6 +27,7 @@
   - `backend/app.py`: `_reescribir_consulta()` (siempre 4o-mini, solo con historial, cae a la pregunta original si falla); la búsqueda usa la reescrita y el LLM final recibe historial y pregunta original. Telemetría `rewritten_query`, `history_turns`, `rewrite_tokens`, `rewrite_latency_ms`.
   - `frontend/app.js`: «Búsqueda interpretada como: …» bajo las fuentes. Service worker en `nexus-fi-v7`.
   - Pruebas en `tests/test_contexto.py` (doble `_LLM` que separa la llamada de reescritura de la respuesta final). Verificado con OpenAI real y en navegador.
+  - Ajuste: `LanceDBVectorStore.search()` descarta fragmentos casi duplicados (los temarios repiten un mapa curricular revuelto que causaba listas de materias inventadas) y el prompt de sistema tiene la regla 5 (semestres solo con fuente explícita). Retirar esos fragmentos del acervo (opción C) lo decide el equipo.
   - Falta probarlo en la EC2.
 - **Siguiente tarea: F3, selector de modelo y cuotas por modelo** (plan, §F3). Empezar por verificar los modelos en developers.openai.com.
 - **Pendientes que no dependen del código:**

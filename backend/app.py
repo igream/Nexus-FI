@@ -675,6 +675,11 @@ def chat_endpoint(req: ChatRequest, request: Request):
             "2. Cita de forma explícita el documento o reglamento fuente cuando menciones requisitos, trámites o plazos (cumpliendo con RF09).\n"
             "3. No inventes procedimientos ni especules si el contexto no lo especifica.\n"
             "4. Si la consulta involucra trámites presenciales, menciona las áreas correspondientes (p. ej. Coordinación de ICO, Subdirección Académica, Control Escolar).\n"
+            "5. Solo afirma que una materia pertenece a un semestre o periodo si la fuente lo indica de forma explícita "
+            "(p. ej. un horario del semestre o un encabezado claro con sus materias). Las listas o tablas desordenadas, "
+            "como un mapa curricular cuyo texto quedó revuelto, NO prueban a qué semestre pertenece cada materia: "
+            "no las uses para armar listas por semestre. Si no hay una fuente clara, dilo y sugiere consultar el plan de estudios "
+            "o la Coordinación de ICO.\n"
         )
 
         user_content = f"Contexto Oficial:\n{joined_context}\n\nPregunta del Estudiante: {user_query}"
