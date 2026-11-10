@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10 (F1 y F2 terminadas, F3 implementada; estado de traspaso en `CLAUDE.md`).
+Última actualización: 2026-11-10 (F1, F2 y F3 terminadas; estado de traspaso en `CLAUDE.md`).
 
 ---
 
@@ -126,7 +126,7 @@ Implementada en `core/chat/contexto.py` (funciones puras: `recortar_historial`, 
 - [x] Pruebas en `tests/test_busqueda_terminos.py` (copias del mapa, sin filtro, fragmentos cortos). Verificado con OpenAI real: la misma pregunta ahora responde con las 6 materias de `horarios_ico_semestre_6.md`.
 - [ ] **C (pendiente de decisión del equipo):** retirar del acervo los 115 fragmentos del mapa revuelto, como cambio técnico (al estilo de CT-01), y, si existe una versión limpia del mapa curricular, agregarla como documento estructurado.
 
-### F3. Selector de modelo y cuotas por modelo — ✅ implementada el 2026-11-10 (falta retirar al perdedor)
+### F3. Selector de modelo y cuotas por modelo — ✅ terminada el 2026-11-10
 
 Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `costo`, `estado_cuota`), `core/chat/store.py` (`contar_consultas` y columna `modelo_cuota`), `backend/app.py` (validación, cuota y llamada en `/api/chat`; `cuota_modelo` y `quotas` en `/api/session/info`) y `frontend/` (selector y cuota). Service worker en `nexus-fi-v8`.
 
@@ -145,7 +145,7 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
   | gpt-5.6-luna (low) | 17/20 | 2,062 ms | 0.00060 USD |
 
   Las tres fallas (titulación, décimo semestre, coordinadora) son iguales en los tres modelos y vienen de la búsqueda, no del modelo. **gpt-6-luna gana:** mismos aciertos, latencia similar y menos de la mitad del costo de gpt-5.6-luna (y más barato que 4o-mini).
-- [ ] Retirar gpt-5.6-luna de la configuración (tabla `MODELOS`, variable de entorno, bolsa `luna56` del panel), **pendiente de confirmación del usuario**. Mientras tanto ya no aparece en el selector (`en_selector: False`).
+- [x] gpt-5.6-luna retirado con la confirmación del usuario: tabla `MODELOS`, `.env.example`, `/api/health`, `main.py --telemetry` y la tarjeta y la bolsa `luna56` del panel admin. Pedirlo ahora da 422. La variable `OPENAI_API_KEY_GPT5_6_LUNA` sigue en la lista de `scripts/security_vault.py` para detectarla si queda en algún `.env`.
 
 **Tareas:**
 - [x] Llamar al modelo elegido, no al fijo.
@@ -224,7 +224,6 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 ## 4. Pendientes por verificar
 
 - [x] Identificadores, precios y parámetros de gpt-6-luna y gpt-5.6-luna (§F3).
-- [ ] Confirmar el retiro de gpt-5.6-luna (§F3).
 - [ ] Huecos de recuperación detectados por la comparación: opciones de titulación (sale la Guía de Trámites en vez del Reglamento de Evaluación Profesional), «décimo semestre» (no recupera `horarios_ico_semestre_10`) y nombre de la coordinadora (solo está en el encabezado de los horarios).
 - [ ] Acceso a AWS desde la sesión: el conector de AWS necesita volver a autenticarse en la configuración de conectores de claude.ai, o hay que darle a la sesión una clave IAM.
 - [ ] Tope diario del modelo avanzado.
@@ -233,7 +232,7 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 
 ## 5. Siguiente tarea
 
-**Cerrar F3 y pasar a F4.** Con la confirmación del usuario, retirar gpt-5.6-luna (entrada de `MODELOS`, `OPENAI_API_KEY_GPT5_6_LUNA` de `.env.example` y del `/api/health`, bolsa `luna56` del panel). Después, **F4: tablero de usuario y panel admin reales**, calculados desde `mensajes` (ya tiene `modelo_cuota`, tokens, costo, latencia, `categoria_principal`, `encontrado` y los tokens de reescritura aparte).
+**F4: tablero de usuario y panel admin reales**, calculados desde `mensajes` (ya tiene `modelo_cuota`, tokens, costo, latencia, `categoria_principal`, `encontrado` y los tokens de reescritura aparte). El panel admin ya solo tiene las bolsas `embeddings`, `gpt4oMini` y `luna6`.
 
 ## 6. Bitácora
 
@@ -243,4 +242,5 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 | 2026-11-10 | F1 terminada: tablas `conversaciones` y `mensajes` (cifradas), endpoints `/api/conversaciones`, `/api/chat` con `conversation_id`, barra lateral desde la API (abrir, borrar, conversación activa). El historial no consume cuota. 12 pruebas nuevas (62 en total). Verificado en navegador con dobles del LLM. |
 | 2026-11-10 | F1 revisada y aprobada por el usuario en local. F2 terminada: últimos 3 pares (~1,500 tokens) en los `messages`, reescritura con 4o-mini solo con historial (búsqueda con la reescrita, LLM con la original), tokens de reescritura en columnas propias, telemetría en el chat. `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true` para que las pruebas no dependan del `.env` local. 16 pruebas nuevas (78 en total). Verificado con OpenAI real y en navegador. |
 | 2026-11-10 | Ajuste de F2 por una alucinación en una primera consulta: filtro de fragmentos casi duplicados en la búsqueda (A) y regla de semestres explícitos en el prompt (B). La opción C (retirar el mapa curricular revuelto del acervo) queda para el equipo. 3 pruebas nuevas (81 en total). |
-| 2026-11-10 | F3 implementada: modelos verificados en la documentación y con llamadas reales; tabla `MODELOS`; selector en el chat; cuotas por modelo desde `mensajes` (429 con modelo y hora de liberación); costos con la tarifa de cada modelo. Comparación de 20 preguntas: gpt-6-luna gana (17/20 como los demás, 0.00026 USD por consulta). Se detectó que una respuesta validada en F2 («seiscientas horas» de servicio social) era una alucinación: el reglamento dice 480; las tres corridas actuales responden 480. 16 pruebas nuevas (97 en total). Falta confirmar el retiro de gpt-5.6-luna. |
+| 2026-11-10 | F3 implementada: modelos verificados en la documentación y con llamadas reales; tabla `MODELOS`; selector en el chat; cuotas por modelo desde `mensajes` (429 con modelo y hora de liberación); costos con la tarifa de cada modelo. Comparación de 20 preguntas: gpt-6-luna gana (17/20 como los demás, 0.00026 USD por consulta). Se detectó que una respuesta validada en F2 («seiscientas horas» de servicio social) era una alucinación: el reglamento dice 480; las tres corridas actuales responden 480. 16 pruebas nuevas (97 en total). |
+| 2026-11-10 | gpt-5.6-luna retirado con la confirmación del usuario (tabla, `.env.example`, `/api/health`, telemetría y panel admin). F3 terminada. 98 pruebas. |

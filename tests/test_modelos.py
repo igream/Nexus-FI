@@ -81,9 +81,17 @@ def test_modelo_invalido_da_422(client, llms):
     assert llms[RAPIDO].llamadas == [] and llms[AVANZADO].llamadas == []
 
 
-def test_modelo_sin_clave_da_503(client, llms):
+def test_modelo_sin_clave_da_503(client, llms, monkeypatch):
+    # El modelo existe en la tabla pero el servidor no tiene su clave
+    monkeypatch.setattr(app_module, "chat_clients", {RAPIDO: llms[RAPIDO]})
     h = sesion(client, CUENTA_A)
-    assert chat(client, h, model="gpt-5.6-luna").status_code == 503
+    assert chat(client, h, model=AVANZADO).status_code == 503
+
+
+def test_modelo_retirado_da_422(client, llms):
+    h = sesion(client, CUENTA_A)
+    assert "gpt-5.6-luna" not in modelos.MODELOS
+    assert chat(client, h, model="gpt-5.6-luna").status_code == 422
 
 
 def test_reescritura_usa_4o_mini_aunque_se_elija_el_avanzado(client, llms):
@@ -162,7 +170,7 @@ def test_session_info_devuelve_la_cuota_de_cada_modelo(client, llms):
     h = sesion(client, CUENTA_A)
     chat(client, h, model=AVANZADO)
     s = client.get("/api/session/info", headers=h).json()
-    assert set(s["quotas"]) == {RAPIDO, AVANZADO}          # gpt-5.6-luna no va al selector
+    assert set(s["quotas"]) == {RAPIDO, AVANZADO}
     assert s["quotas"][AVANZADO]["hourly_remaining"] == modelos.MODELOS[AVANZADO]["cuota_hora"] - 1
     assert s["quotas"][RAPIDO]["hourly_remaining"] == 20
     assert s["quotas"][AVANZADO]["available"] is True

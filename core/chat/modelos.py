@@ -6,14 +6,17 @@ del panel admin, tarifas, tope de salida, cuotas y parámetros admitidos). El us
 el modelo en la interfaz (decisión D1); no hay ruteo automático.
 
 Parámetros verificados el 2026-11-10 con llamadas reales a Chat Completions:
-  - gpt-6-luna y gpt-5.6-luna son modelos de razonamiento: no aceptan `max_tokens`
-    (hay que usar `max_completion_tokens`, que incluye los tokens de razonamiento) y solo
-    admiten `temperature` con `reasoning_effort="none"`.
+  - gpt-6-luna es un modelo de razonamiento: no acepta `max_tokens` (hay que usar
+    `max_completion_tokens`, que incluye los tokens de razonamiento) y solo admite
+    `temperature` con `reasoning_effort="none"`.
   - Precios por millón de tokens (developers.openai.com, 2026-11-10):
       gpt-4o-mini   entrada 0.15  salida 0.60
       gpt-6-luna    entrada 0.10  salida 0.50  (entrada en caché 0.01)
-      gpt-5.6-luna  entrada 0.20  salida 1.20  (entrada en caché 0.02)
     Los tokens de razonamiento se cobran como salida y ya vienen en completion_tokens.
+
+Modelo avanzado (decisión D2): gpt-6-luna ganó la comparación contra gpt-5.6-luna
+(docs/02_Ejecucion/COMPARACION_MODELOS_2026-11-10_0150.md: mismos aciertos, menos de la
+mitad del costo) y gpt-5.6-luna se retiró de la configuración.
 
 Cuotas (decisión D3), en consultas y por modelo, contadas desde la tabla `mensajes`
 para que sobrevivan a los reinicios. `cuota_dia=None` significa sin tope diario
@@ -54,21 +57,6 @@ MODELOS: dict[str, dict[str, Any]] = {
         "razonamiento": True,
         "reasoning_effort": "low",
         "en_selector": True,
-    },
-    # Candidato en comparación (D2). Se retira de la tabla cuando se elija al ganador.
-    "gpt-5.6-luna": {
-        "etiqueta": "Avanzado (gpt-5.6)",
-        "api_id": "gpt-5.6-luna",
-        "env_clave": ("OPENAI_API_KEY_GPT5_6_LUNA",),
-        "bolsa": "luna56",
-        "precio_entrada": 0.20 / 1_000_000,
-        "precio_salida": 1.20 / 1_000_000,
-        "max_salida": 2000,
-        "cuota_hora": 5,
-        "cuota_dia": None,
-        "razonamiento": True,
-        "reasoning_effort": "low",
-        "en_selector": False,
     },
 }
 

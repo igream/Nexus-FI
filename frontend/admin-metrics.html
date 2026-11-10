@@ -63,7 +63,7 @@
       </div>
 
       <!-- SECCIÓN 1: OPENAI / 4 CLAVES API -->
-      <h2 class="section-title">🤖 Consumo de Tokens OpenAI (4 Claves API)</h2>
+      <h2 class="section-title">🤖 Consumo de Tokens OpenAI (3 Claves API)</h2>
       <div class="admin-grid">
         <div class="card metric-card">
           <h3>Embeddings <span class="key-badge">API Key #1</span></h3>
@@ -79,11 +79,6 @@
           <h3>Luna 6 <span class="key-badge">API Key #3</span></h3>
           <div id="tokens-luna6" class="metric-val">--</div>
           <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-luna6">$0.00</b></div>
-        </div>
-        <div class="card metric-card">
-          <h3>Luna 5.6 <span class="key-badge">API Key #4</span></h3>
-          <div id="tokens-luna56" class="metric-val">--</div>
-          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-luna56">$0.00</b></div>
         </div>
       </div>
 
@@ -134,10 +129,7 @@
         document.getElementById('tokens-luna6').textContent = data.openai.luna6.tokens.toLocaleString();
         document.getElementById('cost-luna6').textContent = `$${data.openai.luna6.cost.toFixed(2)}`;
 
-        document.getElementById('tokens-luna56').textContent = data.openai.luna56.tokens.toLocaleString();
-        document.getElementById('cost-luna56').textContent = `$${data.openai.luna56.cost.toFixed(2)}`;
-
-        const totalCost = data.openai.embeddings.cost + data.openai.gpt4oMini.cost + data.openai.luna6.cost + data.openai.luna56.cost;
+        const totalCost = data.openai.embeddings.cost + data.openai.gpt4oMini.cost + data.openai.luna6.cost;
         document.getElementById('total-spent').textContent = `$${totalCost.toFixed(2)} USD`;
 
         document.getElementById('aws-s3').textContent = `${data.aws.s3StorageGb} GB`;
@@ -158,10 +150,7 @@
         document.getElementById('tokens-luna6').textContent = '3,400,000';
         document.getElementById('cost-luna6').textContent = '$9.18';
 
-        document.getElementById('tokens-luna56').textContent = '1,950,000';
-        document.getElementById('cost-luna56').textContent = '$4.88';
-
-        document.getElementById('total-spent').textContent = '$29.09 USD';
+        document.getElementById('total-spent').textContent = '$24.21 USD';
 
         document.getElementById('aws-s3').textContent = '18.4 GB';
         document.getElementById('aws-ec2').textContent = '2x t3.medium';

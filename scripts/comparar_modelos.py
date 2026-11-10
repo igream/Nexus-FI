@@ -11,7 +11,9 @@ usuarios temporal y una cuenta ficticia, y mide por modelo:
 
 Uso:
     python scripts/comparar_modelos.py
-    python scripts/comparar_modelos.py --modelos gpt-6-luna gpt-5.6-luna --esfuerzo medium
+    python scripts/comparar_modelos.py --modelos gpt-6-luna --esfuerzo medium
+Los modelos deben estar en la tabla MODELOS (core/chat/modelos.py). La corrida del
+2026-11-10 que eligió a gpt-6-luna sobre gpt-5.6-luna está en docs/02_Ejecucion/.
 Requiere las claves de OpenAI en .env. Costo aproximado: menos de 0.10 USD por corrida.
 El reporte se guarda en docs/02_Ejecucion/ (Markdown y JSON con las respuestas completas).
 """
@@ -73,7 +75,7 @@ def ultimo_turno(db: Path) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--modelos", nargs="+", default=["gpt-4o-mini", "gpt-6-luna", "gpt-5.6-luna"])
+    ap.add_argument("--modelos", nargs="+", default=["gpt-4o-mini", "gpt-6-luna"])
     ap.add_argument("--esfuerzo", choices=["none", "low", "medium", "high"],
                     help="reasoning_effort para los modelos de razonamiento (por defecto, el de la tabla)")
     ap.add_argument("--preguntas", default=str(RAIZ / "scripts" / "preguntas_comparacion.json"))

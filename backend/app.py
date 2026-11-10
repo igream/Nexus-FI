@@ -144,7 +144,6 @@ admin_tokens_store = {
     "embeddings": {"tokens": 14250000, "cost": 2.85},
     "gpt4oMini": {"tokens": 8120000, "cost": 12.18},
     "luna6": {"tokens": 3400000, "cost": 9.18},
-    "luna56": {"tokens": 1950000, "cost": 4.88},
 }
 
 # Tarifas OpenAI (USD por token) para estimar el costo devengado de cada consulta
@@ -178,7 +177,6 @@ KEY_CHAT_4O_MINI = (
     or os.getenv("OPENAI_API_KEY", "")
 )
 KEY_GPT6_LUNA = os.getenv("OPENAI_API_KEY_GPT6_LUNA", "")
-KEY_GPT5_6_LUNA = os.getenv("OPENAI_API_KEY_GPT5_6_LUNA", "")
 
 vector_store: Optional[LanceDBVectorStore] = None
 embedder: Optional[TextEmbedder] = None
@@ -351,13 +349,7 @@ def get_health():
                 "configured": bool(KEY_GPT6_LUNA),
                 "env_var": "OPENAI_API_KEY_GPT6_LUNA",
                 "masked": mask_key(KEY_GPT6_LUNA),
-                "purpose": "Experimentación y benchmarking (Nexus FI GPT 6 Luna)",
-            },
-            "chat_gpt5_6_luna": {
-                "configured": bool(KEY_GPT5_6_LUNA),
-                "env_var": "OPENAI_API_KEY_GPT5_6_LUNA",
-                "masked": mask_key(KEY_GPT5_6_LUNA),
-                "purpose": "Experimentación y benchmarking (Nexus FI GPT 5.6 Luna)",
+                "purpose": "Modelo avanzado del selector (gpt-6-luna)",
             },
         },
         "telemetry": {
