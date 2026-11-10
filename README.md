@@ -206,7 +206,7 @@ Otras herramientas:
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"   # búsqueda por terminal
 python main.py --telemetry                                                             # diagnóstico (DT-10)
 python main.py --audit                                                                 # auditoría de secretos
-python -m pytest tests -q                                                              # 113 pruebas automáticas
+python -m pytest tests -q                                                              # 127 pruebas automáticas
 ```
 
 Páginas: chat en `/`, tablero en `/dashboard`, panel admin en `/admin-metrics` y documentación Swagger en `/docs`.
@@ -251,7 +251,8 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 | `GET /api/documentos/{id}/texto` | Texto de una fuente citada para el visor `/documento` | Con sesión |
 | `GET /api/auth/admin/usuarios` | Cuentas registradas | Administrador |
 | `POST /api/auth/admin/reiniciar-registro` | Borrar la contraseña de una cuenta para que se registre de nuevo | Administrador |
-| `GET /api/v1/admin/metrics` | Consumo de tokens por clave e infraestructura | Administrador |
+| `GET /api/v1/metrics/user-dashboard` (`?dias=7` o `30`) | Tablero propio: consultas por modelo y día, cuotas, temas, latencia y últimas conversaciones | Con sesión |
+| `GET /api/v1/admin/metrics` | Costo por modelo (hoy, 7 y 30 días), usuarios activos, carreras, latencia p50/p95 y consultas sin resultado | Administrador |
 
 Ejemplo de consulta:
 ```json

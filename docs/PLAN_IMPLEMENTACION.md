@@ -5,7 +5,7 @@ Documento de trabajo para las sesiones de desarrollo con Claude Code. Antes de e
 2. Revisa **Siguiente tarea** y la **Bitácora**.
 3. Al terminar, marca las casillas, actualiza la bitácora y la siguiente tarea, y haz commit de este archivo con el código.
 
-Última actualización: 2026-11-10 (F1, F2 y F3 terminadas; estado de traspaso en `CLAUDE.md`).
+Última actualización: 2026-11-10 (F1 a F4 terminadas; estado de traspaso en `CLAUDE.md`).
 
 ---
 
@@ -182,28 +182,34 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 - [ ] **Documento Maestro v2.0:** corregir las referencias [1]-[29] (26 enlaces rotos). El usuario confirma que los propios portales universitarios no funcionan como deberían, así que conviene citar la ruta que sí abre, o indicar que el documento se consulta desde Nexus FI.
 - [ ] Hueco del acervo: en `6to_PE_ICO_COMPILADORES` (y probablemente en otros temarios) la extracción perdió los números de horas y créditos de la tabla de carga académica.
 
-### F4. Tablero de usuario y panel admin reales
+### F4. Tablero de usuario y panel admin reales — ✅ terminada el 2026-11-10 (falta la etapa 2 de AWS)
 
-**Tablero de usuario** (`/api/v1/metrics/user-dashboard`, con sesión y solo datos propios):
-- [ ] Consultas totales y por modelo, por día de los últimos 7 y 30.
-- [ ] Cuota restante por modelo.
-- [ ] Temas frecuentes (`categoria_principal`).
-- [ ] Latencia promedio.
-- [ ] Últimas conversaciones con enlace.
+Implementada en `core/metricas.py` (`tablero_usuario`, `panel_admin`, `percentil`), `backend/app.py` (los dos endpoints y `_acervo`), `core/chat/store.py` (columna `embedding_tokens` e índice por fecha) y las páginas `frontend/dashboard.html` y `frontend/admin-metrics.html`. Las fechas se agrupan en hora del centro de México (UTC−6).
+
+**Tablero de usuario** (`/api/v1/metrics/user-dashboard?dias=7|30`, con sesión y solo datos propios):
+- [x] Consultas totales y por modelo, por día de los últimos 7 y 30 (barras apiladas por modelo).
+- [x] Cuota restante por modelo, con hora de liberación.
+- [x] Temas frecuentes (`categoria_principal`) y porcentaje de respuestas con fuentes.
+- [x] Latencia promedio.
+- [x] Últimas conversaciones con enlace (`index.html?c=<id>` abre la conversación en el chat).
+- [x] Documentos y fragmentos reales del acervo (se quitó el «3,977» fijo).
 
 **Panel admin** (`/api/v1/admin/metrics`, solo administradores):
-- [ ] Tokens y costo por modelo, por día, semana y mes, calculados desde `mensajes` más los embeddings.
-- [ ] Usuarios activos y consultas por carrera.
-- [ ] Consultas sin resultado (`encontrado = 0`), útiles para ampliar el acervo.
-- [ ] Latencia p50 y p95.
-- [ ] Sección AWS: quitar los valores fijos. En una segunda etapa, datos reales con CloudWatch (CPU y estado de la instancia) y Cost Explorer (0.01 USD por llamada; guardar en caché unas 6 horas). Antes hay que darle a la instancia un rol IAM.
-- [ ] Eliminar `user_metrics_store`, `admin_tokens_store` y los textos `baseline_demo`.
+- [x] Tokens y costo por bolsa (modelo de respuesta, reescritura de 4o-mini y embeddings) para hoy, 7 y 30 días, y serie diaria de costo y consultas. Los tokens de embedding se guardan ahora en `mensajes.embedding_tokens`; los mensajes anteriores a F4 no los tienen (cuentan como 0, una fracción de centavo).
+- [x] Usuarios activos y consultas por carrera.
+- [x] Consultas sin resultado (`encontrado = 0`): tasa y últimas preguntas agrupadas con su número de repeticiones, sin decir quién las hizo.
+- [x] Latencia p50 y p95.
+- [x] Sección AWS sin valores fijos (`aws: null` y una nota en la página).
+- [ ] **Etapa 2 de AWS:** CloudWatch (CPU y estado de la instancia) y Cost Explorer (0.01 USD por llamada; caché de unas 6 horas). Requiere darle un rol IAM a la instancia, así que va junto con F5.
+- [x] Eliminados `user_metrics_store`, `admin_tokens_store`, `record_query_metrics`, `record_token_usage` y los textos `baseline_demo`, y los valores de respaldo inventados de ambas páginas.
 
-**Pruebas:**
-- [ ] El tablero exige sesión.
-- [ ] Dos usuarios ven datos distintos.
-- [ ] Un usuario sin rol de admin recibe 403 en el panel.
-- [ ] Los totales coinciden con los mensajes sembrados en la prueba.
+**Pruebas** (`tests/test_metricas.py`, 14 nuevas):
+- [x] El tablero exige sesión; periodo inválido da 422.
+- [x] Dos usuarios ven datos distintos.
+- [x] Un usuario sin rol de admin recibe 403 en el panel (y 401 sin sesión).
+- [x] Los totales coinciden con los mensajes sembrados (por periodo, bolsa, carrera, latencias y preguntas sin resultado).
+- [x] La consulta guarda los tokens del embedding; percentiles.
+- [x] Verificado en navegador con la cuenta ficticia: tablero (consultas por modelo, cuotas, temas, enlaces que abren la conversación) y panel admin (costo por bolsa, p50/p95, preguntas sin resultado agrupadas), también a 375 px de ancho.
 
 ### F5. Apagado automático (infraestructura, solo servicios nativos de AWS)
 
@@ -244,7 +250,7 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 
 ## 5. Siguiente tarea
 
-**F4: tablero de usuario y panel admin reales**, calculados desde `mensajes` (ya tiene `modelo_cuota`, tokens, costo, latencia, `categoria_principal`, `encontrado` y los tokens de reescritura aparte). El panel admin ya solo tiene las bolsas `embeddings`, `gpt4oMini` y `luna6`.
+**F5: apagado automático de la EC2** (más la etapa 2 de AWS del panel admin, que necesita el mismo rol IAM). Requiere acceso a la cuenta de AWS: el conector de AWS de esta sesión no se pudo conectar. En el mismo viaje a la instancia hay que subir `data/acervo_original` (README, §Despliegue) y desplegar F1-F4. Mientras no haya acceso: atender los huecos de recuperación (§4) o la opción C del mapa curricular (§F2), si el equipo la aprueba.
 
 ## 6. Bitácora
 
@@ -258,3 +264,4 @@ Implementada en `core/chat/modelos.py` (tabla `MODELOS`, `parametros_llamada`, `
 | 2026-11-10 | gpt-5.6-luna retirado con la confirmación del usuario (tabla, `.env.example`, `/api/health`, telemetría y panel admin). F3 terminada. 98 pruebas. |
 | 2026-11-10 | Revisión del usuario: tablas Markdown en el chat, salida del avanzado a 6,000 tokens (5 veces el rápido) con estilo completo. Se detectó que 26 de 29 enlaces del acervo en el Documento Maestro no abren; la forma de hacer consultables las citas queda pendiente de decisión. 100 pruebas. |
 | 2026-11-10 | Citas consultables: catálogo del acervo, enlaces firmados al PDF original en la página citada y visor de texto para las fuentes piloto. Falta subir `data/acervo_original` a la EC2. 113 pruebas. |
+| 2026-11-10 | F4 terminada: tablero de usuario y panel admin calculados desde `mensajes` (sin datos de demostración), tokens de embedding persistidos, preguntas sin resultado agrupadas y anónimas, enlace del tablero a la conversación. La etapa 2 de AWS queda con F5. 127 pruebas. |

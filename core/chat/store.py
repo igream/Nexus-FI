@@ -84,6 +84,10 @@ def init_db() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS ix_msg_cuota ON mensajes(usuario_id, modelo_cuota, creado_en)"
         )
+        # F4: tokens del embedding de la búsqueda, para que el panel admin calcule el costo completo
+        if "embedding_tokens" not in columnas:
+            conn.execute("ALTER TABLE mensajes ADD COLUMN embedding_tokens INTEGER")
+        conn.execute("CREATE INDEX IF NOT EXISTS ix_msg_rol_fecha ON mensajes(rol, creado_en)")
 
 
 def crear_conversacion(usuario_id, primera_pregunta: str) -> str:
@@ -125,6 +129,7 @@ def agregar_mensaje(
     reescritura_tokens_entrada: Optional[int] = None,
     reescritura_tokens_salida: Optional[int] = None,
     modelo_cuota: Optional[str] = None,
+    embedding_tokens: Optional[int] = None,
 ) -> int:
     if rol not in ROLES_MENSAJE:
         raise ValueError("Rol de mensaje no válido")
@@ -134,8 +139,8 @@ def agregar_mensaje(
             """INSERT INTO mensajes(conversacion_id, usuario_id, rol, contenido_cifrado, consulta_reescrita_cifrada,
                    modelo, categoria_principal, encontrado, citas_json, tokens_entrada, tokens_salida,
                    costo_usd, latencia_ms, reescritura_tokens_entrada, reescritura_tokens_salida,
-                   modelo_cuota, creado_en)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   modelo_cuota, embedding_tokens, creado_en)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 conv_id, str(usuario_id), rol, cifrar(contenido),
                 cifrar(consulta_reescrita) if consulta_reescrita else None,
@@ -144,7 +149,8 @@ def agregar_mensaje(
                 json.dumps(citas, ensure_ascii=False) if citas else None,
                 tokens_entrada, tokens_salida, costo_usd, latencia_ms,
                 reescritura_tokens_entrada, reescritura_tokens_salida,
-                modelo_cuota if rol == "assistant" else None, ahora,
+                modelo_cuota if rol == "assistant" else None,
+                embedding_tokens if rol == "assistant" else None, ahora,
             ),
         )
         conn.execute("UPDATE conversaciones SET actualizada_en = ? WHERE id = ?", (ahora, conv_id))

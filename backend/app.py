@@ -31,6 +31,7 @@ from core.chat import contexto, store as chat_store
 from core.chat import modelos
 from core.chat.modelos import MODELO_POR_DEFECTO, MODELO_REESCRITURA, MODELOS
 from core.documentos import catalogo as catalogo_documentos, router as documentos_router
+from core import metricas
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -123,51 +124,11 @@ def mask_key(k: Optional[str]) -> str:
     return k[:11] + "..." + k[-4:] if len(k) > 15 else "***"
 
 # =============================================================================
-# ALMACÉN DE TELEMETRÍA Y MÉTRICAS (WBS 1.3.4 - Daniel Aguilar Sánchez y Joan Alexis Ocaña Martínez)
-# Los valores iniciales son una línea base de demostración; cada consulta real a /api/chat
-# se acumula encima. El almacén vive en memoria y se reinicia al reiniciar el servidor.
+# MÉTRICAS (F4): el tablero de usuario y el panel admin se calculan desde la tabla
+# `mensajes` (core/metricas.py). Ya no hay almacenes en memoria ni líneas base de
+# demostración: cada consulta guarda sus tokens, costo, latencia y tokens de embedding.
+# Las tarifas, bolsas y cuotas de los modelos de chat viven en core/chat/modelos.py (F3).
 # =============================================================================
-user_metrics_store = {
-    "total_queries": 1248,
-    "total_latency_ms": 355680,
-    "successful_queries": 1229,
-    "hourly_queries": [45, 120, 230, 180, 160, 95],
-    "hourly_latencies": [310, 280, 240, 350, 290, 285],
-    "time_labels": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"],
-    "topics": {
-        "Evaluación Escolar": 35,
-        "Servicio Social": 25,
-        "Titulación": 20,
-        "Becas": 12,
-        "Otros": 8,
-    },
-}
-
-admin_tokens_store = {
-    "embeddings": {"tokens": 14250000, "cost": 2.85},
-    "gpt4oMini": {"tokens": 8120000, "cost": 12.18},
-    "luna6": {"tokens": 3400000, "cost": 9.18},
-}
-
-# Tarifas OpenAI (USD por token) para estimar el costo devengado de cada consulta
-PRICE_EMBEDDING_PER_TOKEN = 0.02 / 1_000_000          # text-embedding-3-small
-# Las tarifas, bolsas y cuotas de los modelos de chat viven en core/chat/modelos.py (F3)
-
-
-def record_query_metrics(latency_ms: float, success: bool) -> None:
-    """Acumula una consulta real en el almacén de métricas del dashboard de usuario."""
-    user_metrics_store["total_queries"] += 1
-    user_metrics_store["total_latency_ms"] += latency_ms
-    if success:
-        user_metrics_store["successful_queries"] += 1
-    user_metrics_store["hourly_queries"][-1] += 1
-    user_metrics_store["hourly_latencies"][-1] = int(latency_ms)
-
-
-def record_token_usage(bucket: str, tokens: int, cost: float) -> None:
-    """Suma tokens y costo devengado a la bolsa de facturación correspondiente."""
-    admin_tokens_store[bucket]["tokens"] += tokens
-    admin_tokens_store[bucket]["cost"] += cost
 
 
 # =============================================================================
@@ -395,47 +356,55 @@ def get_stats():
     }
 
 
-@app.get("/api/v1/metrics/user-dashboard", summary="Métricas del dashboard de usuario (WBS 1.3.4)")
-def get_user_dashboard_metrics():
-    """Devuelve datos dinámicos para el dashboard de usuario."""
-    total = max(user_metrics_store["total_queries"], 1)
+_acervo_cache: Dict[str, Any] = {}
+
+
+def _acervo() -> Dict[str, Any]:
+    """Documentos y fragmentos de la base vectorial (se cuentan una vez; cambian solo al revectorizar)."""
+    if not _acervo_cache and vector_store and vector_store.table is not None:
+        try:
+            docs = vector_store.table.to_arrow().column("documento")
+            _acervo_cache.update(documentos=len(set(docs.to_pylist())), fragmentos=len(docs))
+        except Exception as e:
+            print(f"[Métricas] No se pudo contar el acervo: {e}")
+    return _acervo_cache or {"documentos": 0, "fragmentos": 0}
+
+
+@app.get("/api/v1/metrics/user-dashboard", summary="Tablero del usuario en sesión (F4)")
+def get_user_dashboard_metrics(request: Request, dias: int = 7):
+    """Consultas, cuotas, temas y latencia del propio usuario, calculados desde su historial."""
+    user_id = get_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Inicia sesión para ver tu tablero.")
+    if dias not in (7, 30):
+        raise HTTPException(status_code=422, detail="El periodo debe ser de 7 o 30 días.")
+    datos = metricas.tablero_usuario(user_id, dias)
+    cuotas = []
+    for m, cfg in MODELOS.items():
+        if cfg["en_selector"]:
+            q = cuota_modelo(user_id, m)
+            cuotas.append({**q, "available": m in chat_clients})
     return {
-        "totalQueries": user_metrics_store["total_queries"],
-        "avgLatencyMs": int(user_metrics_store["total_latency_ms"] / total),
-        "successRate": round(user_metrics_store["successful_queries"] / total * 100, 1),
-        "timeSeriesLabels": user_metrics_store["time_labels"],
-        "latencyData": user_metrics_store["hourly_latencies"],
-        "queriesData": user_metrics_store["hourly_queries"],
-        "topicLabels": list(user_metrics_store["topics"].keys()),
-        "topicValues": list(user_metrics_store["topics"].values()),
-        "dataSource": "baseline_demo + consultas reales en memoria",
+        **datos,
+        "rate_limit_enabled": RATE_LIMIT_ENABLED,
+        "cuotas": cuotas,
+        "recientes": chat_store.listar_conversaciones(user_id, limite=5),
+        "acervo": _acervo(),
     }
 
 
-@app.get("/api/v1/admin/metrics", summary="Consumo de tokens y costos por clave segregada (WBS 1.3.4 / DT-10)")
+@app.get("/api/v1/admin/metrics", summary="Consumo, uso y calidad de respuestas (F4, solo administradores)")
 def get_admin_metrics(request: Request):
-    """Devuelve el consumo por clave segregada de OpenAI y los datos de infraestructura AWS. Solo administradores."""
+    """Tokens y costo por modelo (día, semana y mes), usuarios activos, consultas por carrera,
+    consultas sin resultado y latencia p50/p95, calculados desde la tabla `mensajes`."""
     requiere_admin(request)
     return {
-        "status": "healthy",
-        "environment": "aws-docker",
-        "openai": admin_tokens_store,
-        # Valores de referencia capturados manualmente por el equipo Cloud DevOps
-        # (Ángel Israel de la Cruz Martínez y Aarón Nevid Domínguez Fuentes); no se consultan en vivo a AWS.
-        "aws": {
-            "s3StorageGb": 18.4,
-            "ec2Instances": "2x t3.medium",
-            "ec2CpuUsage": 28,
-            "bandwidthGb": 142.0,
-            "availableCredit": 170.91,
-        },
-        "server": {
-            "base_latency_seconds": 2.1,
-            "active_connections": 45,
-            "query_distribution": {"administrative": 60, "academic": 40},
-            "proxy": "nginx",
-        },
-        "dataSource": "openai: baseline_demo + consumo real en memoria; aws/server: valores de referencia estáticos",
+        **metricas.panel_admin(),
+        "acervo": _acervo(),
+        "claves": {m: (m in chat_clients) for m in MODELOS} | {"embeddings": bool(KEY_EMBEDDINGS)},
+        # Etapa 2 (pendiente): CPU y estado de la instancia (CloudWatch) y costo (Cost Explorer).
+        # Requiere darle a la instancia un rol IAM; mientras tanto no se muestran valores fijos.
+        "aws": None,
     }
 
 
@@ -477,12 +446,8 @@ def _reescribir_consulta(historial: List[Dict[str, str]], pregunta: str) -> Dict
         )
         usage = getattr(r, "usage", None)
         if usage:
+            # Se guardan en reescritura_tokens_* del mensaje; el panel admin los suma a 4o-mini
             info["tokens_in"], info["tokens_out"] = usage.prompt_tokens, usage.completion_tokens
-            record_token_usage(
-                MODELOS[MODELO_REESCRITURA]["bolsa"],
-                usage.prompt_tokens + usage.completion_tokens,
-                modelos.costo(MODELO_REESCRITURA, usage.prompt_tokens, usage.completion_tokens),
-            )
         reescrita = contexto.limpiar_reescritura(r.choices[0].message.content)
         if reescrita:
             info["consulta"], info["reescrita"] = reescrita, reescrita
@@ -598,7 +563,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         emb_latency_ms = round((time.time() - t0_emb) * 1000, 2)
         # Estimación de tokens de embedding (~4 caracteres por token)
         emb_tokens = max(len(search_query) // 4, 1)
-        record_token_usage("embeddings", emb_tokens, emb_tokens * PRICE_EMBEDDING_PER_TOKEN)
+        meta_reescritura["embedding_tokens"] = emb_tokens   # F4: se guarda con la respuesta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al vectorizar la consulta: {e}")
 
@@ -641,7 +606,6 @@ def chat_endpoint(req: ChatRequest, request: Request):
     # Si no hubo fragmentos que superen el umbral RF13
     if not results:
         total_latency_ms = round((time.time() - start_time) * 1000, 2)
-        record_query_metrics(total_latency_ms, success=False)
         fallback_msg = (
             "No se encontró información oficial suficiente en el corpus normativo y operativo "
             "de la Facultad de Ingeniería (UAEMéx) para responder a tu consulta con alta certeza. "
@@ -737,7 +701,6 @@ def chat_endpoint(req: ChatRequest, request: Request):
             if usage:
                 tokens_in, tokens_out = usage.prompt_tokens, usage.completion_tokens
                 llm_cost = modelos.costo(target_model, tokens_in, tokens_out)
-                record_token_usage(MODELOS[target_model]["bolsa"], tokens_in + tokens_out, llm_cost)
         except Exception as e:
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
             model_name = "direct_synthesis_fallback"
@@ -755,7 +718,6 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     llm_latency_ms = round((time.time() - t0_llm) * 1000, 2)
     total_latency_ms = round((time.time() - start_time) * 1000, 2)
-    record_query_metrics(total_latency_ms, success=True)
 
     conv_id = _guardar_turno(
         user_id, req.conversation_id, user_query, generated_answer,

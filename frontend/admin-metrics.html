@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#006747">
-  <title>Nexus FI - Métricas de Consumo Admin</title>
+  <title>Nexus FI - Panel admin</title>
   <link rel="icon" href="assets/nexus-icon.svg">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -53,59 +54,74 @@
     <div class="page">
       <div class="page-head">
         <div>
-          <h1>Métricas de Consumo e Infraestructura</h1>
-          <p class="sub">Control de presupuesto y tokens devengados en OpenAI y AWS</p>
+          <h1>Consumo, uso y calidad de respuestas</h1>
+          <p class="sub">Calculado desde el historial de consultas (sin datos de demostración)</p>
         </div>
-        <div class="card total-card">
-          <span>Gasto Acumulado Total</span>
-          <strong id="total-spent">$0.00 USD</strong>
-        </div>
-      </div>
-
-      <!-- SECCIÓN 1: OPENAI / 4 CLAVES API -->
-      <h2 class="section-title">🤖 Consumo de Tokens OpenAI (3 Claves API)</h2>
-      <div class="admin-grid">
-        <div class="card metric-card">
-          <h3>Embeddings <span class="key-badge">API Key #1</span></h3>
-          <div id="tokens-emb" class="metric-val">--</div>
-          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-emb">$0.00</b></div>
-        </div>
-        <div class="card metric-card">
-          <h3>GPT-4o-mini <span class="key-badge">API Key #2</span></h3>
-          <div id="tokens-gpt4" class="metric-val">--</div>
-          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-gpt4">$0.00</b></div>
-        </div>
-        <div class="card metric-card">
-          <h3>Luna 6 <span class="key-badge">API Key #3</span></h3>
-          <div id="tokens-luna6" class="metric-val">--</div>
-          <div class="metric-sub"><span>Saldo Devengado:</span><b id="cost-luna6">$0.00</b></div>
+        <div class="seg" role="group" aria-label="Periodo">
+          <button type="button" class="seg-btn" data-periodo="hoy">Hoy</button>
+          <button type="button" class="seg-btn" data-periodo="semana">7 días</button>
+          <button type="button" class="seg-btn activo" data-periodo="mes">30 días</button>
+          <button id="btn-refresh" class="primary" type="button">🔄 Actualizar</button>
         </div>
       </div>
 
-      <!-- SECCIÓN 2: INFRAESTRUCTURA AWS -->
-      <h2 class="section-title">☁️ Recursos de Infraestructura AWS</h2>
-      <div class="admin-grid">
-        <div class="card metric-card">
-          <h3>Almacenamiento S3</h3>
-          <div id="aws-s3" class="metric-val">-- GB</div>
-          <div class="metric-sub"><span>Uso de vectores / JSONs</span></div>
+      <section class="kpis">
+        <article class="card kpi">
+          <span>Costo OpenAI</span>
+          <strong id="kpi-costo">--</strong>
+          <small id="kpi-tokens">--</small>
+        </article>
+        <article class="card kpi">
+          <span>Consultas</span>
+          <strong id="kpi-consultas">--</strong>
+          <small id="kpi-usuarios">--</small>
+        </article>
+        <article class="card kpi">
+          <span>Sin resultado (30 días)</span>
+          <strong><span id="kpi-sin">--</span> <small>%</small></strong>
+          <small id="kpi-sin-total">--</small>
+        </article>
+        <article class="card kpi">
+          <span>Latencia p50 / p95 (30 días)</span>
+          <strong id="kpi-latencia">--</strong>
+          <small id="kpi-muestras">--</small>
+        </article>
+      </section>
+
+      <section class="charts">
+        <div class="panel">
+          <div class="panelhead">
+            <div><h2>Tokens y costo por modelo</h2><p id="consumo-periodo">--</p></div>
+          </div>
+          <div class="tabla-panel">
+            <table class="tabla-datos">
+              <thead><tr><th>Bolsa</th><th>Consultas</th><th>Tokens</th><th>Costo (USD)</th></tr></thead>
+              <tbody id="tabla-consumo"></tbody>
+            </table>
+          </div>
         </div>
-        <div class="card metric-card">
-          <h3>Cómputo EC2</h3>
-          <div id="aws-ec2" class="metric-val">--</div>
-          <div class="metric-sub"><span>CPU Promedio: <b id="aws-cpu">--%</b></span></div>
+        <div class="panel">
+          <div class="panelhead"><div><h2>Costo y consultas por día</h2><p>Últimos 30 días</p></div></div>
+          <div class="chart-box"><canvas id="chartCosto"></canvas></div>
         </div>
-        <div class="card metric-card">
-          <h3>Ancho de Banda</h3>
-          <div id="aws-bandwidth" class="metric-val">-- GB</div>
-          <div class="metric-sub"><span>Tráfico Egress Mensual</span></div>
+      </section>
+
+      <section class="charts">
+        <div class="panel">
+          <div class="panelhead"><div><h2>Consultas sin resultado</h2><p>Preguntas recientes sin fuentes en el acervo; sirven para ampliarlo. No se muestra quién las hizo.</p></div></div>
+          <ul id="sin-resultado" class="recientes"></ul>
         </div>
-        <div class="card metric-card">
-          <h3>Saldo AWS Disponible</h3>
-          <div id="aws-credit" class="metric-val ok">-- USD</div>
-          <div class="metric-sub"><span>Créditos restantes</span></div>
+        <div class="panel">
+          <div class="panelhead"><div><h2>Consultas por carrera</h2><p>Últimos 30 días</p></div></div>
+          <ul id="por-carrera" class="recientes"></ul>
+          <div class="panelhead aws-nota">
+            <div>
+              <h2>☁️ Infraestructura AWS</h2>
+              <p>Sin datos en vivo todavía. La etapa 2 consultará CloudWatch (CPU y estado de la EC2) y Cost Explorer, y requiere un rol IAM en la instancia. Ya no se muestran valores fijos.</p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   </main>
 
@@ -113,54 +129,119 @@
 
   <script src="app.js"></script>
   <script>
-    async function fetchAdminMetrics() {
-      try {
-        const response = await fetch('/api/v1/admin/metrics', { headers: getSecurityHeaders() });
-        if (response.status === 401) { irALogin(); return; }
-        if (response.status === 403) { location.replace('/'); return; }
-        const data = await response.json();
+    // Panel admin (F4): todo sale de /api/v1/admin/metrics, calculado desde la tabla mensajes
+    let periodo = 'mes', datos = null, chartCosto = null;
+    const NOMBRE_PERIODO = { hoy: 'Hoy', semana: 'Últimos 7 días', mes: 'Últimos 30 días' };
+    const fmt = n => n === null || n === undefined ? '—' : Number(n).toLocaleString('es-MX');
+    const usd = n => `$${Number(n || 0).toFixed(n && n < 0.01 ? 5 : 4)}`;
 
-        document.getElementById('tokens-emb').textContent = data.openai.embeddings.tokens.toLocaleString();
-        document.getElementById('cost-emb').textContent = `$${data.openai.embeddings.cost.toFixed(2)}`;
-
-        document.getElementById('tokens-gpt4').textContent = data.openai.gpt4oMini.tokens.toLocaleString();
-        document.getElementById('cost-gpt4').textContent = `$${data.openai.gpt4oMini.cost.toFixed(2)}`;
-
-        document.getElementById('tokens-luna6').textContent = data.openai.luna6.tokens.toLocaleString();
-        document.getElementById('cost-luna6').textContent = `$${data.openai.luna6.cost.toFixed(2)}`;
-
-        const totalCost = data.openai.embeddings.cost + data.openai.gpt4oMini.cost + data.openai.luna6.cost;
-        document.getElementById('total-spent').textContent = `$${totalCost.toFixed(2)} USD`;
-
-        document.getElementById('aws-s3').textContent = `${data.aws.s3StorageGb} GB`;
-        document.getElementById('aws-ec2').textContent = data.aws.ec2Instances;
-        document.getElementById('aws-cpu').textContent = `${data.aws.ec2CpuUsage}%`;
-        document.getElementById('aws-bandwidth').textContent = `${data.aws.bandwidthGb} GB`;
-        document.getElementById('aws-credit').textContent = `$${data.aws.availableCredit.toFixed(2)} USD`;
-
-      } catch (err) {
-        console.warn('Endpoint admin no disponible, cargando valores por defecto:', err);
-
-        document.getElementById('tokens-emb').textContent = '14,250,000';
-        document.getElementById('cost-emb').textContent = '$2.85';
-
-        document.getElementById('tokens-gpt4').textContent = '8,120,000';
-        document.getElementById('cost-gpt4').textContent = '$12.18';
-
-        document.getElementById('tokens-luna6').textContent = '3,400,000';
-        document.getElementById('cost-luna6').textContent = '$9.18';
-
-        document.getElementById('total-spent').textContent = '$24.21 USD';
-
-        document.getElementById('aws-s3').textContent = '18.4 GB';
-        document.getElementById('aws-ec2').textContent = '2x t3.medium';
-        document.getElementById('aws-cpu').textContent = '28%';
-        document.getElementById('aws-bandwidth').textContent = '142 GB';
-        document.getElementById('aws-credit').textContent = '$170.91 USD';
-      }
+    function colores() {
+      const oscuro = document.documentElement.dataset.theme === 'dark';
+      return { text: oscuro ? '#a5b6ab' : '#7c8a82', grid: oscuro ? '#33483c' : '#e2eae5',
+               small: window.matchMedia('(max-width: 600px)').matches };
     }
 
-    document.addEventListener('DOMContentLoaded', fetchAdminMetrics);
+    async function cargar() {
+      try {
+        const r = await fetch('/api/v1/admin/metrics', { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (r.status === 403) { location.replace('/'); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        datos = await r.json();
+      } catch (e) {
+        console.warn('No se pudo cargar el panel admin:', e);
+        document.getElementById('kpi-costo').textContent = 'Sin conexión';
+        return;
+      }
+      pintar();
+    }
+
+    function pintar() {
+      if (!datos) return;
+      const consumo = datos.consumo[periodo];
+      document.getElementById('kpi-costo').textContent = `${usd(consumo.costo_total_usd)} USD`;
+      document.getElementById('kpi-tokens').textContent = `${fmt(consumo.tokens_total)} tokens · ${NOMBRE_PERIODO[periodo]}`;
+      document.getElementById('kpi-consultas').textContent = fmt(datos.consultas[periodo]);
+      document.getElementById('kpi-usuarios').textContent = `${fmt(datos.usuarios_activos[periodo])} usuarios activos`;
+      document.getElementById('kpi-sin').textContent = datos.sin_resultado.tasa_mes ?? '—';
+      document.getElementById('kpi-sin-total').textContent = `${fmt(datos.sin_resultado.total_mes)} consultas sin fuentes`;
+      const l = datos.latencia_ms;
+      document.getElementById('kpi-latencia').textContent = l.p50 === null ? '—' : `${fmt(Math.round(l.p50))} / ${fmt(Math.round(l.p95))} ms`;
+      document.getElementById('kpi-muestras').textContent = `${fmt(l.muestras)} respuestas medidas`;
+      document.getElementById('consumo-periodo').textContent = `${NOMBRE_PERIODO[periodo]} · respuesta, reescritura y embeddings`;
+
+      const tbody = document.getElementById('tabla-consumo');
+      tbody.innerHTML = '';
+      if (!consumo.bolsas.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="vacio">Sin consumo en este periodo.</td></tr>';
+      }
+      consumo.bolsas.forEach(b => {
+        const tr = document.createElement('tr');
+        [b.etiqueta, b.consultas ? fmt(b.consultas) : '—', fmt(b.tokens), usd(b.costo_usd)].forEach((v, i) => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          if (i) td.className = 'num';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      lista('sin-resultado', datos.sin_resultado.recientes,
+            s => [s.pregunta, `${s.veces > 1 ? s.veces + ' veces · ' : ''}${s.fecha}`], 'No hay consultas sin resultado en 30 días.');
+      lista('por-carrera', datos.por_carrera, c => [c.carrera, `${fmt(c.consultas)} consultas`], 'Sin consultas en 30 días.');
+      grafica();
+    }
+
+    function lista(id, items, campos, vacio) {
+      const ul = document.getElementById(id);
+      ul.innerHTML = '';
+      if (!items.length) { ul.innerHTML = `<li class="vacio">${vacio}</li>`; return; }
+      items.forEach(it => {
+        const [principal, secundario] = campos(it);
+        const li = document.createElement('li');
+        const b = document.createElement('span');
+        b.textContent = principal;
+        const s = document.createElement('small');
+        s.textContent = secundario;
+        li.append(b, s);
+        ul.appendChild(li);
+      });
+    }
+
+    function grafica() {
+      if (!datos || typeof Chart === 'undefined') return;
+      const c = colores(), font = { size: c.small ? 10 : 12 };
+      const s = datos.serie_30_dias;
+      chartCosto?.destroy();
+      chartCosto = new Chart(document.getElementById('chartCosto'), {
+        data: {
+          labels: s.fechas.map(f => f.slice(8, 10) + '/' + f.slice(5, 7)),
+          datasets: [
+            { type: 'bar', label: 'Costo (USD)', data: s.costo_usd, backgroundColor: 'rgba(0, 103, 71, 0.75)', yAxisID: 'yCosto', borderRadius: 3 },
+            { type: 'line', label: 'Consultas', data: s.consultas, borderColor: '#d5a62e', backgroundColor: '#d5a62e', yAxisID: 'yConsultas', tension: 0.3, pointRadius: 2 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          scales: {
+            yCosto: { position: 'left', beginAtZero: true, ticks: { color: c.text, font }, grid: { color: c.grid } },
+            yConsultas: { position: 'right', beginAtZero: true, ticks: { color: c.text, font, precision: 0 }, grid: { drawOnChartArea: false } },
+            x: { ticks: { color: c.text, font, maxRotation: 0, autoSkip: true }, grid: { display: false } }
+          },
+          plugins: { legend: { labels: { color: c.text, font, boxWidth: 12 } } }
+        }
+      });
+    }
+
+    document.querySelectorAll('.seg-btn').forEach(b => b.addEventListener('click', () => {
+      periodo = b.dataset.periodo;
+      document.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('activo', x === b));
+      pintar();
+    }));
+    document.addEventListener('nexus-theme', grafica);
+    window.matchMedia('(max-width: 600px)').addEventListener('change', grafica);
+    document.getElementById('btn-refresh').addEventListener('click', cargar);
+    document.addEventListener('DOMContentLoaded', cargar);
   </script>
 </body>
 </html>

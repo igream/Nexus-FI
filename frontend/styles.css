@@ -271,6 +271,38 @@ html[data-theme="dark"] .theme-toggle { background: #24372c; color: #f1d780; bor
 .cite-link:hover, .cite-link:focus-visible { text-decoration-thickness: 2px; }
 .cite-error { color: #b42318; }
 
+/* Tablero y panel admin con datos reales (F4) */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.seg-btn {
+  border: 1px solid var(--theme-border); background: var(--theme-surface); color: var(--theme-text);
+  border-radius: 10px; padding: 8px 12px; font-size: 13px; cursor: pointer;
+}
+.seg-btn.activo { background: var(--green); border-color: var(--green); color: #fff; font-weight: 600; }
+.charts + .charts { margin-top: 14px; }
+.vacio { color: var(--theme-muted); font-size: 13px; text-align: center; padding: 18px 8px; }
+.cuotas { display: grid; gap: 14px; margin-top: 14px; }
+.cuota-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; margin-bottom: 6px; }
+.cuota-head span { color: var(--theme-muted); }
+.barra { height: 10px; border-radius: 6px; background: var(--theme-surface-2); overflow: hidden; }
+.barra i { display: block; height: 100%; background: var(--green); border-radius: 6px; transition: width .3s; }
+.cuota.agotada .barra { outline: 1px solid #b42318; }
+.recientes { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 2px; }
+.recientes li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 4px; border-bottom: 1px dashed var(--theme-border); font-size: 13px; }
+.recientes li:last-child { border-bottom: 0; }
+.recientes li > :first-child { min-width: 0; overflow-wrap: anywhere; }
+.recientes a { color: var(--theme-accent-text); font-weight: 600; }
+.recientes small { color: var(--theme-muted); white-space: nowrap; }
+.tabla-panel { overflow-x: auto; margin-top: 12px; }
+.tabla-datos { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabla-datos th, .tabla-datos td { padding: 8px 6px; border-bottom: 1px solid var(--theme-border); text-align: left; }
+.tabla-datos th { color: var(--theme-muted); font-weight: 600; font-size: 12px; }
+.tabla-datos .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.aws-nota { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--theme-border); }
+@media (max-width: 600px) {
+  .recientes li { flex-direction: column; gap: 2px; }
+  .seg { width: 100%; }
+}
+
 /* Visor de documentos del acervo (documento.html) */
 .visor { max-width: 860px; }
 .visor-doc { background: var(--theme-surface); border: 1px solid var(--theme-border); border-radius: 14px; padding: 20px clamp(14px, 3vw, 28px); }

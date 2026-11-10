@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 from core.auth import routes, store
+from core.chat import store as chat_store
 from core.security import rate_limiter
 
 CUENTA = "1234567"          # inventada
@@ -26,6 +27,7 @@ def client(tmp_path, monkeypatch):
     routes._fallos.clear()
     rate_limiter.clear_store_for_testing()
     store.init_db()
+    chat_store.init_db()   # el servidor crea ambas al arrancar; el panel admin lee el historial
     store.autorizar_cuenta(CUENTA, "Licenciatura en Ingeniería en Computación", NOMBRE)
     c = TestClient(app)
     c.db_path = db

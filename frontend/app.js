@@ -503,6 +503,14 @@ async function borrarConversacion(id, titulo) {
 
 cargarHistorial();
 
+// Enlace desde «Últimas conversaciones» del tablero: index.html?c=<id> abre esa conversación
+(() => {
+    const id = new URLSearchParams(location.search).get('c');
+    if (!id || !document.getElementById('messages')) return;
+    history.replaceState(null, '', location.pathname);
+    abrirConversacion(id);
+})();
+
 // El Markdown seguro (escaparHTML, markdownEnLinea, renderMarkdown) vive en markdown.js
 
 // ---------------------------------------------------------------------------
