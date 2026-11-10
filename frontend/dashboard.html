@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#006747">
-  <title>Nexus FI - Tablero Dinámico de Usuario</title>
+  <title>Nexus FI - Mi tablero</title>
   <link rel="icon" href="assets/nexus-icon.svg">
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -54,61 +54,62 @@
     <div class="page">
       <div class="page-head">
         <div>
-          <h1>Tablero Dinámico de Usuario</h1>
-          <p class="sub">Telemetría de consultas y tiempos de respuesta en tiempo real</p>
+          <h1>Mi tablero</h1>
+          <p class="sub">Tus consultas, cuotas y temas, calculados desde tu historial</p>
         </div>
-        <button id="btn-refresh" class="primary" type="button">🔄 Actualizar Métricas</button>
+        <div class="seg" role="group" aria-label="Periodo">
+          <button type="button" class="seg-btn activo" data-dias="7">7 días</button>
+          <button type="button" class="seg-btn" data-dias="30">30 días</button>
+          <button id="btn-refresh" class="primary" type="button">🔄 Actualizar</button>
+        </div>
       </div>
 
-      <!-- KPIs -->
       <section class="kpis">
         <article class="card kpi">
-          <span>Consultas Totales</span>
-          <strong id="kpi-queries">--</strong>
-          <small class="up">↑ En tiempo real</small>
+          <span>Consultas</span>
+          <strong id="kpi-consultas">--</strong>
+          <small id="kpi-modelos">--</small>
         </article>
         <article class="card kpi">
-          <span>Latencia Promedio</span>
-          <strong><span id="kpi-latency">--</span> <small>ms</small></strong>
-          <small>Pipeline RAG</small>
+          <span>Respondidas con fuentes</span>
+          <strong><span id="kpi-fuentes">--</span> <small>%</small></strong>
+          <small>Con citas del acervo (RF09)</small>
         </article>
         <article class="card kpi">
-          <span>Tasa de Éxito RAG</span>
-          <strong><span id="kpi-accuracy">--</span> <small>%</small></strong>
-          <small class="up">Citas verificadas (RF09)</small>
+          <span>Latencia promedio</span>
+          <strong><span id="kpi-latencia">--</span> <small>ms</small></strong>
+          <small>Tiempo total de respuesta</small>
         </article>
         <article class="card kpi">
-          <span>Documentos Vectorizados</span>
-          <strong>3,977</strong>
-          <small>Acervo FI UAEMéx</small>
+          <span>Acervo consultado</span>
+          <strong id="kpi-acervo">--</strong>
+          <small id="kpi-fragmentos">--</small>
         </article>
       </section>
 
-      <!-- Gráficas -->
       <section class="charts">
         <div class="panel">
           <div class="panelhead">
-            <div>
-              <h2>Latencia Real y Consultas Procesadas</h2>
-              <p>Monitoreo dinámico del servidor</p>
-            </div>
-            <span class="tag">API Telemetry</span>
+            <div><h2>Consultas por día</h2><p>Por modelo elegido</p></div>
           </div>
-          <div class="chart-box">
-            <canvas id="chartLatency"></canvas>
-          </div>
+          <div class="chart-box"><canvas id="chartDias"></canvas></div>
         </div>
-
         <div class="panel">
           <div class="panelhead">
-            <div>
-              <h2>Distribución Temática</h2>
-              <p>Categorías más consultadas por alumnos</p>
-            </div>
+            <div><h2>Temas frecuentes</h2><p>Categoría de la fuente principal de cada respuesta</p></div>
           </div>
-          <div class="chart-box donut">
-            <canvas id="chartTopics"></canvas>
-          </div>
+          <div class="chart-box donut"><canvas id="chartTemas"></canvas><p id="temas-vacio" class="vacio" hidden>Aún no hay consultas con fuentes en este periodo.</p></div>
+        </div>
+      </section>
+
+      <section class="charts">
+        <div class="panel">
+          <div class="panelhead"><div><h2>Cuota restante</h2><p>Se libera conforme pasan las horas</p></div></div>
+          <div id="cuotas" class="cuotas"></div>
+        </div>
+        <div class="panel">
+          <div class="panelhead"><div><h2>Últimas conversaciones</h2><p>Ábrelas para continuar</p></div></div>
+          <ul id="recientes" class="recientes"></ul>
         </div>
       </section>
     </div>
@@ -118,108 +119,130 @@
 
   <script src="app.js"></script>
   <script>
-    let latencyChartInstance = null;
-    let topicsChartInstance = null;
-    let lastData = null;
+    // Tablero del usuario en sesión (F4): todo sale de /api/v1/metrics/user-dashboard
+    let dias = 7, ultimo = null, chartDias = null, chartTemas = null;
+    const COLORES = ['#006747', '#d5a62e', '#78b99a', '#2bab78', '#a5b6ab', '#4c7a64', '#e3c46f', '#9cc7b2'];
 
-    const FALLBACK = {
-      totalQueries: 1248,
-      avgLatencyMs: 285,
-      successRate: 98.5,
-      timeSeriesLabels: ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'],
-      latencyData: [310, 280, 240, 350, 290, 285],
-      queriesData: [45, 120, 230, 180, 160, 95],
-      topicLabels: ['Evaluación Escolar', 'Servicio Social', 'Titulación', 'Becas', 'Otros'],
-      topicValues: [35, 25, 20, 12, 8]
-    };
-
-    function chartColors() {
-      const isDark = document.documentElement.dataset.theme === 'dark';
-      return {
-        text: isDark ? '#a5b6ab' : '#7c8a82',
-        grid: isDark ? '#33483c' : '#e2eae5',
-        small: window.matchMedia('(max-width: 600px)').matches
-      };
+    function colores() {
+      const oscuro = document.documentElement.dataset.theme === 'dark';
+      return { text: oscuro ? '#a5b6ab' : '#7c8a82', grid: oscuro ? '#33483c' : '#e2eae5',
+               small: window.matchMedia('(max-width: 600px)').matches };
     }
+    const fmt = n => n === null || n === undefined ? '—' : Number(n).toLocaleString('es-MX');
+    const corto = s => (s || '').split(' (')[0];
+    const diaCorto = iso => { const [, m, d] = iso.split('-'); return `${d}/${m}`; };
 
-    async function fetchUserMetrics() {
-      let data;
+    async function cargar() {
       try {
-        const response = await fetch('/api/v1/metrics/user-dashboard');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        data = await response.json();
-      } catch (err) {
-        console.warn('Backend de métricas no disponible, se muestran datos de prueba:', err);
-        data = FALLBACK;
+        const r = await fetch(`/api/v1/metrics/user-dashboard?dias=${dias}`, { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        ultimo = await r.json();
+      } catch (e) {
+        console.warn('No se pudo cargar el tablero:', e);
+        document.getElementById('kpi-consultas').textContent = 'Sin conexión';
+        return;
       }
-      lastData = data;
-      document.getElementById('kpi-queries').textContent = Number(data.totalQueries).toLocaleString('es-MX');
-      document.getElementById('kpi-latency').textContent = data.avgLatencyMs;
-      document.getElementById('kpi-accuracy').textContent = data.successRate;
-      renderCharts();
+      const d = ultimo;
+      document.getElementById('kpi-consultas').textContent = fmt(d.consultas);
+      document.getElementById('kpi-modelos').textContent = d.por_modelo.length
+        ? d.por_modelo.map(p => `${corto(p.etiqueta)}: ${p.consultas}`).join(' · ') : `Últimos ${d.periodo_dias} días`;
+      document.getElementById('kpi-fuentes').textContent = d.tasa_con_fuentes ?? '—';
+      document.getElementById('kpi-latencia').textContent = fmt(d.latencia_promedio_ms);
+      document.getElementById('kpi-acervo').textContent = `${fmt(d.acervo.documentos)} documentos`;
+      document.getElementById('kpi-fragmentos').textContent = `${fmt(d.acervo.fragmentos)} fragmentos vectorizados`;
+      pintarCuotas(d);
+      pintarRecientes(d.recientes);
+      graficas();
     }
 
-    function renderCharts() {
-      if (!lastData || typeof Chart === 'undefined') return;
-      renderLatencyChart(lastData.timeSeriesLabels, lastData.latencyData, lastData.queriesData);
-      renderTopicsChart(lastData.topicLabels, lastData.topicValues);
+    function pintarCuotas(d) {
+      const caja = document.getElementById('cuotas');
+      caja.innerHTML = '';
+      if (!d.rate_limit_enabled) {
+        caja.innerHTML = '<p class="vacio">El límite de consultas está desactivado en este servidor.</p>';
+        return;
+      }
+      d.cuotas.forEach(q => {
+        const pct = Math.round(q.hourly_remaining / q.hourly_limit * 100);
+        const fila = document.createElement('div');
+        fila.className = 'cuota' + (pct === 0 ? ' agotada' : '');
+        const libera = q.reset_at
+          ? ` · se libera ${new Date(q.reset_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}` : '';
+        const dia = q.daily_limit ? ` · ${q.daily_remaining}/${q.daily_limit} hoy` : '';
+        fila.innerHTML = '<div class="cuota-head"><b></b><span></span></div><div class="barra"><i></i></div>';
+        fila.querySelector('b').textContent = q.label + (q.available ? '' : ' (no disponible)');
+        fila.querySelector('span').textContent = `${q.hourly_remaining}/${q.hourly_limit} por hora${dia}${libera}`;
+        fila.querySelector('i').style.width = `${pct}%`;
+        caja.appendChild(fila);
+      });
     }
 
-    function renderLatencyChart(labels, latencyData, queriesData) {
-      const ctx = document.getElementById('chartLatency').getContext('2d');
-      if (latencyChartInstance) latencyChartInstance.destroy();
-      const c = chartColors();
-      const font = { size: c.small ? 10 : 12 };
+    function pintarRecientes(lista) {
+      const ul = document.getElementById('recientes');
+      ul.innerHTML = '';
+      if (!lista.length) { ul.innerHTML = '<li class="vacio">Todavía no tienes conversaciones.</li>'; return; }
+      lista.forEach(c => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `index.html?c=${encodeURIComponent(c.id)}`;
+        a.textContent = c.titulo;
+        const fecha = document.createElement('small');
+        fecha.textContent = new Date(c.actualizada_en).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' });
+        li.append(a, fecha);
+        ul.appendChild(li);
+      });
+    }
 
-      latencyChartInstance = new Chart(ctx, {
-        type: 'line',
+    function graficas() {
+      if (!ultimo || typeof Chart === 'undefined') return;
+      const c = colores(), font = { size: c.small ? 10 : 12 };
+      const etiquetas = Object.fromEntries(ultimo.por_modelo.map(p => [p.modelo, corto(p.etiqueta)]));
+      chartDias?.destroy();
+      chartDias = new Chart(document.getElementById('chartDias'), {
+        type: 'bar',
         data: {
-          labels,
-          datasets: [
-            { label: 'Latencia (ms)', data: latencyData, borderColor: '#006747', backgroundColor: 'rgba(0, 103, 71, 0.1)', yAxisID: 'yLatency', tension: 0.3, fill: true },
-            { label: 'Consultas', data: queriesData, borderColor: '#d5a62e', backgroundColor: 'rgba(213, 166, 46, 0.1)', yAxisID: 'yQueries', tension: 0.3, fill: true }
-          ]
+          labels: ultimo.fechas.map(diaCorto),
+          datasets: Object.keys(ultimo.serie).map((m, i) => ({
+            label: etiquetas[m] || m, data: ultimo.serie[m], backgroundColor: COLORES[i % COLORES.length], borderRadius: 4
+          }))
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
+          responsive: true, maintainAspectRatio: false,
           scales: {
-            yLatency: { type: 'linear', position: 'left', ticks: { color: c.text, font, maxTicksLimit: 6 }, grid: { color: c.grid } },
-            yQueries: { type: 'linear', position: 'right', ticks: { color: c.text, font, maxTicksLimit: 6 }, grid: { drawOnChartArea: false } },
-            x: { ticks: { color: c.text, font, maxRotation: 0, autoSkip: true }, grid: { color: c.grid } }
+            x: { stacked: true, ticks: { color: c.text, font, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: c.text, font, precision: 0 }, grid: { color: c.grid } }
           },
           plugins: { legend: { labels: { color: c.text, font, boxWidth: 12 } } }
         }
       });
-    }
-
-    function renderTopicsChart(labels, values) {
-      const ctx = document.getElementById('chartTopics').getContext('2d');
-      if (topicsChartInstance) topicsChartInstance.destroy();
-      const c = chartColors();
-
-      topicsChartInstance = new Chart(ctx, {
+      chartTemas?.destroy();
+      const vacio = !ultimo.temas.length;
+      document.getElementById('temas-vacio').hidden = !vacio;
+      document.getElementById('chartTemas').hidden = vacio;
+      if (vacio) return;
+      chartTemas = new Chart(document.getElementById('chartTemas'), {
         type: 'doughnut',
         data: {
-          labels,
-          datasets: [{ data: values, borderWidth: 0, backgroundColor: ['#006747', '#d5a62e', '#78b99a', '#2bab78', '#a5b6ab'] }]
+          labels: ultimo.temas.map(t => t.categoria),
+          datasets: [{ data: ultimo.temas.map(t => t.consultas), borderWidth: 0, backgroundColor: COLORES }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '58%',
+          responsive: true, maintainAspectRatio: false, cutout: '58%',
           plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { size: c.small ? 11 : 12 }, boxWidth: 12, padding: 12 } } }
         }
       });
     }
 
-    // Vuelve a dibujar con los colores correctos al cambiar de tema o de tamaño de pantalla
-    document.addEventListener('nexus-theme', renderCharts);
-    window.matchMedia('(max-width: 600px)').addEventListener('change', renderCharts);
-
-    document.getElementById('btn-refresh')?.addEventListener('click', fetchUserMetrics);
-    document.addEventListener('DOMContentLoaded', fetchUserMetrics);
+    document.querySelectorAll('.seg-btn').forEach(b => b.addEventListener('click', () => {
+      dias = Number(b.dataset.dias);
+      document.querySelectorAll('.seg-btn').forEach(x => x.classList.toggle('activo', x === b));
+      cargar();
+    }));
+    document.addEventListener('nexus-theme', graficas);
+    window.matchMedia('(max-width: 600px)').addEventListener('change', graficas);
+    document.getElementById('btn-refresh').addEventListener('click', cargar);
+    document.addEventListener('DOMContentLoaded', cargar);
   </script>
 </body>
 </html>

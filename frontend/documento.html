@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#006747">
+  <title>Nexus FI - Documento del acervo</title>
+  <link rel="icon" href="assets/nexus-icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Visor de documentos del acervo que no tienen PDF (fuentes piloto) o cuyo PDF no está en el servidor -->
+  <main class="page visor">
+    <div class="page-head">
+      <div>
+        <h1 id="doc-titulo">Cargando documento…</h1>
+        <p class="sub" id="doc-sub">Documento del acervo oficial de Nexus FI</p>
+      </div>
+      <a href="index.html" class="nav">← Volver al asistente</a>
+    </div>
+    <article id="doc-cuerpo" class="visor-doc bubble md"></article>
+  </main>
+  <script src="markdown.js"></script>
+  <script src="documento.js"></script>
+</body>
+</html>

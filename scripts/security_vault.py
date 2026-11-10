@@ -32,7 +32,7 @@ SENSITIVE_KEYS = [
     "OPENAI_API_KEY_EMBEDDINGS",
     "OPENAI_API_KEY_CHAT_4O_MINI",
     "OPENAI_API_KEY_GPT6_LUNA",
-    "OPENAI_API_KEY_GPT5_6_LUNA",
+    "OPENAI_API_KEY_GPT5_6_LUNA",   # modelo retirado; se sigue vigilando por si queda en algún .env
     "OPENAI_API_KEY",
     "OPENAI_API_KEY_CHAT",
     "GEMINI_API_KEY",

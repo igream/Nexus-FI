@@ -71,6 +71,7 @@ Nexus-FI/
 │   └── config_api/              # Diagnóstico de claves, auditor de secretos y catálogo de modelos
 ├── core/
 │   ├── auth/                    # Inicio de sesión: almacén cifrado, tokens JWT, roles y rutas /api/auth
+│   ├── chat/                    # Historial de conversaciones cifrado y rutas /api/conversaciones
 │   └── security/                # Límite de consultas por usuario y utilidades de seguridad
 ├── frontend/                    # Chat, tablero de usuario y panel admin (responsivos, modo oscuro)
 ├── nexus_ingestion/             # Extracción, limpieza, segmentación, embeddings y LanceDB
@@ -84,7 +85,7 @@ Nexus-FI/
 │   ├── process_to_procesados.py # Pre Procesados → Procesados
 │   ├── vectorize_corpus.py      # Procesados → LanceDB (overwrite o upsert por categoría)
 │   └── precargar_cuentas.py     # Padrón de cuentas autorizadas y cuentas ficticias de prueba
-├── tests/                       # Pruebas automáticas (pytest): login, límite, búsqueda y caché
+├── tests/                       # Pruebas automáticas (pytest): login, límite, historial, búsqueda y caché
 ├── docs/                        # Documentación del proyecto (índice en docs/README.md)
 │   ├── 00_Formatos/             # Plantillas oficiales y matrices de cumplimiento
 │   ├── 01_Planeacion/           # Documento maestro e investigaciones previas
@@ -205,7 +206,7 @@ Otras herramientas:
 python main.py --search "¿Cuáles son los requisitos para liberar el servicio social?"   # búsqueda por terminal
 python main.py --telemetry                                                             # diagnóstico (DT-10)
 python main.py --audit                                                                 # auditoría de secretos
-python -m pytest tests -q                                                              # 50 pruebas automáticas
+python -m pytest tests -q                                                              # 141 pruebas automáticas
 ```
 
 Páginas: chat en `/`, tablero en `/dashboard`, panel admin en `/admin-metrics` y documentación Swagger en `/docs`.
@@ -220,6 +221,18 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 - **CloudFront** da HTTPS con su certificado y entrega el sitio sin caché.
 - **Presupuesto** de 10 USD al mes con alertas y bloqueo automático; la instancia se detiene cuando no se usa (operar 24/7 costaría unos 21 USD al mes). Detalle en el reporte GP-09 (`docs/02_Ejecucion/Avance_3_100/Entregas/`).
 - **Actualizar:** en la instancia, `cd ~/Nexus-FI && git pull && docker compose up -d --build`. Si cambia la base, copiar `data/lancedb` con `scp` y reiniciar el backend.
+- **Documentos citados:** las citas del chat abren el PDF original en la página citada. Los 184 PDF (~236 MB) no van en Git ni en la imagen; se preparan en local y se suben al volumen `data/`:
+  ```bash
+  python scripts/preparar_acervo_original.py
+  scp -r data/acervo_original <usuario>@<servidor>:~/Nexus-FI/data/
+  ```
+  Si falta un PDF en el servidor, la cita abre el texto procesado del documento en lugar de fallar. Las fuentes piloto (horarios, IEEE, avisos) siempre se muestran como texto.
+- **Apagado automático (F5, preparado; pendiente de desplegar):** una alarma de CloudWatch detiene la EC2 tras 15 minutos con poco tráfico de entrada (NetworkIn), y CloudFront muestra una página «servidor en reposo» (desde S3) con un botón que llama a la Lambda `nexus-despertar` para encenderla y actualizar el origen. Archivos en `infra/f5/`. Con credenciales de AWS:
+  ```bash
+  python scripts/f5_desplegar.py calibrar --horas 48
+  python scripts/f5_desplegar.py desplegar --metrica NetworkIn --umbral <bytes_por_5_min>
+  ```
+  Para quitarlo: borrar la pila `nexus-fi-f5` y, en la distribución, el origen `nexus-dormido-s3`, la ruta `/dormido/*` y las páginas de error 502/504 (el bucket se conserva por su `DeletionPolicy`).
 
 ---
 
@@ -234,10 +247,18 @@ La prueba piloto está desplegada en **https://d2j5rd06t9r4yq.cloudfront.net** (
 | `POST /api/auth/login` | Iniciar sesión; regresa un token de 8 horas (429 tras 5 intentos fallidos) | Público |
 | `POST /api/auth/logout` | Cerrar sesión e invalidar el token | Con sesión |
 | `GET /api/session/info` | Usuario y cuota de consultas | Con sesión |
-| `POST /api/chat` | Pregunta al asistente; regresa respuesta, citas y telemetría (429 al exceder el límite) | Con sesión |
+| `POST /api/chat` | Pregunta al asistente; regresa respuesta, citas, telemetría y `conversation_id` (429 al exceder el límite) | Con sesión |
+| `GET /api/conversaciones` | Historial del usuario, de la conversación más reciente a la más antigua | Con sesión |
+| `GET /api/conversaciones/{id}` | Mensajes de una conversación propia (404 si es ajena o se borró) | Con sesión |
+| `PATCH /api/conversaciones/{id}` | Cambiar el título de una conversación propia | Con sesión |
+| `DELETE /api/conversaciones/{id}` | Borrar una conversación propia | Con sesión |
+| `POST /api/documentos/{id}/enlace` | Enlace para abrir una fuente citada: PDF firmado (vence en 10 min) o visor de texto | Con sesión |
+| `GET /api/documentos/{id}/archivo` | PDF original de una fuente citada (403 si la firma venció o no es válida) | Enlace firmado |
+| `GET /api/documentos/{id}/texto` | Texto de una fuente citada para el visor `/documento` | Con sesión |
 | `GET /api/auth/admin/usuarios` | Cuentas registradas | Administrador |
 | `POST /api/auth/admin/reiniciar-registro` | Borrar la contraseña de una cuenta para que se registre de nuevo | Administrador |
-| `GET /api/v1/admin/metrics` | Consumo de tokens por clave e infraestructura | Administrador |
+| `GET /api/v1/metrics/user-dashboard` (`?dias=7` o `30`) | Tablero propio: consultas por modelo y día, cuotas, temas, latencia y últimas conversaciones | Con sesión |
+| `GET /api/v1/admin/metrics` | Costo por modelo (hoy, 7 y 30 días), usuarios activos, carreras, latencia p50/p95 y consultas sin resultado | Administrador |
 
 Ejemplo de consulta:
 ```json

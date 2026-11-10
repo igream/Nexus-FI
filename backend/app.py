@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 import openai
@@ -19,11 +19,19 @@ from nexus_ingestion.embedder import TextEmbedder
 from nexus_ingestion.vector_store import LanceDBVectorStore
 
 # Límite de consultas por usuario registrado (WBS 1.4.2, SC-001)
-from core.security.rate_limiter import RateLimiterMiddleware, check_rate_limit, get_user_id
+from core.security.rate_limiter import RateLimiterMiddleware, get_user_id
 
 # Inicio de sesión con número de cuenta (WBS 1.3.4, SC-001)
 from core.auth import AuthMiddleware, init_db, obtener_usuario, requiere_admin, router as auth_router
 from core.auth.store import ClavesNoConfiguradas
+
+# Historial de conversaciones por usuario (plan de implementación, fase F1)
+from core.chat import init_db as init_chat_db, router as chat_router
+from core.chat import contexto, store as chat_store
+from core.chat import modelos
+from core.chat.modelos import MODELO_POR_DEFECTO, MODELO_REESCRITURA, MODELOS
+from core.documentos import catalogo as catalogo_documentos, router as documentos_router
+from core import metricas
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -90,11 +98,15 @@ print(f"[Seguridad] Límite por usuario (WBS 1.4.2): {'ACTIVO' if RATE_LIMIT_ENA
 # Base de usuarios (data/usuarios.db). Si faltan las claves en .env, el login responde 503.
 try:
     init_db()
-    print("[Seguridad] Inicio de sesión: base de usuarios lista")
+    init_chat_db()
+    print("[Seguridad] Inicio de sesión: base de usuarios e historial listos")
 except ClavesNoConfiguradas as e:
     print(f"[Seguridad] Inicio de sesión sin configurar: {e}")
 
 app.include_router(auth_router)
+app.include_router(chat_router)
+app.include_router(documentos_router)
+print(f"[Documentos] Catálogo del acervo: {len(catalogo_documentos().por_id)} documentos consultables desde las citas")
 
 
 @app.exception_handler(ClavesNoConfiguradas)
@@ -112,60 +124,11 @@ def mask_key(k: Optional[str]) -> str:
     return k[:11] + "..." + k[-4:] if len(k) > 15 else "***"
 
 # =============================================================================
-# ALMACÉN DE TELEMETRÍA Y MÉTRICAS (WBS 1.3.4 - Daniel Aguilar Sánchez y Joan Alexis Ocaña Martínez)
-# Los valores iniciales son una línea base de demostración; cada consulta real a /api/chat
-# se acumula encima. El almacén vive en memoria y se reinicia al reiniciar el servidor.
+# MÉTRICAS (F4): el tablero de usuario y el panel admin se calculan desde la tabla
+# `mensajes` (core/metricas.py). Ya no hay almacenes en memoria ni líneas base de
+# demostración: cada consulta guarda sus tokens, costo, latencia y tokens de embedding.
+# Las tarifas, bolsas y cuotas de los modelos de chat viven en core/chat/modelos.py (F3).
 # =============================================================================
-user_metrics_store = {
-    "total_queries": 1248,
-    "total_latency_ms": 355680,
-    "successful_queries": 1229,
-    "hourly_queries": [45, 120, 230, 180, 160, 95],
-    "hourly_latencies": [310, 280, 240, 350, 290, 285],
-    "time_labels": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"],
-    "topics": {
-        "Evaluación Escolar": 35,
-        "Servicio Social": 25,
-        "Titulación": 20,
-        "Becas": 12,
-        "Otros": 8,
-    },
-}
-
-admin_tokens_store = {
-    "embeddings": {"tokens": 14250000, "cost": 2.85},
-    "gpt4oMini": {"tokens": 8120000, "cost": 12.18},
-    "luna6": {"tokens": 3400000, "cost": 9.18},
-    "luna56": {"tokens": 1950000, "cost": 4.88},
-}
-
-# Tarifas OpenAI (USD por token) para estimar el costo devengado de cada consulta
-PRICE_EMBEDDING_PER_TOKEN = 0.02 / 1_000_000          # text-embedding-3-small
-PRICE_4O_MINI_INPUT_PER_TOKEN = 0.15 / 1_000_000      # gpt-4o-mini (entrada)
-PRICE_4O_MINI_OUTPUT_PER_TOKEN = 0.60 / 1_000_000     # gpt-4o-mini (salida)
-
-# Relación entre la clave de chat usada y su bolsa de facturación en el panel admin (DT-10)
-CHAT_KEY_TO_BUCKET = {
-    "OPENAI_API_KEY_CHAT_4O_MINI": "gpt4oMini",
-    "OPENAI_API_KEY_GPT6_LUNA": "luna6",
-    "OPENAI_API_KEY_GPT5_6_LUNA": "luna56",
-}
-
-
-def record_query_metrics(latency_ms: float, success: bool) -> None:
-    """Acumula una consulta real en el almacén de métricas del dashboard de usuario."""
-    user_metrics_store["total_queries"] += 1
-    user_metrics_store["total_latency_ms"] += latency_ms
-    if success:
-        user_metrics_store["successful_queries"] += 1
-    user_metrics_store["hourly_queries"][-1] += 1
-    user_metrics_store["hourly_latencies"][-1] = int(latency_ms)
-
-
-def record_token_usage(bucket: str, tokens: int, cost: float) -> None:
-    """Suma tokens y costo devengado a la bolsa de facturación correspondiente."""
-    admin_tokens_store[bucket]["tokens"] += tokens
-    admin_tokens_store[bucket]["cost"] += cost
 
 
 # =============================================================================
@@ -178,7 +141,6 @@ KEY_CHAT_4O_MINI = (
     or os.getenv("OPENAI_API_KEY", "")
 )
 KEY_GPT6_LUNA = os.getenv("OPENAI_API_KEY_GPT6_LUNA", "")
-KEY_GPT5_6_LUNA = os.getenv("OPENAI_API_KEY_GPT5_6_LUNA", "")
 
 vector_store: Optional[LanceDBVectorStore] = None
 embedder: Optional[TextEmbedder] = None
@@ -197,25 +159,19 @@ if KEY_EMBEDDINGS:
     except Exception as e:
         print(f"[Aviso] Error al inicializar embedder exclusivo: {e}")
 
-# Inicializar clientes de chat independientes por modelo
+# Inicializar un cliente de chat por modelo de la tabla MODELOS, cada uno con su clave
+# segregada (DT-10). Un modelo sin clave queda fuera y la API responde 503 si se elige.
 chat_clients: Dict[str, openai.OpenAI] = {}
-if KEY_CHAT_4O_MINI:
+chat_key_names: Dict[str, str] = {}   # modelo -> variable de entorno de su clave
+for _modelo, _cfg in MODELOS.items():
+    _env = next((v for v in _cfg["env_clave"] if os.getenv(v)), None)
+    if not _env:
+        continue
     try:
-        chat_clients["gpt-4o-mini"] = openai.OpenAI(api_key=KEY_CHAT_4O_MINI)
+        chat_clients[_modelo] = openai.OpenAI(api_key=os.getenv(_env))
+        chat_key_names[_modelo] = _env
     except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-4o-mini: {e}")
-
-if KEY_GPT6_LUNA:
-    try:
-        chat_clients["gpt-6-luna"] = openai.OpenAI(api_key=KEY_GPT6_LUNA)
-    except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-6 Luna: {e}")
-
-if KEY_GPT5_6_LUNA:
-    try:
-        chat_clients["gpt-5.6-luna"] = openai.OpenAI(api_key=KEY_GPT5_6_LUNA)
-    except Exception as e:
-        print(f"[Aviso] Error al inicializar cliente GPT-5.6 Luna: {e}")
+        print(f"[Aviso] Error al inicializar el cliente de {_modelo}: {e}")
 
 
 # Esquemas Pydantic
@@ -224,7 +180,8 @@ class ChatRequest(BaseModel):
     top_k: int = Field(default=4, ge=1, le=10, description="Número de fragmentos vectoriales a recuperar")
     category_filter: Optional[str] = Field(default=None, description="Filtrar por categoría documental")
     use_llm: bool = Field(default=True, description="Si es True, sintetiza la respuesta con LLM; si es False, devuelve fragmentos directos")
-    model: Optional[str] = Field(default="gpt-4o-mini", description="Modelo generativo: 'gpt-4o-mini', 'gpt-6-luna', 'gpt-5.6-luna'")
+    model: Optional[str] = Field(default=MODELO_POR_DEFECTO, description=f"Modelo generativo: {', '.join(MODELOS)}")
+    conversation_id: Optional[str] = Field(default=None, max_length=64, description="Conversación a continuar; si no se envía se crea una nueva")
 
 
 class CitationItem(BaseModel):
@@ -237,6 +194,7 @@ class CitationItem(BaseModel):
     similarity: float
     chunk_id: str
     snippet: str
+    doc_id: Optional[str] = None   # id del catálogo para abrir el documento (POST /api/documentos/{id}/enlace)
 
 
 class ChatResponse(BaseModel):
@@ -245,6 +203,7 @@ class ChatResponse(BaseModel):
     found: bool
     citations: List[CitationItem]
     telemetry: Dict[str, Any]
+    conversation_id: Optional[str] = None
 
 
 # -----------------------------------------------------------------------------
@@ -265,14 +224,22 @@ async def session_info(request: Request):
     """
     user_id = get_user_id(request)
     quota = None
+    quotas = None
     if user_id:
-        q = check_rate_limit(user_id)
-        quota = {
-            "hourly_limit": q["hourly_limit"],
-            "hourly_remaining": q["hourly_remaining"],
-            "daily_limit": q["daily_limit"],
-            "daily_remaining": q["daily_remaining"],
-        }
+        quotas = {}
+        for m, cfg in MODELOS.items():
+            if not cfg["en_selector"]:
+                continue
+            try:
+                q = cuota_modelo(user_id, m)
+            except Exception as e:   # base sin configurar o sin historial: la info sigue saliendo
+                print(f"[Cuota] No se pudo leer la cuota de {m}: {e}")
+                quotas = None
+                break
+            q["available"] = m in chat_clients
+            quotas[m] = q
+        # Compatibilidad con el frontend anterior: `quota` es la del modelo por defecto
+        quota = quotas.get(MODELO_POR_DEFECTO) if quotas else None
 
     usuario = None
     if user_id:
@@ -288,7 +255,16 @@ async def session_info(request: Request):
         "user_id": user_id,
         "usuario": usuario,
         "quota": quota,
+        "quotas": quotas,
+        "default_model": MODELO_POR_DEFECTO,
     }
+
+
+def cuota_modelo(user_id, modelo: str) -> Dict[str, Any]:
+    """Cuota restante del usuario para un modelo, contada desde la tabla `mensajes` (F3)."""
+    return modelos.estado_cuota(
+        modelo, lambda desde: chat_store.contar_consultas(user_id, modelo, desde)
+    )
 
 
 @app.get("/api/status", summary="Estado del sistema (alias de session/info)")
@@ -338,13 +314,7 @@ def get_health():
                 "configured": bool(KEY_GPT6_LUNA),
                 "env_var": "OPENAI_API_KEY_GPT6_LUNA",
                 "masked": mask_key(KEY_GPT6_LUNA),
-                "purpose": "Experimentación y benchmarking (Nexus FI GPT 6 Luna)",
-            },
-            "chat_gpt5_6_luna": {
-                "configured": bool(KEY_GPT5_6_LUNA),
-                "env_var": "OPENAI_API_KEY_GPT5_6_LUNA",
-                "masked": mask_key(KEY_GPT5_6_LUNA),
-                "purpose": "Experimentación y benchmarking (Nexus FI GPT 5.6 Luna)",
+                "purpose": "Modelo avanzado del selector (gpt-6-luna)",
             },
         },
         "telemetry": {
@@ -386,47 +356,113 @@ def get_stats():
     }
 
 
-@app.get("/api/v1/metrics/user-dashboard", summary="Métricas del dashboard de usuario (WBS 1.3.4)")
-def get_user_dashboard_metrics():
-    """Devuelve datos dinámicos para el dashboard de usuario."""
-    total = max(user_metrics_store["total_queries"], 1)
+_acervo_cache: Dict[str, Any] = {}
+
+
+def _acervo() -> Dict[str, Any]:
+    """Documentos y fragmentos de la base vectorial (se cuentan una vez; cambian solo al revectorizar)."""
+    if not _acervo_cache and vector_store and vector_store.table is not None:
+        try:
+            docs = vector_store.table.to_arrow().column("documento")
+            _acervo_cache.update(documentos=len(set(docs.to_pylist())), fragmentos=len(docs))
+        except Exception as e:
+            print(f"[Métricas] No se pudo contar el acervo: {e}")
+    return _acervo_cache or {"documentos": 0, "fragmentos": 0}
+
+
+@app.get("/api/v1/metrics/user-dashboard", summary="Tablero del usuario en sesión (F4)")
+def get_user_dashboard_metrics(request: Request, dias: int = 7):
+    """Consultas, cuotas, temas y latencia del propio usuario, calculados desde su historial."""
+    user_id = get_user_id(request)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Inicia sesión para ver tu tablero.")
+    if dias not in (7, 30):
+        raise HTTPException(status_code=422, detail="El periodo debe ser de 7 o 30 días.")
+    datos = metricas.tablero_usuario(user_id, dias)
+    cuotas = []
+    for m, cfg in MODELOS.items():
+        if cfg["en_selector"]:
+            q = cuota_modelo(user_id, m)
+            cuotas.append({**q, "available": m in chat_clients})
     return {
-        "totalQueries": user_metrics_store["total_queries"],
-        "avgLatencyMs": int(user_metrics_store["total_latency_ms"] / total),
-        "successRate": round(user_metrics_store["successful_queries"] / total * 100, 1),
-        "timeSeriesLabels": user_metrics_store["time_labels"],
-        "latencyData": user_metrics_store["hourly_latencies"],
-        "queriesData": user_metrics_store["hourly_queries"],
-        "topicLabels": list(user_metrics_store["topics"].keys()),
-        "topicValues": list(user_metrics_store["topics"].values()),
-        "dataSource": "baseline_demo + consultas reales en memoria",
+        **datos,
+        "rate_limit_enabled": RATE_LIMIT_ENABLED,
+        "cuotas": cuotas,
+        "recientes": chat_store.listar_conversaciones(user_id, limite=5),
+        "acervo": _acervo(),
     }
 
 
-@app.get("/api/v1/admin/metrics", summary="Consumo de tokens y costos por clave segregada (WBS 1.3.4 / DT-10)")
+@app.get("/api/v1/admin/metrics", summary="Consumo, uso y calidad de respuestas (F4, solo administradores)")
 def get_admin_metrics(request: Request):
-    """Devuelve el consumo por clave segregada de OpenAI y los datos de infraestructura AWS. Solo administradores."""
+    """Tokens y costo por modelo (día, semana y mes), usuarios activos, consultas por carrera,
+    consultas sin resultado y latencia p50/p95, calculados desde la tabla `mensajes`."""
     requiere_admin(request)
     return {
-        "status": "healthy",
-        "environment": "aws-docker",
-        "openai": admin_tokens_store,
-        # Valores de referencia capturados manualmente por el equipo Cloud DevOps
-        # (Ángel Israel de la Cruz Martínez y Aarón Nevid Domínguez Fuentes); no se consultan en vivo a AWS.
-        "aws": {
-            "s3StorageGb": 18.4,
-            "ec2Instances": "2x t3.medium",
-            "ec2CpuUsage": 28,
-            "bandwidthGb": 142.0,
-            "availableCredit": 170.91,
-        },
-        "server": {
-            "base_latency_seconds": 2.1,
-            "active_connections": 45,
-            "query_distribution": {"administrative": 60, "academic": 40},
-            "proxy": "nginx",
-        },
-        "dataSource": "openai: baseline_demo + consumo real en memoria; aws/server: valores de referencia estáticos",
+        **metricas.panel_admin(),
+        "acervo": _acervo(),
+        "claves": {m: (m in chat_clients) for m in MODELOS} | {"embeddings": bool(KEY_EMBEDDINGS)},
+        # Etapa 2 (pendiente): CPU y estado de la instancia (CloudWatch) y costo (Cost Explorer).
+        # Requiere darle a la instancia un rol IAM; mientras tanto no se muestran valores fijos.
+        "aws": None,
+    }
+
+
+def _guardar_turno(user_id, conv_id: Optional[str], pregunta: str, respuesta: str, **meta) -> Optional[str]:
+    """Guarda la pregunta y la respuesta en el historial y regresa el id de la conversación.
+
+    Si la conversación no existe todavía, la crea con la pregunta como título. Un fallo al
+    guardar no debe dejar al usuario sin respuesta: se registra y se regresa None.
+    """
+    try:
+        if not conv_id:
+            conv_id = chat_store.crear_conversacion(user_id, pregunta)
+        chat_store.agregar_mensaje(conv_id, user_id, "user", pregunta)
+        chat_store.agregar_mensaje(conv_id, user_id, "assistant", respuesta, **meta)
+        return conv_id
+    except Exception as e:
+        print(f"[Historial] No se pudo guardar la consulta: {e}")
+        return None
+
+
+def _reescribir_consulta(historial: List[Dict[str, str]], pregunta: str) -> Dict[str, Any]:
+    """Convierte una pregunta de seguimiento en una autónoma con gpt-4o-mini (F2).
+
+    Solo se usa cuando hay historial. Si no hay cliente, la llamada falla o la salida no sirve,
+    regresa la pregunta original con `reescrita=None`: la consulta nunca se cae por esto.
+    Los tokens se cargan a la bolsa de 4o-mini aunque responda otro modelo.
+    """
+    info: Dict[str, Any] = {"consulta": pregunta, "reescrita": None,
+                            "tokens_in": None, "tokens_out": None, "latencia_ms": 0.0}
+    cliente = chat_clients.get(MODELO_REESCRITURA)
+    if not historial or not cliente:
+        return info
+    t0 = time.time()
+    try:
+        r = cliente.chat.completions.create(
+            messages=contexto.mensajes_reescritura(historial, pregunta),
+            **modelos.parametros_llamada(MODELO_REESCRITURA, max_salida=contexto.MAX_TOKENS_REESCRITURA,
+                                         temperature=0),
+        )
+        usage = getattr(r, "usage", None)
+        if usage:
+            # Se guardan en reescritura_tokens_* del mensaje; el panel admin los suma a 4o-mini
+            info["tokens_in"], info["tokens_out"] = usage.prompt_tokens, usage.completion_tokens
+        reescrita = contexto.limpiar_reescritura(r.choices[0].message.content)
+        if reescrita:
+            info["consulta"], info["reescrita"] = reescrita, reescrita
+    except Exception as e:
+        print(f"[Contexto] No se pudo reescribir la consulta; se usa la original: {e}")
+    info["latencia_ms"] = round((time.time() - t0) * 1000, 2)
+    return info
+
+
+def _telemetria_contexto(historial: List[Dict[str, str]], rw: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "history_turns": len(historial) // 2,
+        "rewritten_query": rw["reescrita"],
+        "rewrite_latency_ms": rw["latencia_ms"],
+        "rewrite_tokens": (rw["tokens_in"] or 0) + (rw["tokens_out"] or 0),
     }
 
 
@@ -437,7 +473,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
     y generación aumentada por recuperación (RAG), garantizando segregación estricta de consumo.
     Requiere sesión iniciada (Authorization: Bearer <token>).
     """
-    if not get_user_id(request):
+    user_id = get_user_id(request)
+    if not user_id:
         raise HTTPException(status_code=401, detail="Inicia sesión para consultar.")
 
     start_time = time.time()
@@ -445,6 +482,47 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     if not user_query:
         raise HTTPException(status_code=400, detail="La consulta no puede estar vacía.")
+
+    # F3: el modelo lo elige el usuario y debe existir en la tabla MODELOS
+    target_model = req.model or MODELO_POR_DEFECTO
+    if target_model not in MODELOS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Modelo no válido: '{target_model}'. Opciones: {', '.join(MODELOS)}.",
+        )
+    if req.use_llm and target_model not in chat_clients:
+        raise HTTPException(
+            status_code=503,
+            detail=f"El modelo {MODELOS[target_model]['etiqueta']} no está disponible en este servidor.",
+        )
+
+    if req.conversation_id and not chat_store.es_de_usuario(user_id, req.conversation_id):
+        raise HTTPException(status_code=404, detail="Conversación no encontrada.")
+
+    # F3: cuota independiente por modelo, contada desde la tabla `mensajes` (sobrevive a reinicios)
+    if RATE_LIMIT_ENABLED:
+        cuota = cuota_modelo(user_id, target_model)
+        if not cuota["allowed"]:
+            etiqueta = MODELOS[target_model]["etiqueta"]
+            limites = f"{cuota['hourly_limit']} por hora"
+            if cuota["daily_limit"]:
+                limites += f" y {cuota['daily_limit']} por día"
+            minutos = max(1, round(cuota["retry_after"] / 60))
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": str(cuota["retry_after"])},
+                content={
+                    "ok": False,
+                    "error": "HTTP_429_TOO_MANY_REQUESTS",
+                    "detail": (
+                        f"Agotaste la cuota del modelo {etiqueta} ({limites}). "
+                        f"Se libera una consulta en unos {minutos} min."
+                    ),
+                    "model": target_model,
+                    "quota": cuota,
+                    "wbs": "1.4.2",
+                },
+            )
 
     if not vector_store:
         raise HTTPException(status_code=503, detail="Base de datos vectorial no inicializada.")
@@ -459,14 +537,33 @@ def chat_endpoint(req: ChatRequest, request: Request):
             detail="No se encuentra configurada OPENAI_API_KEY_EMBEDDINGS para calcular el vector de búsqueda.",
         )
 
+    # 0. Contexto conversacional (F2): turnos previos y, si los hay, la pregunta reescrita
+    #    como autónoma. La búsqueda usa la reescrita; el LLM final recibe la original.
+    historial: List[Dict[str, str]] = []
+    if req.conversation_id:
+        try:
+            historial = contexto.recortar_historial(
+                chat_store.ultimos_mensajes(user_id, req.conversation_id, contexto.PARES_HISTORIAL * 2 + 1)
+            )
+        except Exception as e:
+            print(f"[Contexto] No se pudo leer el historial; se responde sin él: {e}")
+    rw = _reescribir_consulta(historial, user_query)
+    search_query = rw["consulta"]
+    meta_reescritura = {
+        "modelo_cuota": target_model,
+        "consulta_reescrita": rw["reescrita"],
+        "reescritura_tokens_entrada": rw["tokens_in"],
+        "reescritura_tokens_salida": rw["tokens_out"],
+    }
+
     # 1. Generar vector de consulta (Facturado a OPENAI_API_KEY_EMBEDDINGS)
     try:
         t0_emb = time.time()
-        query_vector = current_embedder.embed_query(user_query)
+        query_vector = current_embedder.embed_query(search_query)
         emb_latency_ms = round((time.time() - t0_emb) * 1000, 2)
         # Estimación de tokens de embedding (~4 caracteres por token)
-        emb_tokens = max(len(user_query) // 4, 1)
-        record_token_usage("embeddings", emb_tokens, emb_tokens * PRICE_EMBEDDING_PER_TOKEN)
+        emb_tokens = max(len(search_query) // 4, 1)
+        meta_reescritura["embedding_tokens"] = emb_tokens   # F4: se guarda con la respuesta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al vectorizar la consulta: {e}")
 
@@ -481,7 +578,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
         top_k=req.top_k,
         similarity_threshold=0.52,
         filter_dict=filter_dict if filter_dict else None,
-        query_text=user_query,   # acepta nombres propios poco comunes que aparecen tal cual
+        query_text=search_query,   # acepta nombres propios poco comunes que aparecen tal cual
     )
     search_latency_ms = round((time.time() - t0_search) * 1000, 2)
 
@@ -501,6 +598,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 pagina=r.get("pagina", ""),
                 similarity=float(r["similarity"]),
                 chunk_id=r["id"],
+                doc_id=catalogo_documentos().id_de(r["documento"]),
                 snippet=snippet_text,
             )
         )
@@ -508,18 +606,23 @@ def chat_endpoint(req: ChatRequest, request: Request):
     # Si no hubo fragmentos que superen el umbral RF13
     if not results:
         total_latency_ms = round((time.time() - start_time) * 1000, 2)
-        record_query_metrics(total_latency_ms, success=False)
         fallback_msg = (
             "No se encontró información oficial suficiente en el corpus normativo y operativo "
             "de la Facultad de Ingeniería (UAEMéx) para responder a tu consulta con alta certeza. "
             "Te sugerimos acudir directamente a la Coordinación de ICO (Edificio C) o consultar "
             "el portal institucional oficial de la UAEMéx."
         )
+        conv_id = _guardar_turno(
+            user_id, req.conversation_id, user_query, fallback_msg,
+            modelo="rule-based fallback", encontrado=False, latencia_ms=total_latency_ms,
+            **meta_reescritura,
+        )
         return ChatResponse(
             query=user_query,
             answer=fallback_msg,
             found=False,
             citations=[],
+            conversation_id=conv_id,
             telemetry={
                 "total_latency_ms": total_latency_ms,
                 "embed_latency_ms": emb_latency_ms,
@@ -528,30 +631,23 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 "model": "rule-based fallback",
                 "key_used_embeddings": mask_key(KEY_EMBEDDINGS),
                 "key_used_chat": "none",
+                **_telemetria_contexto(historial, rw),
             },
         )
 
-    # 3. Selección de cliente y modelo LLM para inferencia (Facturado a la clave de Chat elegida)
-    target_model = req.model or "gpt-4o-mini"
-    chosen_client = chat_clients.get(target_model) or chat_clients.get("gpt-4o-mini")
-    key_used_name = "OPENAI_API_KEY_CHAT_4O_MINI"
-    key_used_masked = mask_key(KEY_CHAT_4O_MINI)
-
-    if target_model in ("gpt-6-luna", "luna-6") and "gpt-6-luna" in chat_clients:
-        chosen_client = chat_clients["gpt-6-luna"]
-        key_used_name = "OPENAI_API_KEY_GPT6_LUNA"
-        key_used_masked = mask_key(KEY_GPT6_LUNA)
-    elif target_model in ("gpt-5.6-luna", "luna-5.6") and "gpt-5.6-luna" in chat_clients:
-        chosen_client = chat_clients["gpt-5.6-luna"]
-        key_used_name = "OPENAI_API_KEY_GPT5_6_LUNA"
-        key_used_masked = mask_key(KEY_GPT5_6_LUNA)
+    # 3. Cliente del modelo elegido (facturado a su clave segregada, DT-10)
+    chosen_client = chat_clients.get(target_model)
+    key_used_name = chat_key_names.get(target_model, "none")
+    key_used_masked = mask_key(os.getenv(key_used_name, "")) if chosen_client else "none"
 
     t0_llm = time.time()
     generated_answer = ""
+    tokens_in = tokens_out = None
+    llm_cost = None
     model_name = "direct_synthesis"
 
     if req.use_llm and chosen_client:
-        model_name = "gpt-4o-mini"  # Modelo real OpenAI para ejecución
+        model_name = target_model
         context_blocks = []
         for idx, res in enumerate(results, start=1):
             doc_info = f"Documento: {res['documento']} | Categoría: {res['categoria']}"
@@ -568,24 +664,32 @@ def chat_endpoint(req: ChatRequest, request: Request):
             "Autónoma del Estado de México (UAEMéx), especializado en Ingeniería en Computación.\n"
             "Tu misión es orientar con claridad, precisión y empatía a la comunidad estudiantil y académica.\n\n"
             "REGLAS OBLIGATORIAS:\n"
-            "1. Responde de forma directa, concisa y estructurada basándote EXCLUSIVAMENTE en el siguiente contexto oficial.\n"
+            "1. Responde de forma estructurada basándote EXCLUSIVAMENTE en el siguiente contexto oficial. "
+            f"{MODELOS[target_model].get('estilo', '')}\n"
             "2. Cita de forma explícita el documento o reglamento fuente cuando menciones requisitos, trámites o plazos (cumpliendo con RF09).\n"
             "3. No inventes procedimientos ni especules si el contexto no lo especifica.\n"
             "4. Si la consulta involucra trámites presenciales, menciona las áreas correspondientes (p. ej. Coordinación de ICO, Subdirección Académica, Control Escolar).\n"
+            "5. Solo afirma que una materia pertenece a un semestre o periodo si la fuente lo indica de forma explícita "
+            "(p. ej. un horario del semestre o un encabezado claro con sus materias). Las listas o tablas desordenadas, "
+            "como un mapa curricular cuyo texto quedó revuelto, NO prueban a qué semestre pertenece cada materia: "
+            "no las uses para armar listas por semestre. Si no hay una fuente clara, dilo y sugiere consultar el plan de estudios "
+            "o la Coordinación de ICO.\n"
+            "6. Cuando presentes datos con varias columnas (horarios, grupos y profesores, requisitos comparados, montos), "
+            "usa una tabla Markdown con fila de encabezado y fila separadora (| --- |).\n"
         )
 
         user_content = f"Contexto Oficial:\n{joined_context}\n\nPregunta del Estudiante: {user_query}"
 
         try:
             chat_completion = chosen_client.chat.completions.create(
-                model=model_name,
+                # Turnos previos (F2) entre el prompt de sistema y la pregunta actual
                 messages=[
                     {"role": "system", "content": system_prompt},
+                    *historial,
                     {"role": "user", "content": user_content},
                 ],
-                temperature=0.2,
-                # 1,200 alcanza para listas largas (p. ej. todas las clases de un día); ~0.0007 USD como máximo
-                max_tokens=1200,
+                # Tope de salida, temperatura o esfuerzo de razonamiento según el modelo (F3)
+                **modelos.parametros_llamada(target_model),
             )
             generated_answer = chat_completion.choices[0].message.content or ""
             if getattr(chat_completion.choices[0], "finish_reason", "") == "length":
@@ -595,12 +699,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
                 )
             usage = getattr(chat_completion, "usage", None)
             if usage:
-                record_token_usage(
-                    CHAT_KEY_TO_BUCKET.get(key_used_name, "gpt4oMini"),
-                    usage.prompt_tokens + usage.completion_tokens,
-                    usage.prompt_tokens * PRICE_4O_MINI_INPUT_PER_TOKEN
-                    + usage.completion_tokens * PRICE_4O_MINI_OUTPUT_PER_TOKEN,
-                )
+                tokens_in, tokens_out = usage.prompt_tokens, usage.completion_tokens
+                llm_cost = modelos.costo(target_model, tokens_in, tokens_out)
         except Exception as e:
             print(f"[Error LLM]: {e}. Empleando síntesis directa.")
             model_name = "direct_synthesis_fallback"
@@ -618,13 +718,26 @@ def chat_endpoint(req: ChatRequest, request: Request):
 
     llm_latency_ms = round((time.time() - t0_llm) * 1000, 2)
     total_latency_ms = round((time.time() - start_time) * 1000, 2)
-    record_query_metrics(total_latency_ms, success=True)
+
+    conv_id = _guardar_turno(
+        user_id, req.conversation_id, user_query, generated_answer,
+        modelo=model_name,
+        categoria_principal=results[0]["categoria"],
+        encontrado=True,
+        citas=[c.model_dump() for c in citations],
+        tokens_entrada=tokens_in,
+        tokens_salida=tokens_out,
+        costo_usd=llm_cost,
+        latencia_ms=total_latency_ms,
+        **meta_reescritura,
+    )
 
     return ChatResponse(
         query=user_query,
         answer=generated_answer,
         found=True,
         citations=citations,
+        conversation_id=conv_id,
         telemetry={
             "total_latency_ms": total_latency_ms,
             "embed_latency_ms": emb_latency_ms,
@@ -633,6 +746,7 @@ def chat_endpoint(req: ChatRequest, request: Request):
             "chunks_retrieved": len(results),
             "top_similarity": results[0]["similarity"],
             "model": model_name,
+            **_telemetria_contexto(historial, rw),
             "billing_segregation": {
                 "embeddings_account": f"OPENAI_API_KEY_EMBEDDINGS ({mask_key(KEY_EMBEDDINGS)})",
                 "chat_account": f"{key_used_name} ({key_used_masked})",
@@ -689,6 +803,19 @@ if FRONTEND_DIR.exists():
     @app.get("/app.js")
     def serve_app_js():
         return FileResponse(str(FRONTEND_DIR / "app.js"))
+
+    @app.get("/markdown.js")
+    def serve_markdown_js():
+        return FileResponse(str(FRONTEND_DIR / "markdown.js"))
+
+    # Visor de documentos del acervo sin PDF (fuentes piloto) o cuyo PDF no está en el servidor
+    @app.get("/documento")
+    def serve_documento():
+        return FileResponse(str(FRONTEND_DIR / "documento.html"))
+
+    @app.get("/documento.js")
+    def serve_documento_js():
+        return FileResponse(str(FRONTEND_DIR / "documento.js"))
 
     @app.get("/service-worker.js")
     def serve_sw():

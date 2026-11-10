@@ -52,7 +52,6 @@ def run_telemetry_dt10():
     k_emb = os.getenv("OPENAI_API_KEY_EMBEDDINGS") or os.getenv("OPENAI_API_KEY", "")
     k_4o = os.getenv("OPENAI_API_KEY_CHAT_4O_MINI") or os.getenv("OPENAI_API_KEY_CHAT") or os.getenv("OPENAI_API_KEY", "")
     k_luna6 = os.getenv("OPENAI_API_KEY_GPT6_LUNA", "")
-    k_luna56 = os.getenv("OPENAI_API_KEY_GPT5_6_LUNA", "")
 
     gemini_key = os.getenv("GEMINI_API_KEY", "")
     aws_id = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -64,8 +63,7 @@ def run_telemetry_dt10():
     print(" [CLAVES API SEGREGADAS - CONTROL DE FACTURACIÓN Y REPORTES]")
     print(f"  1. Embeddings (text-embedding-3-small): {mask(k_emb)}")
     print(f"  2. Chat RAG Producción (GPT-4o-mini):   {mask(k_4o)}")
-    print(f"  3. Benchmark Luna (GPT-6 Luna):         {mask(k_luna6)}")
-    print(f"  4. Benchmark Luna (GPT-5.6 Luna):       {mask(k_luna56)}")
+    print(f"  3. Modelo avanzado (GPT-6 Luna):        {mask(k_luna6)}")
 
     print("\n [SERVICIOS EN LA NUBE ADICIONALES]")
     print(f"  • Google Gemini API:  {'Configurada ✓' if gemini_key else 'NO configurada (opcional)'}")

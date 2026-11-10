@@ -1,8 +1,8 @@
 // Service Worker de Nexus FI: red primero, caché solo como respaldo sin conexión.
 // Así cada actualización del servidor llega al navegador sin borrar datos a mano.
-const CACHE = 'nexus-fi-v5';
+const CACHE = 'nexus-fi-v11';
 const FILES = ['./', './index.html', './dashboard.html', './admin-metrics.html', './login.html', './login.js', './styles.css',
-               './app.js', './manifest.webmanifest', './assets/nexus-icon.svg'];
+               './markdown.js', './app.js', './manifest.webmanifest', './assets/nexus-icon.svg'];
 
 self.addEventListener('install', e => {
     e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(() => {}).then(() => self.skipWaiting()));

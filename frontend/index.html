@@ -29,9 +29,10 @@
 
     <button class="primary" id="new">＋ Nueva consulta</button>
     <p class="label">CONSULTAS RECIENTES</p>
-    <button class="history">⌕ Servicio social</button>
-    <button class="history">⌕ Opciones de titulación</button>
-    <button class="history">⌕ Actividades culturales</button>
+    <!-- Historial del usuario: lo llena app.js desde /api/conversaciones -->
+    <div id="history-list" class="history-list">
+      <p class="history-empty">Cargando historial…</p>
+    </div>
     
     <div class="sidebottom">
       <div class="user-box">
@@ -96,6 +97,10 @@
 
       <form id="form" class="composer">
         <button type="button" class="attach">＋</button>
+        <!-- F3: el usuario elige el modelo; las opciones y su cuota llegan de /api/session/info -->
+        <select id="modelo" class="model-select" aria-label="Modelo de respuesta" title="Modelo de respuesta">
+          <option value="gpt-4o-mini">Rápido</option>
+        </select>
         <textarea id="input" rows="1" maxlength="500" placeholder="Pregunta sobre servicios o información de la Facultad…"></textarea>
         <button type="submit" class="send" aria-label="Enviar">↑</button>
       </form>
@@ -115,6 +120,7 @@
   <div id="shade"></div>
   
   <!-- Carga de Scripts del Frontend -->
+  <script src="markdown.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

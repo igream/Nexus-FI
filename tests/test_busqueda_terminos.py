@@ -62,3 +62,43 @@ def test_palabra_frecuente_no_cuenta_como_termino_distintivo(store):
     assert store.terminos_distintivos("¿Dónde está el laboratorio?") == set()
     r = store.search(CONSULTA, top_k=10, similarity_threshold=0.52, query_text="laboratorio")
     assert documentos(r) == {"doc1.md"}
+
+
+# --- Fragmentos casi duplicados (mapa curricular repetido en los temarios) -------------
+
+MAPA = " ".join(f"Materia{i}" for i in range(60)) + " PERIODO 6 PERIODO 7 PERIODO 8"
+
+
+@pytest.fixture
+def store_mapa(tmp_path):
+    s = LanceDBVectorStore(uri=str(tmp_path / "db"), table_name="t", embedding_dim=3)
+    filas = [
+        # Cuatro temarios con la misma página del mapa; solo cambia el encabezado y una palabra
+        (dict(chunk(i, f"[DOCUMENTO: temario{i}.pdf | PÁG: 5-5]\n{MAPA} extra{i}"),
+              documento=f"temario{i}.pdf"), vector(0.63 - i * 0.001))
+        for i in range(4)
+    ]
+    filas.append((dict(chunk(9, "[DOCUMENTO: horarios_ico_semestre_6.md]\n" + " ".join(
+        f"Horario{i}" for i in range(40))), documento="horarios_ico_semestre_6.md"), vector(0.61)))
+    filas.append((chunk(8, "Texto distinto sobre otra cosa " + " ".join(f"Otro{i}" for i in range(40))), vector(0.60)))
+    s.save_chunks([c for c, _ in filas], [v for _, v in filas], mode="overwrite")
+    return s
+
+
+def test_copias_del_mapa_no_desplazan_al_documento_correcto(store_mapa):
+    r = store_mapa.search(CONSULTA, top_k=4, similarity_threshold=0.52)
+    docs = [x["documento"] for x in r]
+    assert docs[0] == "temario0.pdf"                      # se queda la copia mejor clasificada
+    assert sum(d.startswith("temario") for d in docs) == 1
+    assert "horarios_ico_semestre_6.md" in docs
+
+
+def test_sin_filtro_las_copias_ocupan_todas_las_fuentes(store_mapa):
+    r = store_mapa.search(CONSULTA, top_k=4, similarity_threshold=0.52, quitar_duplicados=False)
+    assert all(x["documento"].startswith("temario") for x in r)
+
+
+def test_fragmentos_cortos_parecidos_no_se_descartan(store):
+    # Los «Laboratorio de cómputo número i» se parecen mucho, pero son cortos: se conservan todos
+    r = store.search(CONSULTA, top_k=10, similarity_threshold=0.0)
+    assert sum(x["documento"].startswith("doc1") and len(x["documento"]) == 8 for x in r) == 6

@@ -287,21 +287,74 @@ function pintarUsuario(usuario) {
 
 document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', cerrarSesion));
 
+// ---------------------------------------------------------------------------
+// Selector de modelo (F3): recuerda la última elección y desactiva un modelo sin cuota
+// ---------------------------------------------------------------------------
+const MODELO_KEY = 'nexus_modelo';
+const modeloSelect = document.getElementById('modelo');
+let sesionInfo = null;
+
+function modeloElegido() {
+    return modeloSelect?.value || 'gpt-4o-mini';
+}
+
+function pintarSelectorModelos(s) {
+    if (!modeloSelect || !s.quotas) return;
+    let guardado = null;
+    try { guardado = localStorage.getItem(MODELO_KEY); } catch { }
+    const previo = modeloSelect.value || guardado;
+    modeloSelect.innerHTML = '';
+    for (const [id, q] of Object.entries(s.quotas)) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        const corto = (q.label || id).split(' (')[0];
+        const agotado = s.rate_limit_enabled && !q.allowed;
+        opt.textContent = agotado ? `${corto} (agotado)` : (q.available ? corto : `${corto} (no disponible)`);
+        opt.title = q.label || id;
+        opt.disabled = !q.available || agotado;
+        modeloSelect.appendChild(opt);
+    }
+    // Conserva la elección si sigue disponible; si no, el modelo por defecto
+    const preferido = [previo, guardado, s.default_model].find(
+        id => id && s.quotas[id] && !modeloSelect.querySelector(`option[value="${CSS.escape(id)}"]`).disabled
+    );
+    if (preferido) modeloSelect.value = preferido;
+}
+
+function pintarCuota() {
+    const quota = document.getElementById('rate-limit-badge');
+    const s = sesionInfo;
+    if (!quota || !s) return;
+    if (!s.rate_limit_enabled) {
+        quota.textContent = '⏱️ Sin límite';
+        return;
+    }
+    const q = (s.quotas && s.quotas[modeloElegido()]) || s.quota;
+    if (!q) {
+        quota.textContent = '⏱️ Sin sesión';
+        return;
+    }
+    const corto = (q.label || '').split(' (')[0];
+    quota.textContent = `⏱️ ${corto ? corto + ' ' : ''}${q.hourly_remaining}/${q.hourly_limit}/h`;
+    quota.title = `${q.label || 'Modelo'}: te quedan ${q.hourly_remaining} de ${q.hourly_limit} consultas en la última hora`
+        + (q.daily_limit ? ` y ${q.daily_remaining} de ${q.daily_limit} en el día` : '');
+}
+
+modeloSelect?.addEventListener('change', () => {
+    try { localStorage.setItem(MODELO_KEY, modeloSelect.value); } catch { }
+    pintarCuota();
+});
+
 async function refreshSecurityBadges() {
     const quota = document.getElementById('rate-limit-badge');
     try {
         const r = await fetch('/api/session/info', { headers: getSecurityHeaders() });
         const s = await r.json();
         if (!s.authenticated) { irALogin(); return; }
+        sesionInfo = s;
         pintarUsuario(s.usuario);
-        if (!quota) return;
-        if (!s.rate_limit_enabled) {
-            quota.textContent = '⏱️ Sin límite';
-        } else if (!s.quota) {
-            quota.textContent = '⏱️ Sin sesión';
-        } else {
-            quota.textContent = `⏱️ ${s.quota.hourly_remaining}/${s.quota.hourly_limit} por hora`;
-        }
+        pintarSelectorModelos(s);
+        pintarCuota();
     } catch (error) {
         if (quota) quota.textContent = '⚠️ Servidor sin conexión';
     }
@@ -330,7 +383,7 @@ shade?.addEventListener('click', () => setMenu(false));
 $('.side-close')?.addEventListener('click', () => setMenu(false));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 // Al elegir una opción del menú en celular, se cierra
-side?.querySelectorAll('.nav, .history, #new').forEach(el => el.addEventListener('click', () => setMenu(false)));
+side?.querySelectorAll('.nav, #new').forEach(el => el.addEventListener('click', () => setMenu(false)));
 // Si la pantalla crece a escritorio con el menú abierto, se limpia el estado
 window.matchMedia('(min-width: 961px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
 
@@ -342,88 +395,157 @@ const input = $('#input'),
       count = $('#count');
 
 // =============================================================================
-// MARKDOWN SEGURO PARA LAS RESPUESTAS DEL ASISTENTE
-// Primero se escapa todo el HTML; después solo se convierten los elementos
-// permitidos (títulos, negritas, cursivas, listas, citas, código, separadores
-// y enlaces http/https). Así el texto del modelo no puede inyectar código.
+// HISTORIAL DE CONVERSACIONES (fase F1 del plan de implementación)
+// La barra lateral se llena desde /api/conversaciones. La conversación abierta
+// se identifica con conversacionActual; "Nueva consulta" la reinicia.
 // =============================================================================
-function escaparHTML(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+const historyList = $('#history-list');
+let conversacionActual = null;
+
+function mensajeHistorial(texto) {
+    if (!historyList) return;
+    historyList.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'history-empty';
+    p.textContent = texto;
+    historyList.append(p);
 }
 
-function markdownEnLinea(s) {
-    const codigos = [];
-    s = s.replace(/`([^`]+)`/g, (_, c) => `\u0000${codigos.push(c) - 1}\u0000`);
-    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-        (_, texto, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${texto}</a>`);
-    s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-    s = s.replace(/__([^_]+?)__/g, '<strong>$1</strong>');
-    // Cursiva solo con asterisco: el guion bajo aparece en nombres de archivo (Guia_Tramites.pdf)
-    s = s.replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)\*(?!\w)/g, '$1<em>$2</em>');
-    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${codigos[i]}</code>`);
+function marcarConversacionActiva() {
+    historyList?.querySelectorAll('.history-item').forEach(el => {
+        const activa = el.dataset.id === conversacionActual;
+        el.classList.toggle('active', activa);
+        el.querySelector('.history')?.toggleAttribute('aria-current', activa);
+    });
 }
 
-function renderMarkdown(texto) {
-    const lineas = escaparHTML(String(texto || '').replace(/\r\n?/g, '\n')).split('\n');
-    const html = [];
-    let parrafo = [], lista = null, cita = [], bloque = null;
+async function cargarHistorial() {
+    if (!historyList) return;
+    try {
+        const r = await fetch('/api/conversaciones', { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const { conversaciones } = await r.json();
+        if (!conversaciones.length) { mensajeHistorial('Aún no tienes consultas guardadas.'); return; }
 
-    const cerrarParrafo = () => {
-        if (parrafo.length) html.push(`<p>${parrafo.map(markdownEnLinea).join('<br>')}</p>`);
-        parrafo = [];
-    };
-    const cerrarLista = () => {
-        if (!lista) return;
-        const inicio = lista.tipo === 'ol' && lista.inicio !== 1 ? ` start="${lista.inicio}"` : '';
-        html.push(`<${lista.tipo}${inicio}>${lista.items.map(i => `<li>${markdownEnLinea(i)}</li>`).join('')}</${lista.tipo}>`);
-        lista = null;
-    };
-    const cerrarCita = () => {
-        if (cita.length) html.push(`<blockquote>${cita.map(markdownEnLinea).join('<br>')}</blockquote>`);
-        cita = [];
-    };
-    const cerrarTodo = () => { cerrarParrafo(); cerrarLista(); cerrarCita(); };
+        historyList.innerHTML = '';
+        conversaciones.forEach(c => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.dataset.id = c.id;
 
-    for (const linea of lineas) {
-        if (bloque) {
-            if (/^\s*```/.test(linea)) { html.push(`<pre><code>${bloque.join('\n')}</code></pre>`); bloque = null; }
-            else bloque.push(linea);
-            continue;
-        }
-        if (/^\s*```/.test(linea)) { cerrarTodo(); bloque = []; continue; }
-        if (!linea.trim()) { cerrarTodo(); continue; }
+            const abrir = document.createElement('button');
+            abrir.type = 'button';
+            abrir.className = 'history';
+            abrir.textContent = `⌕ ${c.titulo}`;
+            abrir.title = c.titulo;
+            abrir.addEventListener('click', () => { setMenu(false); abrirConversacion(c.id); });
 
-        let m;
-        if ((m = linea.match(/^\s*(#{1,6})\s+(.*)$/))) {
-            cerrarTodo();
-            const nivel = Math.min(m[1].length + 2, 6);   // # → h3 … para no competir con el título de la página
-            html.push(`<h${nivel}>${markdownEnLinea(m[2])}</h${nivel}>`);
-        } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(linea)) {
-            cerrarTodo();
-            html.push('<hr>');
-        } else if ((m = linea.match(/^\s*[-*+•]\s+(.*)$/))) {
-            cerrarParrafo(); cerrarCita();
-            if (!lista || lista.tipo !== 'ul') { cerrarLista(); lista = { tipo: 'ul', items: [] }; }
-            lista.items.push(m[1]);
-        } else if ((m = linea.match(/^\s*(\d+)[.)]\s+(.*)$/))) {
-            cerrarParrafo(); cerrarCita();
-            if (!lista || lista.tipo !== 'ol') { cerrarLista(); lista = { tipo: 'ol', inicio: Number(m[1]), items: [] }; }
-            lista.items.push(m[2]);
-        } else if ((m = linea.match(/^\s*&gt;\s?(.*)$/))) {
-            cerrarParrafo(); cerrarLista();
-            cita.push(m[1]);
-        } else if (lista && /^\s{2,}\S/.test(linea)) {
-            // Continuación de un elemento de la lista
-            lista.items[lista.items.length - 1] += ' ' + linea.trim();
-        } else {
-            cerrarLista(); cerrarCita();
-            parrafo.push(linea.trim());
+            const borrar = document.createElement('button');
+            borrar.type = 'button';
+            borrar.className = 'history-del';
+            borrar.textContent = '✕';
+            borrar.setAttribute('aria-label', `Borrar la conversación "${c.titulo}"`);
+            borrar.addEventListener('click', () => borrarConversacion(c.id, c.titulo));
+
+            item.append(abrir, borrar);
+            historyList.append(item);
+        });
+        marcarConversacionActiva();
+    } catch (err) {
+        console.warn('No se pudo cargar el historial:', err);
+        mensajeHistorial('No se pudo cargar el historial.');
+    }
+}
+
+function limpiarChat() {
+    conversacionActual = null;
+    if (messages) messages.innerHTML = '';
+    if (welcome) welcome.style.display = '';
+    if (input) input.value = '';
+    if (count) count.textContent = '0 / 500';
+    marcarConversacionActiva();
+}
+
+async function abrirConversacion(id) {
+    try {
+        const r = await fetch(`/api/conversaciones/${encodeURIComponent(id)}`, { headers: getSecurityHeaders() });
+        if (r.status === 401) { irALogin(); return; }
+        if (r.status === 404) { limpiarChat(); cargarHistorial(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const conv = await r.json();
+        limpiarChat();
+        conversacionActual = conv.id;
+        if (welcome) welcome.style.display = 'none';
+        conv.mensajes.forEach(m => {
+            const tel = m.rol === 'assistant' ? { total_latency_ms: m.latencia_ms, model: m.modelo } : null;
+            add(m.contenido, m.rol, m.citas || [], tel);
+        });
+        marcarConversacionActiva();
+    } catch (err) {
+        console.warn('No se pudo abrir la conversación:', err);
+    }
+}
+
+async function borrarConversacion(id, titulo) {
+    if (!confirm(`¿Borrar la conversación "${titulo}"?`)) return;
+    try {
+        const r = await fetch(`/api/conversaciones/${encodeURIComponent(id)}`, {
+            method: 'DELETE', headers: getSecurityHeaders(),
+        });
+        if (r.status === 401) { irALogin(); return; }
+    } catch (err) {
+        console.warn('No se pudo borrar la conversación:', err);
+    }
+    if (id === conversacionActual) limpiarChat();
+    cargarHistorial();
+}
+
+cargarHistorial();
+
+// Enlace desde «Últimas conversaciones» del tablero: index.html?c=<id> abre esa conversación
+(() => {
+    const id = new URLSearchParams(location.search).get('c');
+    if (!id || !document.getElementById('messages')) return;
+    history.replaceState(null, '', location.pathname);
+    abrirConversacion(id);
+})();
+
+// El Markdown seguro (escaparHTML, markdownEnLinea, renderMarkdown) vive en markdown.js
+
+// ---------------------------------------------------------------------------
+// Fuentes consultables: cada cita abre su documento dentro de la app
+// ---------------------------------------------------------------------------
+function paginaCitada(c) {
+    const n = parseInt(String(c.pagina || '').split('-')[0], 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+async function abrirFuente(c, item) {
+    // La pestaña se abre en el clic (antes de esperar al servidor) para que el navegador no la bloquee
+    const ventana = window.open('about:blank', '_blank');
+    try {
+        const r = await fetch(`/api/documentos/${encodeURIComponent(c.doc_id)}/enlace`, {
+            method: 'POST', headers: getSecurityHeaders()
+        });
+        if (r.status === 401) { ventana?.close(); irALogin(); return; }
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const e = await r.json();
+        const pag = paginaCitada(c);
+        let url = e.url;
+        if (e.tipo === 'pdf' && pag) url += `#page=${pag}`;
+        if (ventana) { ventana.opener = null; ventana.location.href = url; }
+        else window.location.href = url;
+    } catch (err) {
+        ventana?.close();
+        console.warn('No se pudo abrir el documento:', err);
+        if (item && !item.querySelector('.cite-error')) {
+            const aviso = document.createElement('span');
+            aviso.className = 'cite-error';
+            aviso.textContent = ' No se pudo abrir el documento; intenta de nuevo.';
+            item.appendChild(aviso);
         }
     }
-    if (bloque) html.push(`<pre><code>${bloque.join('\n')}</code></pre>`);
-    cerrarTodo();
-    return html.join('');
 }
 
 // Renderizado de burbujas en el feed de mensajes
@@ -458,12 +580,25 @@ function add(t, who, citations = [], telemetry = null) {
             let item = document.createElement('div');
             item.className = 'cite';
             let simPercent = Math.round(c.similarity * 100);
-            let doc = document.createElement('b');
-            doc.textContent = c.documento;
+            const pag = paginaCitada(c);
+            // La fuente se abre desde la app: el PDF original en la página citada o su texto
+            let doc;
+            if (c.doc_id) {
+                doc = document.createElement('button');
+                doc.type = 'button';
+                doc.className = 'cite-link';
+                doc.title = 'Abrir el documento' + (pag ? ` en la página ${pag}` : '');
+                doc.textContent = c.documento;
+                doc.addEventListener('click', () => abrirFuente(c, item));
+            } else {
+                doc = document.createElement('b');
+                doc.textContent = c.documento;
+            }
             let rel = document.createElement('span');
             rel.className = 'rel';
             rel.textContent = `(${simPercent}% relevancia)`;
-            item.append('• ', doc, ` [${c.categoria}] ${c.articulo ? '· ' + c.articulo : ''} `, rel);
+            const extra = [c.articulo, pag ? `pág. ${pag}` : ''].filter(Boolean).join(' · ');
+            item.append('• ', doc, ` [${c.categoria}] ${extra ? '· ' + extra : ''} `, rel);
             citeBox.appendChild(item);
         });
 
@@ -471,7 +606,17 @@ function add(t, who, citations = [], telemetry = null) {
             let telDiv = document.createElement('div');
             telDiv.className = 'cite-tel';
             telDiv.textContent = ` Latencia RAG: ${telemetry.total_latency_ms} ms · Modelo: ${telemetry.model || 'LanceDB + GPT'}`;
+            if (telemetry.history_turns) {
+                telDiv.textContent += ` · Contexto: ${telemetry.history_turns} turno(s) previo(s)`;
+            }
             citeBox.appendChild(telDiv);
+            // F2: la búsqueda se hizo con la pregunta reescrita a partir del historial
+            if (telemetry.rewritten_query) {
+                let rwDiv = document.createElement('div');
+                rwDiv.className = 'cite-tel';
+                rwDiv.textContent = ` Búsqueda interpretada como: «${telemetry.rewritten_query}»`;
+                citeBox.appendChild(rwDiv);
+            }
         }
 
         b.appendChild(citeBox);
@@ -526,20 +671,33 @@ form?.addEventListener('submit', async e => {
     let loadingRow = add('Consultando acervo institucional oficial de la FI UAEMéx...', 'assistant');
 
     try {
-        const response = await fetch('/api/chat', {
+        const consultar = () => fetch('/api/chat', {
             method: 'POST',
             headers: getSecurityHeaders(),
-            body: JSON.stringify({ query: q, top_k: 4, use_llm: true })
+            body: JSON.stringify({
+                query: q, top_k: 4, use_llm: true, conversation_id: conversacionActual, model: modeloElegido()
+            })
         });
+        let response = await consultar();
+
+        // La conversación se borró en otra pestaña o equipo: la pregunta inicia una nueva
+        if (response.status === 404 && conversacionActual) {
+            conversacionActual = null;
+            response = await consultar();
+        }
 
         if (response.status === 401) {
             irALogin();
             return;
         }
 
-        if (response.status === 429) {
+        // F3: la cuota es por modelo; el servidor dice cuál se agotó y cuándo se libera
+        if (response.status === 429 || response.status === 503) {
             loadingRow.remove();
-            add(`⚠️ Límite de consultas excedido (HTTP 429): Alcanzaste la cuota de tu cuenta (20 consultas por hora o 60 por día). Por favor espera unos momentos antes de realizar otra pregunta.`, 'assistant');
+            let detalle = '';
+            try { detalle = (await response.json()).detail || ''; } catch { }
+            add(`⚠️ ${detalle || 'Alcanzaste la cuota de consultas. Espera unos minutos antes de preguntar de nuevo.'}`, 'assistant');
+            refreshSecurityBadges();
             return;
         }
 
@@ -550,6 +708,13 @@ form?.addEventListener('submit', async e => {
         const data = await response.json();
         loadingRow.remove();
         add(data.answer, 'assistant', data.citations, data.telemetry);
+        if (data.conversation_id) {
+            const nueva = data.conversation_id !== conversacionActual;
+            conversacionActual = data.conversation_id;
+            // El orden de la lista cambia con cada consulta (la más reciente arriba)
+            cargarHistorial();
+            if (nueva) marcarConversacionActiva();
+        }
         refreshSecurityBadges();
     } catch (err) {
         console.warn('Backend RAG no disponible o error en petición, activando fallback local:', err);
@@ -566,19 +731,5 @@ document.querySelectorAll('[data-q]').forEach(b => {
     });
 });
 
-// Clics en historial
-document.querySelectorAll('.history').forEach(h => {
-    h.addEventListener('click', () => {
-        let text = h.textContent.replace('⌕', '').trim();
-        input.value = `Información sobre: ${text}`;
-        form.requestSubmit();
-    });
-});
-
-// Botón Nueva consulta
-$('#new')?.addEventListener('click', () => {
-    if (messages) messages.innerHTML = '';
-    if (welcome) welcome.style.display = '';
-    if (input) input.value = '';
-    if (count) count.textContent = '0 / 500';
-});
+// Botón Nueva consulta: limpia el chat y la próxima pregunta abre otra conversación
+$('#new')?.addEventListener('click', limpiarChat);

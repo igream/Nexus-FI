@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Nexus FI - Servidor en reposo</title>
+  <!-- F5: CloudFront sirve esta página (desde S3) cuando la EC2 está detenida (errores 502/504).
+       Todo va en línea: en cualquier ruta del sitio debe verse igual. f5_desplegar.py
+       reemplaza __URL_DESPERTAR__ y __TOKEN_DESPERTAR__ al subirla. -->
+  <style>
+    :root { --verde: #006747; --oro: #d5a62e; --fondo: #f4f7f5; --texto: #1d2b24; --suave: #5d6e65; --borde: #dbe5df; --caja: #fff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fondo: #101814; --texto: #e3ece7; --suave: #a5b6ab; --borde: #2c3d34; --caja: #17221c; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+           font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fondo); color: var(--texto); }
+    main { width: 100%; max-width: 460px; background: var(--caja); border: 1px solid var(--borde); border-radius: 18px;
+           padding: 28px 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,.06); }
+    .logo { width: 56px; height: 56px; margin: 0 auto 14px; border-radius: 14px; background: var(--verde); color: #fff;
+            display: grid; place-items: center; font-weight: 800; font-size: 22px; }
+    h1 { font-size: 21px; margin: 0 0 8px; }
+    p { color: var(--suave); line-height: 1.55; margin: 0 0 18px; font-size: 15px; }
+    button { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: var(--verde); color: #fff;
+             font-size: 16px; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: .7; cursor: wait; }
+    .estado { margin-top: 16px; font-size: 14px; color: var(--suave); min-height: 1.5em; }
+    .barra { height: 6px; border-radius: 4px; background: var(--borde); overflow: hidden; margin-top: 14px; display: none; }
+    .barra i { display: block; height: 100%; width: 0; background: var(--oro); transition: width 1s linear; }
+    small { display: block; margin-top: 18px; color: var(--suave); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="logo">N</div>
+    <h1>Nexus FI está en reposo</h1>
+    <p>Para ahorrar recursos, el servidor se apaga cuando nadie lo usa. Puedes encenderlo ahora; tarda unos 3 a 5 minutos.</p>
+    <button id="despertar" type="button">Encender el asistente</button>
+    <div class="barra" id="barra"><i id="avance"></i></div>
+    <div class="estado" id="estado" role="status" aria-live="polite"></div>
+    <small>Facultad de Ingeniería · UAEMéx · Equipo 404</small>
+  </main>
+  <script>
+    (function () {
+      var URL_DESPERTAR = '__URL_DESPERTAR__';
+      var TOKEN = '__TOKEN_DESPERTAR__';
+      var LIMITE_MS = 8 * 60 * 1000, PAUSA_MS = 8000;
+      var boton = document.getElementById('despertar');
+      var estado = document.getElementById('estado');
+      var barra = document.getElementById('barra'), avance = document.getElementById('avance');
+      var TEXTOS = {
+        arrancando: 'Encendiendo el servidor…', pending: 'El servidor está arrancando…',
+        stopping: 'El servidor terminaba de apagarse; se encenderá enseguida…', sin_dns: 'Esperando la dirección del servidor…',
+        actualizando_origen: 'Conectando el sitio con el servidor (puede tardar unos minutos)…', listo: 'Casi listo: esperando a la aplicación…'
+      };
+      var inicio = 0;
+
+      function decir(t) { estado.textContent = t; }
+
+      async function sitioListo() {
+        try {
+          var r = await fetch('/health?t=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) return false;
+          var d = await r.json();
+          return d && d.status === 'healthy';
+        } catch (e) { return false; }
+      }
+
+      async function llamarLambda() {
+        var r = await fetch(URL_DESPERTAR, { method: 'POST', headers: { 'x-nexus-token': TOKEN } });
+        if (r.status === 403) throw new Error('token');
+        var d = await r.json();
+        return d.estado;
+      }
+
+      async function ciclo() {
+        var transcurrido = Date.now() - inicio;
+        avance.style.width = Math.min(95, transcurrido / LIMITE_MS * 100) + '%';
+        if (await sitioListo()) {
+          avance.style.width = '100%';
+          decir('¡Listo! Abriendo Nexus FI…');
+          location.replace(location.pathname === '/dormido/index.html' ? '/' : location.href);
+          return;
+        }
+        if (transcurrido > LIMITE_MS) {
+          decir('Está tardando más de lo normal. Recarga la página en unos minutos o avisa a la Coordinación de ICO.');
+          boton.disabled = false;
+          return;
+        }
+        try {
+          decir(TEXTOS[await llamarLambda()] || 'Encendiendo…');
+        } catch (e) {
+          decir(e.message === 'token' ? 'No se pudo autorizar el encendido.' : 'Reintentando la conexión…');
+        }
+        setTimeout(ciclo, PAUSA_MS);
+      }
+
+      boton.addEventListener('click', function () {
+        boton.disabled = true;
+        barra.style.display = 'block';
+        inicio = Date.now();
+        decir('Enviando la solicitud…');
+        ciclo();
+      });
+    })();
+  </script>
+</body>
+</html>

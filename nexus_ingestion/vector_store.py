@@ -77,6 +77,39 @@ def _palabras(texto: str) -> Set[str]:
             if len(p) >= TERMINO_MIN_LETRAS and p not in _PALABRAS_COMUNES and not p.isdigit()}
 
 
+# ---------------------------------------------------------------------------
+# Fragmentos casi duplicados (plan de implementación, ajuste de F2)
+#
+# Muchos temarios traen incrustada la misma página del mapa curricular, extraída como una
+# lista de materias revuelta. Varias copias de ese texto llegaban a ocupar todas las fuentes
+# de una respuesta, dejaban fuera el documento correcto (p. ej. el horario del semestre) y el
+# LLM armaba listas de materias inventadas. Se descartan los candidatos que comparten casi
+# todas sus palabras con uno mejor clasificado. Los textos muy cortos no se comparan: con
+# pocas palabras, dos fragmentos distintos («Laboratorio 1», «Laboratorio 2») se parecen mucho.
+# ---------------------------------------------------------------------------
+UMBRAL_DUPLICADO = 0.80          # índice de Jaccard sobre el conjunto de palabras
+MIN_PALABRAS_DUPLICADO = 30      # solo se comparan fragmentos con al menos tantas palabras distintas
+FACTOR_CANDIDATOS = 3            # candidatos por cada resultado pedido, para reponer los descartados
+MIN_CANDIDATOS = 12
+_ENCABEZADO = re.compile(r"^\s*\[DOCUMENTO:[^\]]*\]")
+
+
+def _huella(texto: str) -> Set[str]:
+    """Conjunto de palabras del fragmento sin su encabezado [DOCUMENTO: ...]."""
+    return set(re.findall(r"[a-z0-9]+", _normalizar(_ENCABEZADO.sub("", texto or ""))))
+
+
+def es_casi_duplicado(huella: Set[str], elegidas: List[Set[str]]) -> bool:
+    if len(huella) < MIN_PALABRAS_DUPLICADO:
+        return False
+    for otra in elegidas:
+        if len(otra) < MIN_PALABRAS_DUPLICADO:
+            continue
+        if len(huella & otra) / len(huella | otra) >= UMBRAL_DUPLICADO:
+            return True
+    return False
+
+
 def get_vector_schema(embedding_dim: int = 1536) -> pa.Schema:
     """Esquema explícito Apache Arrow para garantizar consistencia de tipos en LanceDB."""
     return pa.schema([
@@ -207,6 +240,7 @@ class LanceDBVectorStore:
         similarity_threshold: float = 0.52,
         filter_dict: Optional[Dict[str, str]] = None,
         query_text: Optional[str] = None,
+        quitar_duplicados: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         Búsqueda por similitud vectorial con pre-filtrado seguro por metadatos (prefilter=True)
@@ -214,6 +248,9 @@ class LanceDBVectorStore:
 
         Si se pasa query_text, también se aceptan fragmentos bajo el umbral (pero sobre
         SIMILITUD_MINIMA_TERMINO) que contienen tal cual una palabra poco común de la pregunta.
+
+        Con quitar_duplicados (por defecto), un candidato casi idéntico a otro mejor clasificado
+        se descarta y su lugar lo toma el siguiente candidato.
         """
         if self.table is None:
             return []
@@ -229,9 +266,12 @@ class LanceDBVectorStore:
                 query = query.where(where_clause, prefilter=True)
 
         limite = max(top_k, CANDIDATOS_TERMINO) if terminos else top_k
+        if quitar_duplicados:
+            limite = max(limite, top_k * FACTOR_CANDIDATOS, MIN_CANDIDATOS)
         results = query.limit(limite).to_pandas()
 
         filtered_results = []
+        huellas: List[Set[str]] = []
         for _, row in results.iterrows():
             distance = float(row.get("_distance", 1.0))
             similarity = 1.0 - distance
@@ -244,6 +284,11 @@ class LanceDBVectorStore:
             if similarity >= similarity_threshold or coincidencia:
                 if len(filtered_results) >= top_k:
                     break
+                if quitar_duplicados:
+                    huella = _huella(row["text"])
+                    if es_casi_duplicado(huella, huellas):
+                        continue
+                    huellas.append(huella)
                 filtered_results.append({
                     "id": row["id"],
                     "documento": row["documento"],
