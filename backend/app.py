@@ -334,7 +334,7 @@ def get_stats():
         "carrera": "Ingeniería en Computación (ICO)",
         "equipo": "Equipo 404 (Nexus FI)",
         "corpus": {
-            "total_documents": 211,
+            "total_documents": _acervo()["documentos"],   # cuenta real de la base vectorial
             "categories_count": 6,
             "categories": [
                 "01_Normativa_Universitaria",
