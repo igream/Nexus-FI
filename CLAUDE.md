@@ -58,4 +58,4 @@ Todo está en `main` (PR igream/Nexus-FI#5 y #6) y **desplegado** en la EC2. Ram
 - **Acervo:** huecos de recuperación (opciones de titulación, «décimo semestre», nombre de la coordinadora); temarios que perdieron horas y créditos al extraerse.
 - **Documento Maestro v2.0:** 26 de las 29 referencias del acervo tienen enlaces rotos (los portales de la UAEMéx tampoco funcionan bien); citar rutas que abran o la consulta desde Nexus FI.
 - El nombre público del perfil de GitHub del usuario es «Fer AI»; los merges hechos desde la web salen con ese nombre (el `.mailmap` lo traduce).
-- Chat: Enter envía y Mayús + Enter salta de línea; las cifras del acervo salen de /api/stats (corregido el 2026-11-11 en el árbol de trabajo, falta fusionar y desplegar).
+- Chat: Enter envía y Mayús + Enter salta de línea; las cifras del acervo salen de /api/stats (corregido el 2026-11-11 en el árbol de trabajo, falta desplegar).
