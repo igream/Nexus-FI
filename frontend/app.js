@@ -645,7 +645,7 @@ function answerFallback(q) {
     if (q.includes('cultur') || q.includes('activ')) {
         return 'Revisa las convocatorias de actividades culturales y deportivas en el Edificio B de la Facultad de Ingeniería. (Modo de demostración offline)';
     }
-    return 'Nexus FI está diseñado para orientarte sobre qué hacer, dónde consultar y con quién comunicarte en la Facultad de Ingeniería (UAEMéx). Enciende el servidor backend para consultar los 211 documentos y 3,977 vectores oficiales.';
+    return 'Nexus FI está diseñado para orientarte sobre qué hacer, dónde consultar y con quién comunicarte en la Facultad de Ingeniería (UAEMéx). Enciende el servidor backend para consultar los documentos oficiales del acervo.';
 }
 
 // Contador de caracteres y auto-ajuste de altura
@@ -654,6 +654,31 @@ input?.addEventListener('input', () => {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
 });
+
+// Enter envía la pregunta; Mayús + Enter inserta un salto de línea.
+// Se ignora mientras se compone un carácter (teclados IME) para no enviar a medias.
+input?.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    e.preventDefault();
+    if (input.value.trim()) form.requestSubmit();
+});
+
+// Cifras del acervo: salen de la base vectorial (/api/stats), nunca de texto fijo.
+// Si la consulta falla, se conserva el texto genérico del HTML.
+async function pintarAcervo() {
+    try {
+        const r = await fetch('/api/stats', { headers: getSecurityHeaders() });
+        if (!r.ok) return;
+        const corpus = (await r.json()).corpus || {};
+        const docs = corpus.total_documents, frag = corpus.total_indexed_chunks;
+        if (!docs || !frag) return;
+        const nf = n => Number(n).toLocaleString('es-MX');
+        const intro = $('#intro-acervo'), pie = $('#caption-acervo');
+        if (intro) intro.textContent = `Nexus FI consulta ${nf(docs)} documentos oficiales de la Facultad de Ingeniería y la normativa UAEMéx.`;
+        if (pie) pie.textContent = `Orientación oficial basada en ${nf(docs)} documentos y ${nf(frag)} fragmentos.`;
+    } catch { /* se queda el texto genérico */ }
+}
+pintarAcervo();
 
 // Envío y consulta con el backend RAG
 form?.addEventListener('submit', async e => {

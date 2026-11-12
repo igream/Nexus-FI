@@ -14,7 +14,7 @@ La documentación se organiza por fase del ciclo de vida del proyecto (PMBOK) y,
 docs/
 ├── 00_Formatos/                    # Plantillas oficiales de gobernanza, tareas y cambios
 │   └── Matrices_Cumplimiento/      # Matrices de evaluación del desempeño y anexo de rúbricas
-├── 01_Planeacion/                  # Documento maestro e investigaciones previas
+├── 01_Planeacion/                  # Documento maestro (v6.0 y v7.0) e investigaciones previas
 │   └── Investigaciones_Previas/
 └── 02_Ejecucion/                   # Grupo de procesos de ejecución
     ├── Avance_1_25/                # Corte del 25 % (21/10/2026)
@@ -26,9 +26,15 @@ docs/
     │   ├── Entregas/
     │   └── ESTADO_ENTREGAS_AVANCE2_SC001.md
     ├── Avance_3_100/               # Cierre del 100 % de la ejecución (03/11/2026)
-    │   └── Asignaciones/
-    ├── Control_Cambios/            # Solicitudes de cambio aprobadas (SC-001, ...)
-    └── Especificaciones_Tecnicas/  # Base vectorial, plantilla ICO y pipeline Apify + OCR
+    │   ├── Asignaciones/
+    │   └── Entregas/
+    ├── Control_Cambios/            # Solicitudes de cambio aprobadas (SC-001 y SC-002)
+    ├── Documento_Maestro/          # Documento Maestro de la Fase de Ejecución (v1.0 y v1.1)
+    ├── Especificaciones_Tecnicas/  # Base vectorial, plantilla ICO y pipeline Apify + OCR
+    ├── Matrices_Cumplimiento/      # Matrices llenadas por avance, evaluación del PM y Excel maestro
+    ├── Monitoreo_y_Control/        # Documento escrito y presentación de monitoreo y control
+    └── COMPARACION_MODELOS_*       # Comparación de modelos (la citan el código y el README)
+└── 03_Cierre/                      # Manuales y documentos de transferencia del proyecto
 ```
 
 ### Convención de nombres
@@ -65,6 +71,7 @@ Formatos institucionales en Times New Roman y texto negro:
 
 ### `01_Planeacion/`
 * `DOCUMENTO_MAESTRO_NEXUS_FI.docx` / `.pdf`: documento maestro de planificación y gestión (problema, objetivos, RF/RNF, trazabilidad y gobernanza PMBOK). Versión 6.0 de uso interno: las secciones afectadas por la SC-001 llevan una «Nota de control de cambios»; el texto de la v5.0 se conserva como línea base.
+* `DOCUMENTO_MAESTRO_NEXUS_FI_v7.0.docx` / `.pdf`: versión 7.0 (10 y 11/11/2026): conserva la línea base v6.0, agrega «notas de ejecución» por sección y el Anexo D con las variaciones, el monitoreo y control por etapa y los costos reales.
 * `Investigaciones_Previas/`
   * `BITACORA_RECOLECCION_DATOS_FERNANDO_AZUARA.docx`: bitácora de acopio documental y normativo.
   * `INVESTIGACION_APIFY_OCR_SANTIAGO_CUEVAS.pdf`: estudio de extracción de redes sociales con Apify y OCR Tesseract.
@@ -96,6 +103,22 @@ Formatos institucionales en Times New Roman y texto negro:
 
 ### `02_Ejecucion/Control_Cambios/`
 * `SOLICITUD_CAMBIO_SC001_PRUEBA_PILOTO_ICO.docx`: SC-001, aprobada el 29/10/2026. Acota el proyecto a una prueba piloto en ICO, descarta el control por IP y define el nuevo alcance, los nuevos objetivos y las partes de la planeación afectadas.
+* `SOLICITUD_CAMBIO_SC002_PIPELINE_APIFY_OCR_SANTIAGO_CUEVAS.docx`: SC-002, corrección del pipeline de redes sociales (aprobada y aplicada).
+
+### `02_Ejecucion/Documento_Maestro/`
+* `DOCUMENTO_MAESTRO_EJECUCION_NEXUS_FI.docx` / `.pdf`: versión 1.0 del 03/11/2026 (tres cortes de la ejecución).
+* `DOCUMENTO_MAESTRO_EJECUCION_NEXUS_FI_v1.1.docx` / `.pdf`: versión 1.1 con los resultados finales al 10/11/2026, el monitoreo y control, la evaluación del Project Manager y todos los anexos incrustados.
+
+### `02_Ejecucion/Monitoreo_y_Control/`
+* `DOCUMENTO_MONITOREO_Y_CONTROL_NEXUS_FI.docx` / `.pdf`: cómo se monitoreó, cómo se respondió con control, impacto en la planeación, análisis del ROI e implicaciones para una implementación real.
+* `PRESENTACION_MONITOREO_CONTROL_NEXUS_FI.pptx` / `.pdf`: presentación en lenguaje no técnico con el reparto de la exposición por rol.
+
+### `03_Cierre/`
+* `MANUAL_DE_USUARIO_NEXUS_FI.docx` / `.pdf`: manual para las personas usuarias de la prueba piloto, con capturas anotadas, tutorial paso a paso, consideraciones, preguntas frecuentes y un anexo para administradores. Las capturas se tomaron con cuentas ficticias.
+* `DOCUMENTO_DE_TRANSFERENCIA_NEXUS_FI.docx` / `.pdf`: guía para quienes continúen el proyecto (servicio social). Reúne un SRS condensado, un documento de diseño (arquitectura, datos, API, seguridad, infraestructura), la puesta en marcha, la operación y el mantenimiento, las pruebas, los defectos conocidos, el trabajo sugerido y la lista de verificación del traspaso de accesos.
+
+### `02_Ejecucion/Matrices_Cumplimiento/`
+* Matrices individuales por avance (`Avance_1_25/`, `Avance_2_50/`, `Avance_3_100/`), `MATRIZ_DESEMPENO_ACTIVIDADES.docx`, `MATRIZ_EVALUACION_PM.docx` y `MATRICES_CUMPLIMIENTO_NEXUS_FI.xlsx` (con la hoja de evaluación del PM).
 
 ### `02_Ejecucion/Especificaciones_Tecnicas/`
 * `ENTREGA_BASE_DATOS_VECTORIAL_NEXUS_FI.md`: dictamen de entrega de la base vectorial LanceDB (3,977 fragmentos y umbral RF13).
