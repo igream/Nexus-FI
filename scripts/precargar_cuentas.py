@@ -4,6 +4,7 @@ Precarga el padrón de cuentas autorizadas para la prueba piloto (SC-001).
 Uso:
     python scripts/precargar_cuentas.py --csv C:\\ruta\\fuera\\del\\repo\\padron.csv
     python scripts/precargar_cuentas.py --ficticias
+    python scripts/precargar_cuentas.py --ficticias --cantidad 100
     python scripts/precargar_cuentas.py --reiniciar-registro 1234567
 
 El CSV lleva encabezado numero_cuenta,nombre,carrera,rol (nombre y rol son opcionales).
@@ -11,7 +12,8 @@ La carrera puede ser la clave (ICO) o el nombre completo
 (Licenciatura en Ingeniería en Computación). El rol es admin (integrantes del
 equipo) o alumno (por defecto).
 
---ficticias carga las cuentas de prueba 1000001 a 1000009 con rol alumno
+--ficticias carga las cuentas de prueba 1000001 a 1000009 con rol alumno; con --cantidad N
+carga de 1000001 a 1000000+N (hasta 100, para la prueba de aceptación UAT)
 (no son datos reales; se guardan igual, cifradas).
 
 El reinicio de registro también lo pueden hacer los administradores desde el
@@ -41,6 +43,9 @@ def main() -> int:
                    help="Borra la contraseña de esa cuenta para que su dueño vuelva a registrarse")
     p.add_argument("--ficticias", action="store_true",
                    help="Carga las cuentas de prueba 1000001 a 1000009 (rol alumno)")
+    p.add_argument("--cantidad", type=int, default=store.FICTICIAS_POR_DEFECTO, metavar="N",
+                   help=f"Con --ficticias: cuántas cuentas cargar, de 1 a {store.FICTICIAS_MAXIMO} (por defecto "
+                        f"{store.FICTICIAS_POR_DEFECTO})")
     args = p.parse_args()
 
     store.init_db()
@@ -51,7 +56,9 @@ def main() -> int:
         return 0
 
     if args.ficticias:
-        print(f"Cuentas ficticias nuevas: {store.precargar_ficticias()} de {len(store.CUENTAS_FICTICIAS)}")
+        if not 1 <= args.cantidad <= store.FICTICIAS_MAXIMO:
+            p.error(f"--cantidad debe estar entre 1 y {store.FICTICIAS_MAXIMO}")
+        print(f"Cuentas ficticias nuevas: {store.precargar_ficticias(args.cantidad)} de {args.cantidad}")
         if not args.csv:
             print(f"Total en el padrón: {store.conteo()['autorizadas']}")
             return 0

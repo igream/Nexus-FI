@@ -64,7 +64,7 @@ pip install -r requirements.txt
 | Pruebas automáticas | `python -m pytest tests -q` |
 | Diagnóstico de claves y base | `python main.py --telemetry` |
 | Comparar modelos | `python scripts/comparar_modelos.py` |
-| Cuentas ficticias de prueba | `python scripts/precargar_cuentas.py --ficticias` |
+| Cuentas ficticias de prueba (hasta 100 con `--cantidad 100`) | `python scripts/precargar_cuentas.py --ficticias` |
 | Preparar los PDF originales | `python scripts/preparar_acervo_original.py` |
 
 ## ☁️ Despliegue
