@@ -36,8 +36,20 @@ CARRERAS = {
 # Roles: los integrantes del equipo son administradores; el resto, alumnos.
 ROLES = ("admin", "alumno")
 
-# Cuentas ficticias de prueba (no son datos reales): 1000001 a 1000009, rol alumno
-CUENTAS_FICTICIAS = [(f"100000{n}", f"Usuario de Prueba {n}") for n in range(1, 10)]
+# Cuentas ficticias de prueba (no son datos reales), rol alumno: de 1000001 en adelante.
+# Por defecto son 9 (1000001 a 1000009); para la prueba de aceptación (UAT) se pueden cargar hasta 100.
+FICTICIAS_POR_DEFECTO = 9
+FICTICIAS_MAXIMO = 100
+
+
+def cuentas_ficticias(cantidad: int = FICTICIAS_POR_DEFECTO) -> list[tuple[str, str]]:
+    """Las primeras `cantidad` cuentas ficticias (1000001, 1000002, ...) con su nombre de prueba."""
+    if not 1 <= cantidad <= FICTICIAS_MAXIMO:
+        raise ValueError(f"La cantidad de cuentas ficticias debe estar entre 1 y {FICTICIAS_MAXIMO}.")
+    return [(str(1000000 + n), f"Usuario de Prueba {n}") for n in range(1, cantidad + 1)]
+
+
+CUENTAS_FICTICIAS = cuentas_ficticias()
 
 
 class CuentaNoAutorizada(Exception):
@@ -163,9 +175,9 @@ def autorizar_cuenta(numero: str, carrera: str, nombre: str = "", rol: Optional[
         return nueva
 
 
-def precargar_ficticias() -> int:
+def precargar_ficticias(cantidad: int = FICTICIAS_POR_DEFECTO) -> int:
     """Carga las cuentas ficticias de prueba (rol alumno). Regresa cuántas eran nuevas."""
-    return sum(autorizar_cuenta(n, "ICO", nombre, "alumno") for n, nombre in CUENTAS_FICTICIAS)
+    return sum(autorizar_cuenta(n, "ICO", nombre, "alumno") for n, nombre in cuentas_ficticias(cantidad))
 
 
 def registrar_usuario(numero: str, carrera: str, password: str) -> int:

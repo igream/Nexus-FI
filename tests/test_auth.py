@@ -220,3 +220,19 @@ def test_base_sin_datos_en_texto_plano(client):
     assert CUENTA.encode() not in contenido
     assert NOMBRE.encode() not in contenido
     assert PASS.encode() not in contenido
+
+
+def test_ficticias_hasta_cien_para_uat(client):
+    # La UAT usa 1000001 a 1000100; lo ya cargado no se duplica
+    assert store.precargar_ficticias() == 9
+    assert store.precargar_ficticias(100) == 91
+    assert store.precargar_ficticias(100) == 0
+    nums = [n for n, _ in store.cuentas_ficticias(100)]
+    assert nums[0] == "1000001" and nums[-1] == "1000100" and len(set(nums)) == 100
+    assert all(len(n) == 7 for n in nums)
+    h = sesion(client, "1000100")
+    assert client.get("/api/session/info", headers=h).json()["usuario"]["rol"] == "alumno"
+    with pytest.raises(ValueError):
+        store.cuentas_ficticias(101)
+    with pytest.raises(ValueError):
+        store.cuentas_ficticias(0)
