@@ -34,7 +34,8 @@ docs/
     ├── Matrices_Cumplimiento/      # Matrices llenadas por avance, evaluación del PM y Excel maestro
     ├── Monitoreo_y_Control/        # Documento escrito y presentación de monitoreo y control
     └── COMPARACION_MODELOS_*       # Comparación de modelos (la citan el código y el README)
-└── 03_Cierre/                      # Manuales y documentos de transferencia del proyecto
+└── 03_Cierre/                      # Manuales, transferencia y cierre del proyecto
+└── 04_Documento_Final/             # Documento maestro final (Word y PDF) y scripts de armado
 ```
 
 ### Convención de nombres
@@ -115,7 +116,12 @@ Formatos institucionales en Times New Roman y texto negro:
 
 ### `03_Cierre/`
 * `MANUAL_DE_USUARIO_NEXUS_FI.docx` / `.pdf`: manual para las personas usuarias de la prueba piloto, con capturas anotadas, tutorial paso a paso, consideraciones, preguntas frecuentes y un anexo para administradores. Las capturas se tomaron con cuentas ficticias.
-* `DOCUMENTO_DE_TRANSFERENCIA_NEXUS_FI.docx` / `.pdf`: guía para quienes continúen el proyecto (servicio social). Reúne un SRS condensado, un documento de diseño (arquitectura, datos, API, seguridad, infraestructura), la puesta en marcha, la operación y el mantenimiento, las pruebas, los defectos conocidos, el trabajo sugerido y la lista de verificación del traspaso de accesos.
+* `MANUAL_TECNICO_Y_GUIA_DE_TRANSFERENCIA_NEXUS_FI.docx` / `.pdf`: manual técnico y guía para quienes continúen el proyecto (servicio social). Reúne un SRS condensado, un documento de diseño (arquitectura, datos, API, seguridad, infraestructura), la puesta en marcha, la operación y el mantenimiento, las pruebas, los defectos conocidos, el trabajo sugerido, la lista de verificación del traspaso de accesos y un anexo con el funcionamiento interno de una consulta.
+* `DOCUMENTO_DE_CIERRE_NEXUS_FI.docx` / `.pdf`: documento del grupo de procesos de cierre (PMBOK 6.1): informe final, aceptación y plan de la prueba UAT, cierre de adquisiciones, lecciones aprendidas, transferencia y capacitación, liberación de recursos, atención a sugerencias y acta de cierre (firmas pendientes).
+
+### `04_Documento_Final/`
+* `DOCUMENTO_MAESTRO_FINAL_NEXUS_FI_v1.0.docx` / `.pdf`: documento único de la entrega final (unas 680 páginas). Reúne la planeación, la ejecución, el monitoreo y control y el cierre como Partes I a IV, los anexos A a H de Ejecución tal como se entregaron, los anexos I a M (manual técnico, manual de usuario, cuestionario, presentaciones e índice de entrega) y una lista única de referencias con vínculos desde todas las partes. Tiene control de versiones propio en la página 2 y una tabla de actualizaciones al cierre. Omite direcciones IP, segmentos de red e identificadores de la infraestructura. **No se publica en el repositorio** (la carpeta tiene su propio `.gitignore`).
+* `armado/`: scripts para reconstruirlo (por ejemplo, la versión 1.1 con los resultados de la prueba UAT). Tampoco se publica; viven en la copia local del equipo.
 
 ### `02_Ejecucion/Matrices_Cumplimiento/`
 * Matrices individuales por avance (`Avance_1_25/`, `Avance_2_50/`, `Avance_3_100/`), `MATRIZ_DESEMPENO_ACTIVIDADES.docx`, `MATRIZ_EVALUACION_PM.docx` y `MATRICES_CUMPLIMIENTO_NEXUS_FI.xlsx` (con la hoja de evaluación del PM).
