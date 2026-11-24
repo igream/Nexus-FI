@@ -10,6 +10,7 @@ import pytest
 
 import backend.app as app_module
 from core.chat import contexto
+from nexus_ingestion.vector_store import expandir_consulta
 from tests.test_conversaciones import CUENTA_A, client, preguntar, sesion  # noqa: F401 (fixture)
 
 REESCRITA = "¿Cuál es el plazo para liberar el servicio social?"
@@ -66,7 +67,7 @@ def test_sin_historial_no_hay_reescritura(client, llm):
     r = preguntar(client, h, "¿Qué requisitos tiene el servicio social?")
     assert r.status_code == 200
     assert llm.reescrituras == []
-    assert llm.embedder.textos == ["¿Qué requisitos tiene el servicio social?"]
+    assert llm.embedder.textos == [expandir_consulta("¿Qué requisitos tiene el servicio social?")]   # D-02: glosario
     assert [m["role"] for m in llm.respuestas[0]["messages"]] == ["system", "user"]
     tel = r.json()["telemetry"]
     assert tel["rewritten_query"] is None and tel["history_turns"] == 0
@@ -82,7 +83,7 @@ def test_con_historial_reescribe_y_busca_con_la_reescrita(client, llm):
     assert rw["temperature"] == 0 and rw["max_tokens"] == contexto.MAX_TOKENS_REESCRITURA
     assert "servicio social" in rw["messages"][1]["content"]
     # El embedding usa la reescrita; el LLM final, la pregunta original
-    assert llm.embedder.textos[-1] == REESCRITA
+    assert llm.embedder.textos[-1] == expandir_consulta(REESCRITA)
     assert llm.respuestas[-1]["messages"][-1]["content"].endswith("Pregunta del Estudiante: ¿y cuál es el plazo?")
     tel = r.json()["telemetry"]
     assert tel["rewritten_query"] == REESCRITA and tel["history_turns"] == 1 and tel["rewrite_tokens"] == 60
