@@ -120,3 +120,42 @@ def test_la_norma_reforzada_no_tiene_tope(tmp_path):
 
 def test_constantes_documentadas():
     assert vs_mod.REFUERZO_TITULO == 0.06 and vs_mod.MAX_POR_DOCUMENTO == 2
+
+
+# Temas agregados el 24/11/2026 por la prueba de 41 preguntas de estudiantes
+NOMBRES = ["1 BRE 26Bv1.pdf", "17 BSIv3.pdf", "8 AEV-26B.pdf", "10 EC-26B.pdf", "11 EDv1.pdf",
+           "reglamento Becas.pdf", "2026 Convenios.pdf", "09-reglamento_del_sistema_bibliotecario.pdf",
+           "Facultad de Ingeniería - Control Escolar FI.html",
+           "REGLAMENTO DE MOVILIDAD ESTUDIANTIL DE ESTUDIOS PROFESIONALES.pdf",
+           "REGLAMENTO DE PRÁCTICAS Y ESTANCIAS PROFESIONALES.pdf", SERVICIO]
+
+
+@pytest.fixture
+def acervo(tmp_path):
+    s = LanceDBVectorStore(uri=str(tmp_path / "db3"), table_name="t", embedding_dim=3)
+    s.save_chunks([chunk(i, "texto", d, "x") for i, d in enumerate(NOMBRES)], [vector(0.3)] * len(NOMBRES),
+                  mode="overwrite")
+    return s
+
+
+@pytest.mark.parametrize("pregunta,esperados", [
+    ("¿A qué área debo acudir con una duda escolar?", {"Facultad de Ingeniería - Control Escolar FI.html"}),
+    ("¿Cómo saco una constancia de estudios?", {"Facultad de Ingeniería - Control Escolar FI.html"}),
+    ("¿Qué necesito para irme de intercambio?", {"REGLAMENTO DE MOVILIDAD ESTUDIANTIL DE ESTUDIOS PROFESIONALES.pdf"}),
+    ("¿Qué actividades culturales y deportivas hay?", {"10 EC-26B.pdf", "11 EDv1.pdf"}),
+    ("¿Puedo hacer las prácticas profesionales y el servicio social al mismo tiempo?",
+     {"REGLAMENTO DE PRÁCTICAS Y ESTANCIAS PROFESIONALES.pdf", SERVICIO}),
+])
+def test_temas_de_estudiantes(acervo, pregunta, esperados):
+    assert acervo.documentos_reforzados(pregunta) == esperados
+
+
+def test_becas_refuerza_solo_las_convocatorias(acervo):
+    r = acervo.documentos_reforzados("¿Qué becas hay?")
+    assert r == {"1 BRE 26Bv1.pdf", "17 BSIv3.pdf", "8 AEV-26B.pdf", "10 EC-26B.pdf", "11 EDv1.pdf"}
+    assert "8 AEV-26B.pdf" in acervo.documentos_reforzados("¿Hay alguna beca si soy mamá y estudio?")
+
+
+def test_temas_nuevos_no_tocan_otras_preguntas(acervo):
+    for q in ["¿Qué materias hay en séptimo semestre de ICO?", "receta de pozole", "¿Cuál es el horario de Cálculo?"]:
+        assert acervo.documentos_reforzados(q) == set()

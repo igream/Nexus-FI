@@ -123,17 +123,30 @@ def es_casi_duplicado(huella: Set[str], elegidas: List[Set[str]]) -> bool:
 #      profesional»); en servicio social reordenaba el reglamento y dejaba fuera el art. 16 (480 h).
 #   2. Refuerzo por título: los fragmentos de esa norma suman REFUERZO_TITULO al puntaje con
 #      que se ordenan y se comparan con el umbral; la similitud que se informa es la real.
-#   3. Diversidad: como máximo MAX_POR_DOCUMENTO fragmentos de un mismo documento, salvo la
-#      norma reforzada, que puede ocupar todos los lugares.
+#   3. Diversidad: como máximo MAX_POR_DOCUMENTO fragmentos de un mismo documento, salvo
+#      cuando se refuerza un solo documento, que puede ocupar todos los lugares.
 # Solo se activan con preguntas del tema; las fuera de tema no cambian.
-# Cada entrada: (patrón en la pregunta normalizada, texto del glosario o None, patrón en el nombre del documento)
+# El 24/11/2026 se agregaron temas por la prueba de 41 preguntas de estudiantes: intercambio,
+# Control Escolar (constancias, bajas, dudas escolares), becas, madres y padres estudiantes y
+# actividades culturales y deportivas (dos de las sugerencias de la pantalla inicial fallaban).
+# Cada entrada: (patrón en la pregunta normalizada, texto del glosario o None, patrón en el nombre
+# normalizado del documento). Las convocatorias de becas se llaman «<n> <siglas>…» (p. ej. «1 BRE 26Bv1.pdf»).
 # ---------------------------------------------------------------------------
+_CONVOCATORIA_BECA = r"^\d{1,2} [a-z]{2,4}([ -]|v\d|\.)"
 TEMAS_NORMATIVOS = [
     (r"titula", "Reglamento de Evaluación Profesional: modalidades u opciones de evaluación profesional",
      r"evaluacion profesional"),
     (r"servicio social", None, r"servicio social"),
-    (r"practicas? profesional", None, r"practicas? profesional"),
-    (r"movilidad", None, r"movilidad"),
+    (r"practicas? profesional", None, r"practicas y estancias profesional"),
+    (r"movilidad|intercambio", "Reglamento de Movilidad Estudiantil: requisitos para participar",
+     r"movilidad"),
+    (r"constancia|duda (escolar|academica)|control escolar|dar(me)? de baja|baja de (una )?materia",
+     "Control Escolar de la Facultad de Ingeniería: trámites y servicios escolares", r"control escolar"),
+    (r"\bbecas?\b|apoyo economico", None, _CONVOCATORIA_BECA),
+    (r"\b(mama|madre|papa|padre|embarazada)\b", "apoyo para estudiantes en situación de vulnerabilidad: "
+     "responsabilidad como madre, padre o persona cuidadora", r"^8 aev"),
+    (r"cultura|deport|artistic", "Estímulo Cultural y Estímulo Deportivo; difusión cultural; instalaciones deportivas",
+     r"^10 ec-|^11 ed"),
 ]
 REFUERZO_TITULO = 0.06
 MAX_POR_DOCUMENTO = 2
@@ -363,7 +376,7 @@ class LanceDBVectorStore:
             if puntaje >= similarity_threshold or coincidencia:
                 if len(filtered_results) >= top_k:
                     break
-                if (max_por_documento and row["documento"] not in reforzados
+                if (max_por_documento and not (len(reforzados) == 1 and row["documento"] in reforzados)
                         and por_documento.get(row["documento"], 0) >= max_por_documento):
                     continue
                 if quitar_duplicados:

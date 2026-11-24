@@ -4,7 +4,7 @@ Asistente RAG de la Facultad de Ingeniería (UAEMéx), prueba piloto para Ingeni
 
 - **Plan vigente:** `docs/PLAN_IMPLEMENTACION.md` (fases, decisiones D1-D7, bitácora y «Siguiente tarea»). Léelo antes de implementar; al terminar, actualiza casillas, bitácora y siguiente tarea.
 - **Idioma:** español en código, comentarios, commits y documentos.
-- **Pruebas:** `python -m pytest tests -q` → 157 en verde (2026-11-23). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`.
+- **Pruebas:** `python -m pytest tests -q` → 164 en verde (2026-11-24). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`.
 
 ## Reglas del usuario (obligatorias, también en la nube)
 
@@ -55,7 +55,7 @@ Todo está en `main` (PR igream/Nexus-FI#5 y #6) y **desplegado** en la EC2. Ram
 
 - **F4 etapa 2 (siguiente tarea técnica):** rol IAM de solo lectura en la EC2; CloudWatch (estado, CPU, NetworkIn) y Cost Explorer (caché ~6 h, 0.01 USD por llamada) en el panel admin.
 - **Decisiones del equipo:** retención del historial y aviso de privacidad (hoy no se purga nada); tope diario del Avanzado; opción C (retirar del acervo los 115 fragmentos del mapa curricular revuelto).
-- **D-02 (titulación y servicio social):** corregido en la rama `fix/d02-busqueda-normativa` (2026-11-23); falta PR y despliegue. Repetir con `python scripts/comparar_modelos.py --preguntas scripts/preguntas_d02.json`.
+- **D-02 (titulación y servicio social):** corregido en la rama `fix/d02-busqueda-normativa` (2026-11-23); falta PR y despliegue. Repetir con `python scripts/comparar_modelos.py --preguntas scripts/preguntas_d02.json`. La misma rama amplía los temas de búsqueda por la prueba de 41 preguntas de estudiantes (`scripts/preguntas_estudiantes.json`; esta batería no trae hechos esperados: se califica leyendo las respuestas).
 - **Acervo:** huecos de recuperación («décimo semestre», nombre de la coordinadora); temarios que perdieron horas y créditos al extraerse.
 - **Documento Maestro v2.0:** 26 de las 29 referencias del acervo tienen enlaces rotos (los portales de la UAEMéx tampoco funcionan bien); citar rutas que abran o la consulta desde Nexus FI.
 - El nombre público del perfil de GitHub del usuario es «Fer AI»; los merges hechos desde la web salen con ese nombre (el `.mailmap` lo traduce).
