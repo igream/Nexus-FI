@@ -10,7 +10,19 @@ function getToken() {
     try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
 }
 
+// Todas las pestañas del sitio comparten el almacenamiento local: si en otra pestaña se inicia
+// sesión con otra cuenta, el token guardado cambia. Cada pestaña conserva el token con el que se
+// abrió, envía siempre ese y, si el guardado cambia, se bloquea con un aviso (ensayo de sesiones
+// simultáneas del 23/11/2026: 30 pestañas enviaban con la última cuenta y agotaban su cuota).
+const TOKEN_PESTANA = getToken();
+
+function sesionCambio() {
+    return getToken() !== TOKEN_PESTANA;
+}
+
 function borrarSesion() {
+    // Una pestaña desactualizada no borra la sesión que abrió otra pestaña
+    if (sesionCambio()) return;
     try {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(CARRERA_KEY);
@@ -29,8 +41,7 @@ if (!getToken()) {
 
 function getSecurityHeaders() {
     const headers = { "Content-Type": "application/json" };
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (TOKEN_PESTANA) headers.Authorization = `Bearer ${TOKEN_PESTANA}`;
     return headers;
 }
 
@@ -42,6 +53,42 @@ async function cerrarSesion() {
 }
 
 const $ = s => document.querySelector(s);
+
+/* Aviso de sesión cambiada en otra pestaña: bloquea la página hasta que el usuario recargue */
+function mostrarAvisoSesion() {
+    if (document.getElementById('aviso-sesion')) return;
+    const otra = !!getToken();
+    const aviso = document.createElement('div');
+    aviso.id = 'aviso-sesion';
+    aviso.className = 'aviso-sesion';
+    aviso.setAttribute('role', 'alertdialog');
+    aviso.setAttribute('aria-modal', 'true');
+    aviso.setAttribute('aria-labelledby', 'aviso-sesion-titulo');
+    aviso.innerHTML = `
+      <div class="aviso-sesion-caja">
+        <h2 id="aviso-sesion-titulo">${otra ? 'Se inició sesión con otra cuenta' : 'Se cerró la sesión'}</h2>
+        <p>${otra
+            ? 'En otra pestaña de este navegador se inició sesión con una cuenta distinta. Para no enviar consultas a nombre de otra persona, esta pestaña ya no puede usarse.'
+            : 'La sesión se cerró en otra pestaña de este navegador.'}</p>
+        <p class="aviso-sesion-nota">Para usar varias cuentas a la vez, abre cada una en otro dispositivo o en otro perfil del navegador.</p>
+        <button type="button" class="primary" id="aviso-sesion-boton">${otra ? 'Continuar con la cuenta actual' : 'Iniciar sesión'}</button>
+      </div>`;
+    document.body.appendChild(aviso);
+    document.querySelectorAll('#form textarea, #form button, #form select').forEach(el => { el.disabled = true; });
+    const boton = document.getElementById('aviso-sesion-boton');
+    boton.addEventListener('click', () => otra ? location.reload() : location.replace('/login'));
+    boton.focus();
+}
+
+function revisarSesion() {
+    if (sesionCambio()) mostrarAvisoSesion();
+    return !sesionCambio();
+}
+
+// El evento storage llega a las demás pestañas cuando una cambia el token; al volver a una
+// pestaña también se revisa, por si el navegador la tenía suspendida.
+window.addEventListener('storage', e => { if (e.key === TOKEN_KEY || e.key === null) revisarSesion(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) revisarSesion(); });
 
 /* ========================================
 MODO OSCURO — NEXUS FI
@@ -683,6 +730,7 @@ pintarAcervo();
 // Envío y consulta con el backend RAG
 form?.addEventListener('submit', async e => {
     e.preventDefault();
+    if (!revisarSesion()) return;
     let q = input.value.trim();
     if (!q) return;
 
