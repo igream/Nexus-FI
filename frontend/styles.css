@@ -316,11 +316,15 @@ html[data-theme="dark"] .theme-toggle { background: #24372c; color: #f1d780; bor
 }
 .composer textarea {
   flex: 1; min-width: 0; border: 0; outline: 0; resize: none;
-  padding: 9px 2px; min-height: 40px; max-height: 120px;
+  /* Una línea = 40 px (9 + 22 + 9), igual que el selector y el botón de enviar,
+     para que el texto quede centrado; la barra de desplazamiento solo aparece
+     al llegar a la altura máxima (app.js) */
+  padding: 9px 2px; min-height: 40px; max-height: 120px; line-height: 22px; overflow-y: hidden;
   font-size: 14px; background: transparent; color: var(--theme-text);
 }
-.attach, .send { width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 10px; }
-.attach { background: var(--theme-surface-2); color: var(--theme-muted); font-size: 20px; }
+/* El placeholder ocupa una sola línea; si no cabe se recorta con «…» */
+.composer textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.send { width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 10px; }
 .model-select {
   height: 40px; flex-shrink: 0; max-width: 112px; border: 1px solid var(--theme-border); border-radius: 10px;
   padding: 0 8px; background: var(--theme-surface-2); color: var(--theme-text); font-size: 13px; cursor: pointer;

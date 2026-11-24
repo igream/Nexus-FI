@@ -700,6 +700,7 @@ input?.addEventListener('input', () => {
     count.textContent = input.value.length + ' / 500';
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
 });
 
 // Enter envía la pregunta; Mayús + Enter inserta un salto de línea.
@@ -739,6 +740,7 @@ form?.addEventListener('submit', async e => {
     input.value = '';
     if (count) count.textContent = '0 / 500';
     input.style.height = '';
+    input.style.overflowY = '';
 
     // Burbuja temporal de carga
     let loadingRow = add('Consultando acervo institucional oficial de la FI UAEMéx...', 'assistant');
