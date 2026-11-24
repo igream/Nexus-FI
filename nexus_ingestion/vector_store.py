@@ -3,6 +3,7 @@ import re
 import uuid
 from typing import List, Dict, Any, Optional, Set
 import lancedb
+import pandas as pd
 import pyarrow as pa
 
 # Lista blanca estricta de columnas permitidas para filtrado de metadatos (Mitigación SQL/DataFusion Injection)
@@ -108,6 +109,60 @@ def es_casi_duplicado(huella: Set[str], elegidas: List[Set[str]]) -> bool:
         if len(huella & otra) / len(huella | otra) >= UMBRAL_DUPLICADO:
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Preguntas de trámite que no encuentran su norma (defecto D-02)
+#
+# «¿Qué opciones de titulación tengo en ICO?» no recuperaba el Reglamento de Evaluación
+# Profesional: la norma no usa la palabra «titulación», y «Ingeniería en Computación», «ICO» o
+# «créditos» acercan la pregunta a los programas de materia, que llenaban los 4 lugares.
+# Tres medidas, medidas el 23/11/2026 sobre 28 preguntas (de 18 a 25 aciertos, sin retrocesos):
+#   1. Glosario: al texto que se vectoriza se le agrega el nombre de la norma del tema. Solo
+#      donde la norma usa otras palabras que la pregunta («titulación» frente a «evaluación
+#      profesional»); en servicio social reordenaba el reglamento y dejaba fuera el art. 16 (480 h).
+#   2. Refuerzo por título: los fragmentos de esa norma suman REFUERZO_TITULO al puntaje con
+#      que se ordenan y se comparan con el umbral; la similitud que se informa es la real.
+#   3. Diversidad: como máximo MAX_POR_DOCUMENTO fragmentos de un mismo documento, salvo
+#      cuando se refuerza un solo documento, que puede ocupar todos los lugares.
+# Solo se activan con preguntas del tema; las fuera de tema no cambian.
+# El 24/11/2026 se agregaron temas por la prueba de 41 preguntas de estudiantes: intercambio,
+# Control Escolar (constancias, bajas, dudas escolares), becas, madres y padres estudiantes y
+# actividades culturales y deportivas (dos de las sugerencias de la pantalla inicial fallaban).
+# Cada entrada: (patrón en la pregunta normalizada, texto del glosario o None, patrón en el nombre
+# normalizado del documento). Las convocatorias de becas se llaman «<n> <siglas>…» (p. ej. «1 BRE 26Bv1.pdf»).
+# ---------------------------------------------------------------------------
+_CONVOCATORIA_BECA = r"^\d{1,2} [a-z]{2,4}([ -]|v\d|\.)"
+TEMAS_NORMATIVOS = [
+    (r"titula", "Reglamento de Evaluación Profesional: modalidades u opciones de evaluación profesional",
+     r"evaluacion profesional"),
+    (r"servicio social", None, r"servicio social"),
+    (r"practicas? profesional", None, r"practicas y estancias profesional"),
+    (r"movilidad|intercambio", "Reglamento de Movilidad Estudiantil: requisitos para participar",
+     r"movilidad"),
+    (r"constancia|duda (escolar|academica)|control escolar|dar(me)? de baja|baja de (una )?materia",
+     "Control Escolar de la Facultad de Ingeniería: trámites y servicios escolares", r"control escolar"),
+    (r"\bbecas?\b|apoyo economico", None, _CONVOCATORIA_BECA),
+    (r"\b(mama|madre|papa|padre|embarazada)\b", "apoyo para estudiantes en situación de vulnerabilidad: "
+     "responsabilidad como madre, padre o persona cuidadora", r"^8 aev"),
+    (r"cultura|deport|artistic", "Estímulo Cultural y Estímulo Deportivo; difusión cultural; instalaciones deportivas",
+     r"^10 ec-|^11 ed"),
+]
+REFUERZO_TITULO = 0.06
+MAX_POR_DOCUMENTO = 2
+CANDIDATOS_REFUERZO = 20         # candidatos que se piden aparte a los documentos reforzados
+MIN_CANDIDATOS_TOPE = 40         # candidatos mínimos cuando se limita el número por documento
+
+
+def _temas(texto: str) -> list:
+    t = _normalizar(texto)
+    return [tema for tema in TEMAS_NORMATIVOS if re.search(tema[0], t)]
+
+
+def expandir_consulta(texto: str) -> str:
+    """Texto que se vectoriza: la pregunta más el nombre de la norma de cada tema que toca."""
+    extra = [glosa for _, glosa, _ in _temas(texto) if glosa]
+    return f"{texto} ({'; '.join(extra)})" if extra else texto
 
 
 def get_vector_schema(embedding_dim: int = 1536) -> pa.Schema:
@@ -216,6 +271,19 @@ class LanceDBVectorStore:
                 escaped_doc = doc_name.replace("'", "''")
                 self.table.delete(f"documento = '{escaped_doc}'")
             self.table.add(data)
+        # Las cachés derivadas del acervo se recalculan con los datos nuevos
+        self._df_terminos = None
+        self._nombres_documentos = None
+
+    def documentos_reforzados(self, query_text: str) -> Set[str]:
+        """Documentos cuyo nombre corresponde a un tema normativo de la pregunta (D-02)."""
+        temas = _temas(query_text or "")
+        if not temas or self.table is None:
+            return set()
+        if getattr(self, "_nombres_documentos", None) is None:
+            self._nombres_documentos = sorted(set(self.table.to_arrow().column("documento").to_pylist()))
+        return {d for d in self._nombres_documentos
+                if any(re.search(patron, _normalizar(d)) for _, _, patron in temas)}
 
     def _frecuencia_terminos(self) -> Dict[str, int]:
         """En cuántos fragmentos aparece cada palabra (se calcula una vez por proceso)."""
@@ -241,6 +309,8 @@ class LanceDBVectorStore:
         filter_dict: Optional[Dict[str, str]] = None,
         query_text: Optional[str] = None,
         quitar_duplicados: bool = True,
+        reforzar_normativa: bool = False,
+        max_por_documento: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Búsqueda por similitud vectorial con pre-filtrado seguro por metadatos (prefilter=True)
@@ -251,44 +321,70 @@ class LanceDBVectorStore:
 
         Con quitar_duplicados (por defecto), un candidato casi idéntico a otro mejor clasificado
         se descarta y su lugar lo toma el siguiente candidato.
+
+        Con reforzar_normativa y query_text, los fragmentos de la norma del tema de la pregunta
+        suman REFUERZO_TITULO a su puntaje (D-02). max_por_documento limita cuántos fragmentos
+        de un mismo documento entran al resultado.
         """
         if self.table is None:
             return []
 
         terminos = self.terminos_distintivos(query_text) if query_text else set()
+        reforzados = self.documentos_reforzados(query_text) if (reforzar_normativa and query_text) else set()
 
-        query = self.table.search(query_vector).metric("cosine")
+        where_clause = build_safe_where_clause(filter_dict) if filter_dict else ""
 
-        # Aplicar filtros sanitizados ANTES de la búsqueda ANN (prefilter=True)
-        if filter_dict:
-            where_clause = build_safe_where_clause(filter_dict)
-            if where_clause:
-                query = query.where(where_clause, prefilter=True)
+        def consulta():
+            q = self.table.search(query_vector).metric("cosine")
+            if where_clause:   # filtros sanitizados ANTES de la búsqueda ANN (prefilter=True)
+                q = q.where(where_clause, prefilter=True)
+            return q
 
         limite = max(top_k, CANDIDATOS_TERMINO) if terminos else top_k
-        if quitar_duplicados:
+        if quitar_duplicados or max_por_documento:
             limite = max(limite, top_k * FACTOR_CANDIDATOS, MIN_CANDIDATOS)
-        results = query.limit(limite).to_pandas()
+        if max_por_documento:   # con el tope se descartan más candidatos: hay que pedir más
+            limite = max(limite, MIN_CANDIDATOS_TOPE)
+        results = consulta().limit(limite).to_pandas()
+
+        if reforzados:
+            # La norma puede quedar lejos en el orden coseno: se piden aparte sus mejores fragmentos.
+            # Los nombres salen de la propia tabla y se escapan; no vienen del usuario.
+            lista = ", ".join("'" + d.replace("'", "''") + "'" for d in sorted(reforzados))
+            extra = (self.table.search(query_vector).metric("cosine")
+                     .where(" AND ".join(filter(None, [where_clause, f"documento IN ({lista})"])), prefilter=True)
+                     .limit(CANDIDATOS_REFUERZO).to_pandas())
+            results = pd.concat([results, extra]).drop_duplicates(subset="id")
+
+        results = results.copy()
+        results["_similitud"] = 1.0 - results["_distance"].astype(float)
+        results["_puntaje"] = results["_similitud"] + results["documento"].isin(reforzados) * REFUERZO_TITULO
+        results = results.sort_values("_puntaje", ascending=False, kind="stable")
 
         filtered_results = []
         huellas: List[Set[str]] = []
+        por_documento: Dict[str, int] = {}
         for _, row in results.iterrows():
-            distance = float(row.get("_distance", 1.0))
-            similarity = 1.0 - distance
+            similarity = float(row["_similitud"])
+            puntaje = float(row["_puntaje"])
 
             coincidencia = (
-                similarity < similarity_threshold
+                puntaje < similarity_threshold
                 and similarity >= SIMILITUD_MINIMA_TERMINO
                 and bool(terminos & _palabras(row["text"]))
             )
-            if similarity >= similarity_threshold or coincidencia:
+            if puntaje >= similarity_threshold or coincidencia:
                 if len(filtered_results) >= top_k:
                     break
+                if (max_por_documento and not (len(reforzados) == 1 and row["documento"] in reforzados)
+                        and por_documento.get(row["documento"], 0) >= max_por_documento):
+                    continue
                 if quitar_duplicados:
                     huella = _huella(row["text"])
                     if es_casi_duplicado(huella, huellas):
                         continue
                     huellas.append(huella)
+                por_documento[row["documento"]] = por_documento.get(row["documento"], 0) + 1
                 filtered_results.append({
                     "id": row["id"],
                     "documento": row["documento"],
@@ -302,6 +398,7 @@ class LanceDBVectorStore:
                     "raw_text": row.get("raw_text", ""),
                     "similarity": round(similarity, 4),
                     "coincidencia_exacta": coincidencia,
+                    "reforzado": row["documento"] in reforzados,
                 })
 
         return filtered_results

@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 from nexus_ingestion.embedder import TextEmbedder
-from nexus_ingestion.vector_store import LanceDBVectorStore
+from nexus_ingestion.vector_store import LanceDBVectorStore, MAX_POR_DOCUMENTO, expandir_consulta
 
 # Límite de consultas por usuario registrado (WBS 1.4.2, SC-001)
 from core.security.rate_limiter import RateLimiterMiddleware, get_user_id
@@ -559,10 +559,12 @@ def chat_endpoint(req: ChatRequest, request: Request):
     # 1. Generar vector de consulta (Facturado a OPENAI_API_KEY_EMBEDDINGS)
     try:
         t0_emb = time.time()
-        query_vector = current_embedder.embed_query(search_query)
+        # D-02: se vectoriza la pregunta más el nombre de la norma de su tema (glosario)
+        texto_vectorizado = expandir_consulta(search_query)
+        query_vector = current_embedder.embed_query(texto_vectorizado)
         emb_latency_ms = round((time.time() - t0_emb) * 1000, 2)
         # Estimación de tokens de embedding (~4 caracteres por token)
-        emb_tokens = max(len(search_query) // 4, 1)
+        emb_tokens = max(len(texto_vectorizado) // 4, 1)
         meta_reescritura["embedding_tokens"] = emb_tokens   # F4: se guarda con la respuesta
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al vectorizar la consulta: {e}")
@@ -579,6 +581,8 @@ def chat_endpoint(req: ChatRequest, request: Request):
         similarity_threshold=0.52,
         filter_dict=filter_dict if filter_dict else None,
         query_text=search_query,   # acepta nombres propios poco comunes que aparecen tal cual
+        reforzar_normativa=True,   # D-02: la norma del tema gana a los programas de materia
+        max_por_documento=MAX_POR_DOCUMENTO,
     )
     search_latency_ms = round((time.time() - t0_search) * 1000, 2)
 
