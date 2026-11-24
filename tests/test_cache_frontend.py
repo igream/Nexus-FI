@@ -21,3 +21,13 @@ def test_archivo_sin_cambios_responde_304():
 
 def test_api_no_recibe_cabecera_de_frontend():
     assert client.get("/api/session/info").headers.get("cache-control") != "no-cache"
+
+
+def test_cada_pestana_envia_su_propio_token():
+    # Ensayo de sesiones simultáneas (23/11/2026): las pestañas comparten localStorage y enviaban
+    # con la última cuenta que inició sesión. Cada pestaña debe usar el token con el que abrió y
+    # avisar si el guardado cambia.
+    js = client.get("/app.js").text
+    assert "const TOKEN_PESTANA = getToken();" in js
+    assert "Bearer ${TOKEN_PESTANA}" in js
+    assert "addEventListener('storage'" in js and "mostrarAvisoSesion" in js

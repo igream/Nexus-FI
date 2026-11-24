@@ -546,3 +546,20 @@ html[data-theme="dark"] .auth-msg.ok { border-color: #3b5e4b; }
 @media (max-width: 330px) {
   .kpis { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Aviso de sesión cambiada en otra pestaña (app.js, mostrarAvisoSesion) ---------- */
+.aviso-sesion {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center;
+  padding: 16px; background: #0b1a1399;
+}
+.aviso-sesion-caja {
+  max-width: 440px; width: 100%;
+  background: var(--theme-surface); color: var(--theme-text);
+  border: 1px solid var(--theme-border); border-radius: 14px;
+  box-shadow: var(--theme-shadow); padding: 22px 22px 18px;
+}
+.aviso-sesion-caja h2 { margin: 0 0 8px; font-size: 18px; color: var(--theme-accent-text); }
+.aviso-sesion-caja p { margin: 0 0 10px; line-height: 1.5; }
+.aviso-sesion-nota { color: var(--theme-muted); font-size: 13px; }
+.aviso-sesion-caja .primary { width: 100%; margin-top: 6px; }

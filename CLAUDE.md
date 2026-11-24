@@ -4,7 +4,7 @@ Asistente RAG de la Facultad de Ingeniería (UAEMéx), prueba piloto para Ingeni
 
 - **Plan vigente:** `docs/PLAN_IMPLEMENTACION.md` (fases, decisiones D1-D7, bitácora y «Siguiente tarea»). Léelo antes de implementar; al terminar, actualiza casillas, bitácora y siguiente tarea.
 - **Idioma:** español en código, comentarios, commits y documentos.
-- **Pruebas:** `python -m pytest tests -q` → 164 en verde (2026-11-24). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`.
+- **Pruebas:** `python -m pytest tests -q` → 165 en verde (2026-11-24). `tests/conftest.py` fija `RATE_LIMIT_ENABLED=true`.
 
 ## Reglas del usuario (obligatorias, también en la nube)
 
